@@ -67,7 +67,7 @@ function generateMockSalesData(dateRange: DateRange): SaleStats {
 export const getSalesStats = action(getSalesStatsSchema, async ({ dateRange }) => {
   try {
     // TODO: Replace with actual database query
-    const stats = generateMockSalesData(dateRange)
+    const stats = generateMockSalesData(dateRange as DateRange)
     
     return {
       data: stats,
