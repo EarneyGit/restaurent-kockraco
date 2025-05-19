@@ -10,7 +10,8 @@ export interface MenuItem {
   weight?: number
   calorificValue?: string
   calorieDetails?: string
-  images?: string[]
+  images?: (string | File | Blob)[]
+  category?: string
   availability?: {
     monday?: DayAvailability
     tuesday?: DayAvailability

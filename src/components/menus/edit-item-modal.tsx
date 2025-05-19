@@ -20,9 +20,11 @@ import { MenuItem, DayAvailability, TimeSlot, Allergen, PriceChange } from '@/ty
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { toast } from 'react-hot-toast'
 
 interface EditItemModalProps {
   item: MenuItem | null
+  categoryId: string
   open: boolean
   onClose: () => void
   onSave: (item: MenuItem) => void
@@ -64,16 +66,17 @@ const DEFAULT_PRICE_CHANGE: PriceChange = {
   active: true
 }
 
-export function EditItemModal({ item, open, onClose, onSave }: EditItemModalProps) {
+export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditItemModalProps) {
   const [currentItem, setCurrentItem] = useState<MenuItem>(
     item || {
-      id: Math.random().toString(36).substr(2, 9),
+      id: '',
       name: '',
       price: 0,
       hideItem: false,
       delivery: true,
       collection: true,
       dineIn: true,
+      category: categoryId,
       availability: DAYS_OF_WEEK.reduce((acc, day) => ({
         ...acc,
         [day]: { ...DEFAULT_AVAILABILITY }
@@ -93,18 +96,84 @@ export function EditItemModal({ item, open, onClose, onSave }: EditItemModalProp
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
     onDrop: (acceptedFiles) => {
-      // In a real app, you would upload these files to your storage
       const imageUrls = acceptedFiles.map(file => URL.createObjectURL(file))
       setCurrentItem(prev => ({
         ...prev,
-        images: [...(prev.images || []), ...imageUrls]
+        images: [...(prev.images || []), ...acceptedFiles]
       }))
     }
   })
 
-  const handleSave = () => {
-    onSave(currentItem)
-    onClose()
+  const getImageUrl = (image: string | File | Blob): string => {
+    if (image instanceof File || image instanceof Blob) {
+      return URL.createObjectURL(image)
+    }
+    return image
+  }
+
+  const handleSave = async () => {
+    try {
+      const formData = new FormData()
+
+      // Add all current item data to formData
+      formData.append('name', currentItem.name)
+      formData.append('price', currentItem.price.toString())
+      formData.append('description', currentItem.description || '')
+      formData.append('weight', (currentItem.weight || '').toString())
+      formData.append('calorificValue', currentItem.calorificValue || '')
+      formData.append('calorieDetails', currentItem.calorieDetails || '')
+      formData.append('hideItem', currentItem.hideItem.toString())
+      formData.append('delivery', currentItem.delivery.toString())
+      formData.append('collection', currentItem.collection.toString())
+      formData.append('dineIn', currentItem.dineIn.toString())
+      formData.append('branchId', "6829cec57032455faec894ab")
+      formData.append('category', categoryId)
+
+      // Add availability
+      formData.append('availability', JSON.stringify(currentItem.availability))
+
+      // Add allergens
+      formData.append('allergens', JSON.stringify(currentItem.allergens))
+
+      // Add price changes
+      formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
+
+      // Handle images
+      if (currentItem.images) {
+        currentItem.images.forEach((image) => {
+          if (image instanceof File || image instanceof Blob) {
+            formData.append('images', image)
+          }
+          else if (typeof image === 'string' && !image.startsWith('blob:')) {
+            formData.append('existingImages', image)
+          }
+        })
+      }
+
+      const url = currentItem.id ? 
+        `http://localhost:5000/api/products/${currentItem.id}` :
+        'http://localhost:5000/api/products'
+
+      const method = currentItem.id ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to save item')
+      }
+
+      const data = await response.json()
+      onSave(data.data)
+      onClose()
+      toast.success(`Product ${currentItem.id ? 'updated' : 'created'} successfully`)
+    } catch (error) {
+      console.error('Error saving item:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save item')
+    }
   }
 
   const removeImage = (index: number) => {
@@ -228,7 +297,7 @@ export function EditItemModal({ item, open, onClose, onSave }: EditItemModalProp
   const addPriceChange = () => {
     const newPriceChange: PriceChange = {
       ...DEFAULT_PRICE_CHANGE,
-      id: Math.random().toString(36).substr(2, 9)
+      id: new Date().getTime().toString()
     }
     setEditingPriceChange(newPriceChange)
   }
@@ -356,7 +425,7 @@ export function EditItemModal({ item, open, onClose, onSave }: EditItemModalProp
                 {currentItem.images.map((image, index) => (
                   <div key={index} className="relative">
                     <Image
-                      src={image}
+                      src={getImageUrl(image)}
                       alt={`Menu item image ${index + 1}`}
                       width={200}
                       height={150}

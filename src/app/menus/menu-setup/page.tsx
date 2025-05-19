@@ -49,25 +49,20 @@ export default function MenuSetupPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch categories from API
+  // Fetch categories and their products
   const fetchCategories = async () => {
     try {
       setIsLoading(true)
       const response = await axios.get('http://localhost:5000/api/categories')
       
       if (response.data.success) {
-        // Add dummy items to each category
-        const categoriesWithItems = response.data.data.map((category: Category) => ({
-          ...category,
-          items: [...dummyItems] // Add dummy items to each category
-        }))
-        setCategories(categoriesWithItems)
+        setCategories(response.data.data)
       } else {
-        toast.error('Failed to fetch categories')
+        toast.error('Failed to fetch data')
       }
     } catch (error) {
-      console.error('Error fetching categories:', error)
-      toast.error('Failed to fetch categories')
+      console.error('Error fetching data:', error)
+      toast.error('Failed to fetch data')
     } finally {
       setIsLoading(false)
     }
@@ -78,14 +73,49 @@ export default function MenuSetupPage() {
   }, [])
 
   const handleAddCategory = async (category: Category) => {
-    // The API call is now handled in the AddCategoryModal component
-    // Here we just need to add the dummy items to the new category
-    const categoryWithItems = {
-      ...category,
-      items: [...dummyItems]
+    try {
+      const formData = new FormData()
+      formData.append('name', category.name)
+      formData.append('displayOrder', category.displayOrder.toString())
+      formData.append('hidden', category.hidden.toString())
+      formData.append('branchId', "6829cec57032455faec894ab")
+
+      // Add availability data
+      Object.entries(category.availability).forEach(([day, value]) => {
+        formData.append(`availability[${day}]`, value)
+      })
+
+      // Add printers
+      category.printers.forEach(printer => {
+        formData.append('printers', printer)
+      })
+
+      // Add image if exists
+      if (category.imageUrl) {
+        formData.append('image', category.imageUrl)
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/categories',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      )
+
+      if (response.data.success) {
+        setCategories(prev => [...prev, { ...response.data.data, items: [] }])
+        setIsAddModalOpen(false)
+        toast.success('Category added successfully')
+      } else {
+        throw new Error('Failed to add category')
+      }
+    } catch (error) {
+      console.error('Error adding category:', error)
+      toast.error('Failed to add category')
     }
-    setCategories(prev => [...prev, categoryWithItems])
-    setIsAddModalOpen(false)
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
@@ -106,24 +136,20 @@ export default function MenuSetupPage() {
 
   const handleUpdateCategory = async (updatedCategory: Category) => {
     try {
-      // Prepare form data for update
       const formData = new FormData()
       formData.append('name', updatedCategory.name)
       formData.append('displayOrder', updatedCategory.displayOrder.toString())
       formData.append('hidden', updatedCategory.hidden.toString())
       formData.append('branchId', "6829cec57032455faec894ab")
 
-      // Add availability data
       Object.entries(updatedCategory.availability).forEach(([day, value]) => {
         formData.append(`availability[${day}]`, value)
       })
 
-      // Add printers
       updatedCategory.printers.forEach(printer => {
         formData.append('printers', printer)
       })
 
-      // Add image if exists
       if (updatedCategory.imageUrl) {
         formData.append('image', updatedCategory.imageUrl)
       }
@@ -139,13 +165,10 @@ export default function MenuSetupPage() {
       )
 
       if (response.data.success) {
-        // Keep the existing items when updating the category in state
-        const updatedCategoryWithItems = {
-          ...response.data.data,
-          items: updatedCategory.items // Keep existing items
-        }
         setCategories(prev => 
-          prev.map(cat => cat.id === updatedCategory.id ? updatedCategoryWithItems : cat)
+          prev.map(cat => cat.id === updatedCategory.id ? 
+            { ...response.data.data, items: updatedCategory.items } : cat
+          )
         )
         toast.success('Category updated successfully')
       } else {

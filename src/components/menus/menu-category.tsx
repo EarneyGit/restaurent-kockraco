@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { EditItemModal } from './edit-item-modal'
 import { Category, MenuItem } from '@/types/menu'
 import { EditCategoryModal } from './edit-category-modal'
+import { toast } from 'react-hot-toast'
 
 interface MenuCategoryProps {
   category: Category
@@ -33,7 +34,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const handleCloneItem = (itemId: string) => {
-    const itemToClone = category.items.find(item => item.id === itemId)
+    const itemToClone = category.items?.find(item => item.id === itemId)
     if (!itemToClone) return
 
     const clonedItem: MenuItem = {
@@ -44,27 +45,135 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
     onUpdate({
       ...category,
-      items: [...category.items, clonedItem]
+      items: [...(category.items || []), clonedItem]
     })
   }
 
-  const handleDeleteItem = (itemId: string) => {
-    onUpdate({
-      ...category,
-      items: category.items.filter(item => item.id !== itemId)
-    })
+  const handleToggleDelivery = async (item: MenuItem, checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append('delivery', checked.toString())
+      
+      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+        method: 'PUT',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update delivery status')
+      }
+
+      onUpdate({
+        ...category,
+        items: category.items?.map(i => 
+          i.id === item.id ? { ...i, delivery: checked } : i
+        ) || []
+      })
+    } catch (error) {
+      console.error('Error updating delivery status:', error)
+      toast.error('Failed to update delivery status')
+    }
   }
 
-  const handleEditItem = (item: MenuItem) => {
-    setEditingItem(item)
+  const handleToggleCollection = async (item: MenuItem, checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append('collection', checked.toString())
+      
+      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+        method: 'PUT',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update collection status')
+      }
+
+      onUpdate({
+        ...category,
+        items: category.items?.map(i => 
+          i.id === item.id ? { ...i, collection: checked } : i
+        ) || []
+      })
+    } catch (error) {
+      console.error('Error updating collection status:', error)
+      toast.error('Failed to update collection status')
+    }
+  }
+
+  const handleToggleDineIn = async (item: MenuItem, checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append('dineIn', checked.toString())
+      
+      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+        method: 'PUT',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update dine in status')
+      }
+
+      onUpdate({
+        ...category,
+        items: category.items?.map(i => 
+          i.id === item.id ? { ...i, dineIn: checked } : i
+        ) || []
+      })
+    } catch (error) {
+      console.error('Error updating dine in status:', error)
+      toast.error('Failed to update dine in status')
+    }
+  }
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/products/${itemId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete item')
+      }
+
+      onUpdate({
+        ...category,
+        items: category.items?.filter(item => item.id !== itemId) || []
+      })
+      toast.success('Product deleted successfully')
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      toast.error('Failed to delete item')
+    }
+  }
+
+  const handleEditItem = async (item: MenuItem) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/products/${item.id}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch product details')
+      }
+      const data = await response.json()
+      if (data.success) {
+        setEditingItem(data.data)
+      } else {
+        throw new Error(data.message || 'Failed to fetch product details')
+      }
+    } catch (error) {
+      console.error('Error fetching product details:', error)
+      toast.error('Failed to fetch product details')
+    }
   }
 
   const handleSaveItem = (updatedItem: MenuItem) => {
     onUpdate({
       ...category,
-      items: category.items.map(item => 
+      items: category.items?.map(item => 
         item.id === updatedItem.id ? updatedItem : item
-      )
+      ) || []
     })
     setEditingItem(null)
   }
@@ -76,7 +185,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const handleSaveNewItem = (newItem: MenuItem) => {
     onUpdate({
       ...category,
-      items: [...category.items, newItem]
+      items: [...(category.items || []), { ...newItem, category: category.id }]
     })
     setIsAddModalOpen(false)
   }
@@ -85,8 +194,23 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
     const targetCategory = allCategories.find(cat => cat.id === targetCategoryId)
     if (!targetCategory) return
 
-    const itemsToMove = category.items.filter(item => selectedItems.includes(item.id))
-    const remainingItems = category.items.filter(item => !selectedItems.includes(item.id))
+    const itemsToMove = category.items?.filter(item => selectedItems.includes(item.id)) || []
+    const remainingItems = category.items?.filter(item => !selectedItems.includes(item.id)) || []
+
+    // Update each moved item's category
+    itemsToMove.forEach(async (item) => {
+      try {
+        const formData = new FormData()
+        formData.append('category', targetCategoryId)
+        
+        await fetch(`http://localhost:5000/api/products/${item.id}`, {
+          method: 'PUT',
+          body: formData
+        })
+      } catch (error) {
+        console.error(`Error moving item ${item.id}:`, error)
+      }
+    })
 
     onUpdate({
       ...category,
@@ -95,7 +219,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
     const targetCategoryWithNewItems = {
       ...targetCategory,
-      items: [...targetCategory.items, ...itemsToMove]
+      items: [...(targetCategory.items || []), ...itemsToMove]
     }
 
     onUpdate(targetCategoryWithNewItems)
@@ -104,7 +228,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
   const handleCloneSelected = () => {
     const clonedItems = selectedItems.map(id => {
-      const item = category.items.find(item => item.id === id)
+      const item = category.items?.find(item => item.id === id)
       if (!item) return null
       return {
         ...item,
@@ -115,14 +239,14 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
     onUpdate({
       ...category,
-      items: [...category.items, ...clonedItems]
+      items: [...(category.items || []), ...clonedItems]
     })
     setSelectedItems([])
   }
 
-  // Calculate availability status
-  const availabilityStatus = 'Available'
-  const availabilityColor = 'bg-green-100 text-green-800'
+  // Calculate availability status based on category availability
+  const availabilityStatus = category.hidden ? 'Hidden' : 'Available'
+  const availabilityColor = category.hidden ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
 
   return (
     <Accordion type="single" collapsible>
@@ -239,7 +363,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
                   <th className="text-left p-2">
                     <input
                       type="checkbox"
-                      checked={selectedItems.length === category.items?.length}
+                      checked={selectedItems.length === (category.items?.length || 0)}
                       onChange={(e) => {
                         if (e.target.checked) {
                           setSelectedItems(category.items?.map(item => item.id) || [])
@@ -280,40 +404,19 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
                     <td className="text-center p-2">
                       <Switch
                         checked={item.delivery}
-                        onCheckedChange={(checked) => {
-                          onUpdate({
-                            ...category,
-                            items: category.items?.map(i => 
-                              i.id === item.id ? { ...i, delivery: checked } : i
-                            )
-                          })
-                        }}
+                        onCheckedChange={(checked) => handleToggleDelivery(item, checked)}
                       />
                     </td>
                     <td className="text-center p-2">
                       <Switch
                         checked={item.collection}
-                        onCheckedChange={(checked) => {
-                          onUpdate({
-                            ...category,
-                            items: category.items?.map(i => 
-                              i.id === item.id ? { ...i, collection: checked } : i
-                            )
-                          })
-                        }}
+                        onCheckedChange={(checked) => handleToggleCollection(item, checked)}
                       />
                     </td>
                     <td className="text-center p-2">
                       <Switch
                         checked={item.dineIn}
-                        onCheckedChange={(checked) => {
-                          onUpdate({
-                            ...category,
-                            items: category.items?.map(i => 
-                              i.id === item.id ? { ...i, dineIn: checked } : i
-                            )
-                          })
-                        }}
+                        onCheckedChange={(checked) => handleToggleDineIn(item, checked)}
                       />
                     </td>
                     <td className="p-2">
@@ -358,17 +461,17 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               </Button>
             </div>
 
-            {editingItem && (
-              <EditItemModal
-                item={editingItem}
-                open={true}
-                onClose={() => setEditingItem(null)}
-                onSave={handleSaveItem}
-              />
-            )}
+            <EditItemModal
+              item={editingItem}
+              categoryId={category.id}
+              open={!!editingItem}
+              onClose={() => setEditingItem(null)}
+              onSave={handleSaveItem}
+            />
 
             <EditItemModal
               item={null}
+              categoryId={category.id}
               open={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
               onSave={handleSaveNewItem}
