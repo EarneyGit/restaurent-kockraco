@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { PlusIcon } from "lucide-react"
+import { BaseUrl } from '@/lib/config'
 
 export default function BranchGalleries() {
   const [selectedImages, setSelectedImages] = useState<number[]>([])
@@ -74,7 +75,7 @@ export default function BranchGalleries() {
             onClick={() => toggleImageSelection(image.id)}
           >
             <img 
-              src={image.src} 
+              src={`${BaseUrl}${image.src}`} 
               alt={image.alt} 
               className="w-full h-full object-cover"
             />

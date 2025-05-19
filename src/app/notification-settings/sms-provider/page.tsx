@@ -1,8 +1,13 @@
 import PageLayout from "@/components/layout/page-layout"
 
+interface SmsProvider {
+  type: string;
+  twilioNumber: string;
+}
+
 export default function SmsProviderPage() {
   // Sample data for SMS providers (empty for now to show "No Data" state)
-  const smsProviders = []
+  const smsProviders: SmsProvider[] = []
 
   return (
     <PageLayout>

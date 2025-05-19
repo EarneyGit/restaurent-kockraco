@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { Search, Eye, Trash, Pencil, Plus } from "lucide-react"
+import { BaseUrl } from '@/lib/config'
 
 export default function RecipeListContent() {
   const [selectedTab, setSelectedTab] = useState("published")
@@ -119,7 +120,7 @@ export default function RecipeListContent() {
                   <td className="px-4 py-3 whitespace-nowrap">
                     {recipe.image ? (
                       <img 
-                        src={recipe.image} 
+                        src={recipe.image ? `${BaseUrl}${recipe.image}` : recipe.image} 
                         alt={recipe.title} 
                         className="h-10 w-10 rounded-md object-cover"
                         onError={(e) => {

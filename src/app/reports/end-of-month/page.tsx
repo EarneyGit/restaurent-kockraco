@@ -13,9 +13,14 @@ import { PrinterIcon } from 'lucide-react'
 import { format, subMonths } from 'date-fns'
 import { SaleData } from '@/types/reports'
 
+interface MonthOption {
+  value: string;
+  label: string;
+}
+
 // Generate months from June 2023 to current month
 const generateMonthOptions = () => {
-  const options = []
+  const options: MonthOption[] = []
   const currentDate = new Date()
   let date = new Date(2023, 5, 1) // June 2023
 

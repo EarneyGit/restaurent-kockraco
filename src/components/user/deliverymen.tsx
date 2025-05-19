@@ -71,7 +71,7 @@ export default function DeliverymenList() {
   }
 
   const renderRating = (rating: number) => {
-    const stars = []
+    const stars: JSX.Element[] = []
     for (let i = 0; i < 5; i++) {
       stars.push(
         <svg

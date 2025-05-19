@@ -55,6 +55,20 @@ export function EditCategoryModal({
   const [currentTab, setCurrentTab] = useState<TabType>('settings')
   const [formData, setFormData] = useState<Category>(category)
 
+  const handleImageChange = (file: File) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: URL.createObjectURL(file)
+    }))
+  }
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: ''
+    }))
+  }
+
   const handleSave = () => {
     onSave(formData)
     onClose()
@@ -144,8 +158,8 @@ export function EditCategoryModal({
                 <Label>Category Image</Label>
                 <ImageUpload
                   value={formData.imageUrl}
-                  onChange={(value) => setFormData(prev => ({ ...prev, imageUrl: value }))}
-                  onRemove={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                  onChange={handleImageChange}
+                  onRemove={handleImageRemove}
                 />
               </div>
             </div>

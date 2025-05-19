@@ -7,8 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 // Sample data generator from dashboard
+interface DayData {
+  date: string;
+  hourlyData: { hour: number; sales: number; orders: number; }[];
+  totalSales: number;
+  totalOrders: number;
+}
+
 const generateSampleData = (days: number) => {
-  const data = []
+  const data: DayData[] = []
   for (let i = days - 1; i >= 0; i--) {
     const date = subDays(new Date(), i)
     const isWeekend = date.getDay() === 0 || date.getDay() === 6
@@ -54,6 +61,11 @@ const generateSampleData = (days: number) => {
       hourlyData,
       totalSales: hourlyData.reduce((sum, h) => sum + h.sales, 0),
       totalOrders: hourlyData.reduce((sum, h) => sum + h.orders, 0)
+    } as {
+      date: string;
+      hourlyData: { hour: number; sales: number; orders: number; }[];
+      totalSales: number;
+      totalOrders: number;
     })
   }
   return data

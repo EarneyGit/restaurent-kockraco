@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { Category } from '@/types/menu'
 import { toast } from 'react-hot-toast'
+import { BaseUrl } from '@/lib/config'
 
 interface AddCategoryModalProps {
   open: boolean
@@ -51,16 +52,16 @@ const PRINTERS = [
 export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('settings')
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState<Omit<Category, 'id'> & { imageFile?: File }>({
+  const [formData, setFormData] = useState({
     name: '',
     displayOrder: 0,
     hidden: false,
-    imageUrl: undefined,
-    imageFile: undefined,
+    imageUrl: undefined as string | undefined,
+    imageFile: undefined as File | undefined,
     availability: Object.fromEntries(
       DAYS_OF_WEEK.map(day => [day, 'All Day' as AvailabilityOption])
     ),
-    printers: ['Kitchen (P2)'],
+    printers: ['Kitchen (P2)'] as string[],
     items: []
   })
 
@@ -69,54 +70,51 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
     setIsLoading(true)
 
     try {
-      // Create FormData for multipart/form-data submission
       const formDataToSend = new FormData()
-      
-      // Add basic fields
       formDataToSend.append('name', formData.name)
       formDataToSend.append('displayOrder', formData.displayOrder.toString())
       formDataToSend.append('hidden', formData.hidden.toString())
-      formDataToSend.append('branchId', "6829cec57032455faec894ab")
-
+      
       // Add availability data
       Object.entries(formData.availability).forEach(([day, value]) => {
         formDataToSend.append(`availability[${day}]`, value)
       })
+      
+      // Add printers as individual values
+      formData.printers.forEach(printer => {
+        formDataToSend.append('printers', printer)
+      })
 
-      // Add printers as JSON string to handle array
-      formDataToSend.append('printers', JSON.stringify(formData.printers))
-
-      // Add image if exists - IMPORTANT: The field name must match what multer expects
+      // Add image if exists
       if (formData.imageFile) {
-        formDataToSend.append('image', formData.imageFile, formData.imageFile.name)
+        formDataToSend.append('image', formData.imageFile)
       }
 
-      // Debug FormData contents
-      console.log('FormData contents:')
-      const formDataObj: Record<string, any> = {}
-      formDataToSend.forEach((value, key) => {
-        formDataObj[key] = value instanceof File ? `File: ${value.name}` : value
-      })
-      console.log(formDataObj)
+      // Add branchId
+      formDataToSend.append('branchId', '6829bf447ecc1e0e2bd7931f')
 
-      const response = await axios.post('http://localhost:5000/api/categories', formDataToSend, {
+      // Log the form data for debugging
+      const formDataObject: any = {};
+      formDataToSend.forEach((value, key) => {
+        formDataObject[key] = value;
+      });
+      console.log('Form data being sent:', formDataObject);
+
+      const response = await axios.post(`${BaseUrl}/api/categories`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
 
       if (response.data.success) {
-        const newCategory = response.data.data
-        onAdd(newCategory)
+        onAdd(response.data.data)
         toast.success('Category created successfully')
         resetForm()
         onClose()
-      } else {
-        throw new Error('Failed to create category')
       }
-    } catch (error) {
-      console.error('Error creating category:', error)
-      toast.error('Failed to create category')
+    } catch (error: any) {
+      console.error('Error creating category:', error.response?.data || error)
+      toast.error(error.response?.data?.message || 'Error creating category')
     } finally {
       setIsLoading(false)
     }

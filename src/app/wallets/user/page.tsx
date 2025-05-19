@@ -23,7 +23,7 @@ export default function UserWalletsPage() {
 
   const totalPages = 9
   const renderPageNumbers = () => {
-    const pageNumbers = []
+    const pageNumbers: JSX.Element[] = []
     
     // Always show the first page
     pageNumbers.push(

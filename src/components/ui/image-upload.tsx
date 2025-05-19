@@ -1,3 +1,4 @@
+import { BaseUrl } from '@/lib/config'
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Image as ImageIcon, X } from 'lucide-react'
@@ -54,7 +55,7 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
         {displayPreview ? (
           <>
             <img
-              src={displayPreview}
+              src={typeof value === 'string' ? `${BaseUrl}${value}` : displayPreview}
               alt="Uploaded"
               className="max-h-[140px] object-contain"
             />

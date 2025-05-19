@@ -1,9 +1,15 @@
 import React from 'react'
 import { Mail, Pencil, Plus, Trash } from 'lucide-react'
 
+interface EmailTemplate {
+  id: string
+  sendTo: string
+  createdAt: string
+}
+
 export default function TemplatesContent() {
   // Sample data - empty initially
-  const templates = []
+  const templates: EmailTemplate[] = []
 
   return (
     <div className="max-w-7xl mx-auto p-8">

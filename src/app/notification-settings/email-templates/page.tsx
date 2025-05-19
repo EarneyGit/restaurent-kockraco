@@ -1,8 +1,14 @@
 import PageLayout from "@/components/layout/page-layout"
 
+interface EmailTemplate {
+  id: string;
+  sendTo: string;
+  createdAt: string;
+}
+
 export default function EmailTemplatesPage() {
   // Empty data for "No data" state
-  const emailTemplates = []
+  const emailTemplates: EmailTemplate[] = []
 
   return (
     <PageLayout>
