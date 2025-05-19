@@ -25,7 +25,7 @@ export default function DeliverymanPaymentsInfoPage() {
   ]
 
   // Empty transactions data
-  const transactions = []
+  const transactions: any = []
 
   return (
     <PageLayout>

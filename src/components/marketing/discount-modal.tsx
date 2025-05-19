@@ -12,12 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import * as SelectPrimitive from "@radix-ui/react-select"
 import { format } from "date-fns"
 import { CalendarIcon, ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface DiscountModalProps {
   isOpen: boolean
