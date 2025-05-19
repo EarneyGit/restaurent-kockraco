@@ -1,0 +1,15 @@
+import StaffAdminUsers from '@/components/user/staff'
+import Sidebar from '@/components/layout/sidebar'
+
+export default function StaffPage() {
+  return (
+    <PageLayout>
+      <div className="w-64 fixed h-screen overflow-hidden border-r bg-white">
+        <Sidebar />
+      </div>
+      <PageLayout>
+        <StaffAdminUsers />
+      </div>
+    </PageLayout>
+  )
+} 

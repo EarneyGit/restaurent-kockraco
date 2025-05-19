@@ -1,0 +1,18 @@
+"use client"
+
+import React from "react"
+import PageLayout from "@/components/layout/page-layout"
+import Referral from "@/components/promotion/referral"
+
+export default function ReferralPage() {
+  return (
+    <PageLayout>
+      <div className="w-64 fixed h-screen overflow-hidden border-r bg-white">
+        <Sidebar />
+      </div>
+      <PageLayout>
+        <Referral />
+      </div>
+    </PageLayout>
+  )
+} 

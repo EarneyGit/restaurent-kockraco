@@ -1,0 +1,265 @@
+import React from 'react'
+import Sidebar from '@/components/layout/sidebar'
+import { Download, Pencil, Plus, Search, Upload } from 'lucide-react'
+
+function TranslationsPage() {
+  return (
+    <div className="flex min-h-screen">
+      <div className="fixed top-0 left-0 h-full">
+        <Sidebar />
+      </div>
+      <main className="flex-1 p-8 bg-white ml-64 overflow-auto">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold text-gray-900">Translations</h1>
+            
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600">
+              <Plus size={16} />
+              Add translation
+            </button>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="block w-full p-2 pl-10 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Search by key, title"
+              />
+            </div>
+            
+            <div className="flex space-x-3">
+              <select
+                className="block w-40 p-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                defaultValue="all"
+              >
+                <option value="all">All</option>
+                <option value="web">Web</option>
+                <option value="mobile">Mobile</option>
+                <option value="admin">Admin</option>
+              </select>
+              
+              <select
+                className="block w-40 p-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                defaultValue="all"
+              >
+                <option value="all">Select group</option>
+                <option value="orders">Orders</option>
+                <option value="products">Products</option>
+                <option value="users">Users</option>
+              </select>
+              
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <Export size={16} />
+                Export
+              </button>
+              
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <Import size={16} />
+                Import
+              </button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+            <table className="min-w-full divide-y divide-gray-300">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    Name
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Group
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Thai
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    tr
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    English
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                <tr>
+                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                    staff.users
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    web
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    Staff users
+                  </td>
+                </tr>
+                <tr>
+                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                    my.branch
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    web
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    My branch
+                  </td>
+                </tr>
+                <tr>
+                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                    branch.users
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    web
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    Branch users
+                  </td>
+                </tr>
+                <tr>
+                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                    enter.amount.you.have
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    web
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <button className="p-1 text-blue-600 hover:text-blue-800">
+                      <Pencil size={16} />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    Enter amount you have
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-5">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">10</span> of <span className="font-medium">181</span> results
+            </div>
+            <div className="flex space-x-1">
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300">
+                <span>&lt;</span>
+              </button>
+              <button className="p-2 text-white bg-blue-500 rounded-md w-8 h-8 flex items-center justify-center">
+                1
+              </button>
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300 w-8 h-8 flex items-center justify-center">
+                2
+              </button>
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300 w-8 h-8 flex items-center justify-center">
+                3
+              </button>
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300 w-8 h-8 flex items-center justify-center">
+                4
+              </button>
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300 w-8 h-8 flex items-center justify-center">
+                5
+              </button>
+              <button className="p-2 text-gray-500 bg-white rounded-md border border-gray-300">
+                <span>&gt;</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>Foodyman Single support team <a href="tel:123456789" className="text-blue-500">123456789</a></p>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// Custom icons for import and export
+function Import({ size = 24, ...props }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      {...props}
+    >
+      <path d="M12 3v12"></path>
+      <path d="m8 11 4 4 4-4"></path>
+      <path d="M8 21H16"></path>
+      <path d="M12 17v4"></path>
+    </svg>
+  )
+}
+
+function Export({ size = 24, ...props }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      {...props}
+    >
+      <path d="M12 3v12"></path>
+      <path d="m16 11-4-4-4 4"></path>
+      <path d="M8 21H16"></path>
+      <path d="M12 17v4"></path>
+    </svg>
+  )
+}
+
+export default TranslationsPage 

@@ -1,0 +1,249 @@
+"use client"
+
+import React, { useState } from "react"
+import { ArrowLeft, Save, Calendar, User, Phone, Mail, Clock, Users, Map, Utensils, FileText } from "lucide-react"
+import PageLayout from "@/components/layout/page-layout"
+import Link from "next/link"
+
+export default function NewReservationPage() {
+  // Form state
+  const [formData, setFormData] = useState({
+    clientName: "",
+    clientPhone: "",
+    email: "",
+    date: "",
+    time: "",
+    guests: 1,
+    zone: "",
+    table: "",
+    notes: ""
+  })
+
+  // Handler for form input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData({
+      ...formData,
+      [name]: value
+    })
+  }
+
+  // Handler for form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Here you would typically send the data to your API
+    console.log("Form submitted:", formData)
+    // Redirect or show success message
+  }
+
+  return (
+    <PageLayout>
+      <div className="w-full px-6 py-6">
+        <div className="flex items-center mb-6">
+          <Link 
+            href="/reservations/list"
+            className="mr-4 p-2 rounded-full hover:bg-gray-200"
+          >
+            <ArrowLeft size={20} className="text-gray-500" />
+          </Link>
+          <h1 className="text-2xl font-medium">New reservation</h1>
+        </div>
+
+        {/* Date selection header */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center">
+          <Calendar className="text-gray-500 mr-3" size={20} />
+          <div className="flex-1 mr-4">
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+              Select Date
+            </label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">
+              Select Time
+            </label>
+            <input
+              type="time"
+              id="time"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-medium mb-4">Reservation Details</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <User className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Client Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="clientName"
+                      name="clientName"
+                      value={formData.clientName}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <Phone className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="clientPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      id="clientPhone"
+                      name="clientPhone"
+                      value={formData.clientPhone}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <Mail className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <Users className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="guests" className="block text-sm font-medium text-gray-700 mb-1">
+                      Number of Guests *
+                    </label>
+                    <input
+                      type="number"
+                      id="guests"
+                      name="guests"
+                      min="1"
+                      value={formData.guests}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <Map className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="zone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Zone *
+                    </label>
+                    <select
+                      id="zone"
+                      name="zone"
+                      value={formData.zone}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select zone</option>
+                      <option value="vip1">VIP 1</option>
+                      <option value="vip2">VIP 2</option>
+                      <option value="vip3">VIP 3</option>
+                      <option value="vip4">VIP 4</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <Utensils className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="table" className="block text-sm font-medium text-gray-700 mb-1">
+                      Table *
+                    </label>
+                    <select
+                      id="table"
+                      name="table"
+                      value={formData.table}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select table</option>
+                      <option value="1">Table 1 (Abc)</option>
+                      <option value="2">Table 2 (Title-2)</option>
+                      <option value="3">Table 3 (Title-3)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <FileText className="mt-1 mr-3 text-gray-500" size={18} />
+                  <div className="flex-1">
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      rows={5}
+                      value={formData.notes}
+                      onChange={handleChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Add any special requirements or additional information here"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <Link
+                href="/reservations/list"
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 mr-3"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 flex items-center"
+              >
+                <Save size={16} className="mr-2" />
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </PageLayout>
+  )
+} 

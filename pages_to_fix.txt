@@ -1,0 +1,11 @@
+src/app/backup-maintenance/backup/page.tsx
+src/app/deliverymen/statistics/page.tsx
+src/app/lang-translations/languages/page.tsx
+src/app/lang-translations/translations/page.tsx
+src/app/page-setup/custom-pages/page.tsx
+src/app/page-setup/custom/page.tsx
+src/app/page-setup/faq/page.tsx
+src/app/page-setup/privacy-policy/page.tsx
+src/app/page-setup/privacy/page.tsx
+src/app/page-setup/terms-conditions/page.tsx
+src/app/page-setup/terms/page.tsx

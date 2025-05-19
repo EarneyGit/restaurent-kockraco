@@ -1,0 +1,13 @@
+"use client"
+
+import React from 'react'
+import PageLayout from '@/components/layout/page-layout'
+import StaffAdminUsers from '@/components/user/staff'
+
+export default function StaffAdminPage() {
+  return (
+    <PageLayout>
+      <StaffAdminUsers />
+    </PageLayout>
+  )
+} 

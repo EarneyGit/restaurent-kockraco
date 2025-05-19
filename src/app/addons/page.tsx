@@ -1,15 +1,6 @@
-import Addons from "@/components/products/addons"
-import Sidebar from "@/components/layout/sidebar"
+import React from "react"
+import AddonsContent from "@/components/products/addons-content"
 
 export default function AddonsPage() {
-  return (
-    <main className="flex min-h-screen bg-gray-50">
-      <div className="w-64 fixed h-screen overflow-hidden border-r bg-white">
-        <Sidebar />
-      </div>
-      <div className="flex-1 ml-64">
-        <Addons />
-      </div>
-    </main>
-  )
+  return <AddonsContent />
 } 

@@ -1,0 +1,6 @@
+import React from 'react'
+import FirebaseContent from '@/components/notification-settings/firebase-content'
+
+export default function FirebaseConfigurationPage() {
+  return <FirebaseContent />
+} 

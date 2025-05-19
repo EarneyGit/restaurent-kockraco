@@ -1,0 +1,15 @@
+import Sidebar from '@/components/layout/sidebar'
+import DeliverymenStatistics from '@/components/user/deliverymen-statistics'
+
+export default function DeliverymenStatisticsPage() {
+  return (
+    <PageLayout>
+      <div className="w-64 fixed h-screen overflow-hidden border-r bg-white">
+        <Sidebar />
+      </div>
+      <PageLayout>
+        <DeliverymenStatistics />
+      </div>
+    </PageLayout>
+  )
+} 

@@ -31,8 +31,4 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-# Excluding app directory to avoid routing conflicts
-/src/app/
-/src/app-backup/ 
+next-env.d.ts 

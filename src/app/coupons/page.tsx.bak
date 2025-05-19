@@ -1,0 +1,18 @@
+"use client"
+
+import React from "react"
+import PageLayout from "@/components/layout/page-layout"
+import Coupons from "@/components/promotion/coupons"
+
+export default function CouponsPage() {
+  return (
+    <PageLayout>
+      <div className="fixed top-0 left-0 bottom-0 w-[240px]" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+        <Sidebar />
+      </div>
+      <PageLayout>
+        <Coupons />
+      </div>
+    </PageLayout>
+  )
+} 

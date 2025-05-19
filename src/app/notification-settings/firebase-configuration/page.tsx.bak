@@ -1,0 +1,164 @@
+import Sidebar from "@/components/layout/sidebar"
+
+export default function FirebaseConfigurationPage() {
+  return (
+    <main className="flex min-h-screen bg-gray-50">
+      <div className="w-64 fixed h-screen overflow-hidden border-r bg-white">
+        <Sidebar />
+      </div>
+      <div className="flex-1 ml-64">
+        <div className="p-6 max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Firebase configuration</h1>
+            
+            <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
+              Save
+            </button>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="space-y-6">
+              {/* API key */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    API key
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter API key"
+                  />
+                </div>
+              </div>
+
+              {/* Auth domain */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    Auth domain
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Auth domain"
+                  />
+                </div>
+              </div>
+
+              {/* Project ID */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    Project ID
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Project ID"
+                  />
+                </div>
+              </div>
+
+              {/* Storage bucket */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    Storage bucket
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Storage bucket"
+                  />
+                </div>
+              </div>
+
+              {/* Messaging sender ID */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    Messaging sender ID
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Messaging sender ID"
+                  />
+                </div>
+              </div>
+
+              {/* App ID */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    App ID
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter App ID"
+                  />
+                </div>
+              </div>
+
+              {/* VAPID key */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    <span className="text-red-500 mr-1">*</span>
+                    VAPID key
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter VAPID key"
+                  />
+                </div>
+              </div>
+
+              {/* iOS API key */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    IOS API key
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter IOS API key"
+                  />
+                </div>
+              </div>
+
+              {/* Android API key */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">
+                    Android API key
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter Android API key"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-sm text-center text-gray-500 mb-6">
+            <span>Foodyman Single support team </span>
+            <a href="#" className="text-blue-500">123456789</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+} 
