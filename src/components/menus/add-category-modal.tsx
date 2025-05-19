@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import axios from 'axios'
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { Category } from '@/types/menu'
+import { toast } from 'react-hot-toast'
 
 interface AddCategoryModalProps {
   open: boolean
@@ -48,28 +50,76 @@ const PRINTERS = [
 
 export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('settings')
-  const [formData, setFormData] = useState<Omit<Category, 'id'>>({
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState<Omit<Category, 'id'> & { imageFile?: File }>({
     name: '',
     displayOrder: 0,
     hidden: false,
     imageUrl: undefined,
+    imageFile: undefined,
     availability: Object.fromEntries(
       DAYS_OF_WEEK.map(day => [day, 'All Day' as AvailabilityOption])
     ),
-    printers: ['Admin user (P1)'],
+    printers: ['Kitchen (P2)'],
     items: []
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    const newCategory: Category = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...formData
-    }
+    setIsLoading(true)
 
-    onAdd(newCategory)
-    resetForm()
+    try {
+      // Create FormData for multipart/form-data submission
+      const formDataToSend = new FormData()
+      
+      // Add basic fields
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('displayOrder', formData.displayOrder.toString())
+      formDataToSend.append('hidden', formData.hidden.toString())
+      formDataToSend.append('branchId', "6829cec57032455faec894ab")
+
+      // Add availability data
+      Object.entries(formData.availability).forEach(([day, value]) => {
+        formDataToSend.append(`availability[${day}]`, value)
+      })
+
+      // Add printers as JSON string to handle array
+      formDataToSend.append('printers', JSON.stringify(formData.printers))
+
+      // Add image if exists - IMPORTANT: The field name must match what multer expects
+      if (formData.imageFile) {
+        formDataToSend.append('image', formData.imageFile, formData.imageFile.name)
+      }
+
+      // Debug FormData contents
+      console.log('FormData contents:')
+      const formDataObj: Record<string, any> = {}
+      formDataToSend.forEach((value, key) => {
+        formDataObj[key] = value instanceof File ? `File: ${value.name}` : value
+      })
+      console.log(formDataObj)
+
+      const response = await axios.post('http://localhost:5000/api/categories', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.success) {
+        const newCategory = response.data.data
+        onAdd(newCategory)
+        toast.success('Category created successfully')
+        resetForm()
+        onClose()
+      } else {
+        throw new Error('Failed to create category')
+      }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      toast.error('Failed to create category')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const resetForm = () => {
@@ -78,10 +128,11 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
       displayOrder: 0,
       hidden: false,
       imageUrl: undefined,
+      imageFile: undefined,
       availability: Object.fromEntries(
         DAYS_OF_WEEK.map(day => [day, 'All Day' as AvailabilityOption])
       ),
-      printers: ['Admin user (P1)'],
+      printers: ['Kitchen (P2)'],
       items: []
     })
     setActiveTab('settings')
@@ -103,6 +154,22 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
       printers: prev.printers.includes(printer)
         ? prev.printers.filter(p => p !== printer)
         : [...prev.printers, printer]
+    }))
+  }
+
+  const handleImageChange = (file: File) => {
+    setFormData(prev => ({
+      ...prev,
+      imageFile: file,
+      imageUrl: URL.createObjectURL(file) // Create a preview URL
+    }))
+  }
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      imageFile: undefined,
+      imageUrl: undefined
     }))
   }
 
@@ -128,7 +195,7 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" encType="multipart/form-data">
           {activeTab === 'settings' && (
             <div className="space-y-4">
               <div>
@@ -138,6 +205,7 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter category name"
+                  required
                 />
               </div>
 
@@ -149,6 +217,7 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
                   value={formData.displayOrder}
                   onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
                   className="mt-1"
+                  required
                 />
               </div>
 
@@ -167,8 +236,8 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
                 <Label>Category Image</Label>
                 <ImageUpload
                   value={formData.imageUrl}
-                  onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
-                  onRemove={() => setFormData(prev => ({ ...prev, imageUrl: undefined }))}
+                  onChange={handleImageChange}
+                  onRemove={handleImageRemove}
                 />
               </div>
             </div>
@@ -212,14 +281,14 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
             </div>
           )}
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!formData.name.trim()}>
-              Add Category
+            <Button type="submit" disabled={!formData.name.trim() || isLoading}>
+              {isLoading ? 'Creating...' : 'Add Category'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

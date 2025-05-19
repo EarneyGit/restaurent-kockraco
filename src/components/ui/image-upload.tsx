@@ -4,29 +4,26 @@ import { Image as ImageIcon, X } from 'lucide-react'
 import { Button } from './button'
 
 interface ImageUploadProps {
-  value?: string
-  onChange: (value: string) => void
+  value?: string | File
+  onChange: (value: File) => void
   onRemove: () => void
 }
 
 export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    try {
-      setIsLoading(true)
-      const file = acceptedFiles[0]
-      
-      // Convert file to base64 for preview
+    const file = acceptedFiles[0]
+    if (file) {
+      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
-        onChange(reader.result as string)
+        setPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
-    } catch (error) {
-      console.error('Error uploading image:', error)
-    } finally {
-      setIsLoading(false)
+
+      // Pass the file to parent
+      onChange(file)
     }
   }, [onChange])
 
@@ -38,6 +35,9 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
     maxFiles: 1,
     multiple: false
   })
+
+  // If value is a string (URL), use it as preview
+  const displayPreview = preview || (typeof value === 'string' ? value : null)
 
   return (
     <div className="space-y-4 w-full">
@@ -51,10 +51,10 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
         `}
       >
         <input {...getInputProps()} />
-        {value ? (
+        {displayPreview ? (
           <>
             <img
-              src={value}
+              src={displayPreview}
               alt="Uploaded"
               className="max-h-[140px] object-contain"
             />
@@ -65,6 +65,7 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               onClick={(e) => {
                 e.stopPropagation()
+                setPreview(null)
                 onRemove()
               }}
             >
@@ -90,11 +91,6 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
           </div>
         )}
       </div>
-      {isLoading && (
-        <div className="text-sm text-gray-500 text-center">
-          Uploading...
-        </div>
-      )}
     </div>
   )
 } 

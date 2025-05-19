@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, RefreshCw, Plus, Eye } from 'lucide-react'
@@ -9,116 +10,151 @@ import { MenuCategory } from '@/components/menus/menu-category'
 import { Category } from '@/types/menu'
 import { AttributeTypesModal } from '@/components/menus/attribute-types-modal'
 import PageLayout from "@/components/layout/page-layout"
+import { toast } from 'react-hot-toast'
 
-// Sample data - replace with API call
-const sampleCategories: Category[] = [
+// Dummy items to add to each category
+const dummyItems = [
   {
-    id: '1',
-    name: 'Lunch Time Deals',
-    displayOrder: 0,
-    hidden: false,
-    availability: {
-      Monday: 'All Day',
-      Tuesday: 'All Day',
-      Wednesday: 'All Day',
-      Thursday: 'All Day',
-      Friday: 'All Day',
-      Saturday: 'All Day',
-      Sunday: 'All Day'
-    },
-    printers: ['Admin user (P1)'],
-    items: [
-      {
-        id: '1-1',
-        name: 'Chicken Tikka Masala with Rice',
-        price: 8.99,
-        hideItem: false,
-        delivery: true,
-        collection: true,
-        dineIn: true,
-        description: 'Tender chicken pieces in a rich, creamy tomato sauce',
-        weight: 450,
-        calorificValue: '650 kcal',
-        calorieDetails: 'Protein: 35g, Carbs: 75g, Fat: 22g'
-      },
-      {
-        id: '1-2',
-        name: 'Vegetable Biryani',
-        price: 7.99,
-        hideItem: false,
-        delivery: true,
-        collection: true,
-        dineIn: true,
-        description: 'Mixed vegetables and aromatic rice cooked with Indian spices',
-        weight: 400,
-        calorificValue: '550 kcal',
-        calorieDetails: 'Protein: 12g, Carbs: 85g, Fat: 18g'
-      }
-    ]
+    id: '1-1',
+    name: 'Chicken Tikka Masala with Rice',
+    price: 8.99,
+    hideItem: false,
+    delivery: true,
+    collection: true,
+    dineIn: true,
+    description: 'Tender chicken pieces in a rich, creamy tomato sauce',
+    weight: 450,
+    calorificValue: '650 kcal',
+    calorieDetails: 'Protein: 35g, Carbs: 75g, Fat: 22g'
   },
   {
-    id: '2',
-    name: 'Meal Deals',
-    displayOrder: 1,
-    hidden: false,
-    availability: {
-      Monday: 'Specific Times',
-      Tuesday: 'Specific Times',
-      Wednesday: 'Specific Times',
-      Thursday: 'Specific Times',
-      Friday: 'Specific Times',
-      Saturday: 'Not Available',
-      Sunday: 'Not Available'
-    },
-    printers: ['Admin user (P1)', 'Kitchen (P2)'],
-    items: [
-      {
-        id: '2-1',
-        name: 'Family Feast',
-        price: 24.99,
-        hideItem: false,
-        delivery: true,
-        collection: true,
-        dineIn: false,
-        description: '2 curries, 4 naans, 2 rice, and 2 sides',
-        calorificValue: '2400 kcal',
-        calorieDetails: 'Serves 4 people'
-      },
-      {
-        id: '2-2',
-        name: 'Couple Deal',
-        price: 16.99,
-        hideItem: false,
-        delivery: true,
-        collection: true,
-        dineIn: false,
-        description: '2 curries, 2 naans, and 1 rice',
-        calorificValue: '1600 kcal',
-        calorieDetails: 'Serves 2 people'
-      }
-    ]
+    id: '1-2',
+    name: 'Vegetable Biryani',
+    price: 7.99,
+    hideItem: false,
+    delivery: true,
+    collection: true,
+    dineIn: true,
+    description: 'Mixed vegetables and aromatic rice cooked with Indian spices',
+    weight: 400,
+    calorificValue: '550 kcal',
+    calorieDetails: 'Protein: 12g, Carbs: 85g, Fat: 18g'
   }
 ]
 
 export default function MenuSetupPage() {
-  const [categories, setCategories] = useState<Category[]>(sampleCategories)
+  const [categories, setCategories] = useState<Category[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAttributeTypesModalOpen, setIsAttributeTypesModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
-  const handleAddCategory = (category: Category) => {
-    setCategories(prev => [...prev, category])
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true)
+      const response = await axios.get('http://localhost:5000/api/categories')
+      
+      if (response.data.success) {
+        // Add dummy items to each category
+        const categoriesWithItems = response.data.data.map((category: Category) => ({
+          ...category,
+          items: [...dummyItems] // Add dummy items to each category
+        }))
+        setCategories(categoriesWithItems)
+      } else {
+        toast.error('Failed to fetch categories')
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+      toast.error('Failed to fetch categories')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  const handleAddCategory = async (category: Category) => {
+    // The API call is now handled in the AddCategoryModal component
+    // Here we just need to add the dummy items to the new category
+    const categoryWithItems = {
+      ...category,
+      items: [...dummyItems]
+    }
+    setCategories(prev => [...prev, categoryWithItems])
     setIsAddModalOpen(false)
   }
 
-  const handleDeleteCategory = (categoryId: string) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId))
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/categories/${categoryId}`)
+      
+      if (response.data.success) {
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId))
+        toast.success('Category deleted successfully')
+      } else {
+        throw new Error('Failed to delete category')
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast.error('Failed to delete category')
+    }
   }
 
-  const handleUpdateCategory = (updatedCategory: Category) => {
-    setCategories(prev => 
-      prev.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat)
-    )
+  const handleUpdateCategory = async (updatedCategory: Category) => {
+    try {
+      // Prepare form data for update
+      const formData = new FormData()
+      formData.append('name', updatedCategory.name)
+      formData.append('displayOrder', updatedCategory.displayOrder.toString())
+      formData.append('hidden', updatedCategory.hidden.toString())
+      formData.append('branchId', "6829cec57032455faec894ab")
+
+      // Add availability data
+      Object.entries(updatedCategory.availability).forEach(([day, value]) => {
+        formData.append(`availability[${day}]`, value)
+      })
+
+      // Add printers
+      updatedCategory.printers.forEach(printer => {
+        formData.append('printers', printer)
+      })
+
+      // Add image if exists
+      if (updatedCategory.imageUrl) {
+        formData.append('image', updatedCategory.imageUrl)
+      }
+
+      const response = await axios.put(
+        `http://localhost:5000/api/categories/${updatedCategory.id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      )
+
+      if (response.data.success) {
+        // Keep the existing items when updating the category in state
+        const updatedCategoryWithItems = {
+          ...response.data.data,
+          items: updatedCategory.items // Keep existing items
+        }
+        setCategories(prev => 
+          prev.map(cat => cat.id === updatedCategory.id ? updatedCategoryWithItems : cat)
+        )
+        toast.success('Category updated successfully')
+      } else {
+        throw new Error('Failed to update category')
+      }
+    } catch (error) {
+      console.error('Error updating category:', error)
+      toast.error('Failed to update category')
+    }
   }
 
   const filteredCategories = categories.filter(cat =>
@@ -171,17 +207,23 @@ export default function MenuSetupPage() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {filteredCategories.map((category) => (
-            <MenuCategory
-              key={category.id}
-              category={category}
-              onDelete={handleDeleteCategory}
-              onUpdate={handleUpdateCategory}
-              allCategories={categories}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredCategories.map((category) => (
+              <MenuCategory
+                key={category.id}
+                category={category}
+                onDelete={handleDeleteCategory}
+                onUpdate={handleUpdateCategory}
+                allCategories={categories}
+              />
+            ))}
+          </div>
+        )}
 
         <AddCategoryModal
           open={isAddModalOpen}
