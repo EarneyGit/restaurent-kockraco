@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { toast } from 'react-hot-toast'
+import { MenuItemsTab } from './menu-items-tab'
 
 interface EditItemModalProps {
   item: MenuItem | null
@@ -92,29 +93,47 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           contains: [],
           mayContain: []
         },
-        priceChanges: item.priceChanges || []
+        priceChanges: item.priceChanges || [],
+        selectedItems: item.selectedItems || [],
+        itemSettings: item.itemSettings || {
+          showSelectedOnly: false,
+          showSelectedCategories: false,
+          limitSingleChoice: false,
+          addAttributeCharges: false,
+          useProductPrices: false,
+          showChoiceAsDropdown: false,
+        },
       }
     } else {
       // If no item, we're in add new mode
       return {
         id: '',
-      name: '',
-      price: 0,
-      hideItem: false,
-      delivery: true,
-      collection: true,
-      dineIn: true,
+        name: '',
+        price: 0,
+        hideItem: false,
+        delivery: true,
+        collection: true,
+        dineIn: true,
         category: categoryId,
-      availability: DAYS_OF_WEEK.reduce((acc, day) => ({
-        ...acc,
-        [day]: { ...DEFAULT_AVAILABILITY }
-      }), {}),
-      allergens: {
-        contains: [],
-        mayContain: []
-      },
-      priceChanges: []
-    }
+        availability: DAYS_OF_WEEK.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...DEFAULT_AVAILABILITY }
+        }), {}),
+        allergens: {
+          contains: [],
+          mayContain: []
+        },
+        priceChanges: [],
+        selectedItems: [],
+        itemSettings: {
+          showSelectedOnly: false,
+          showSelectedCategories: false,
+          limitSingleChoice: false,
+          addAttributeCharges: false,
+          useProductPrices: false,
+          showChoiceAsDropdown: false,
+        },
+      }
     }
   })
 
@@ -143,7 +162,16 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           contains: [],
           mayContain: []
         },
-        priceChanges: item.priceChanges || []
+        priceChanges: item.priceChanges || [],
+        selectedItems: item.selectedItems || [],
+        itemSettings: item.itemSettings || {
+          showSelectedOnly: false,
+          showSelectedCategories: false,
+          limitSingleChoice: false,
+          addAttributeCharges: false,
+          useProductPrices: false,
+          showChoiceAsDropdown: false,
+        },
       })
     }
   }, [item, categoryId])
@@ -246,11 +274,20 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         images: data.data.images || [],
         availability: data.data.availability,
         allergens: data.data.allergens,
-        priceChanges: data.data.priceChanges || []
+        priceChanges: data.data.priceChanges || [],
+        selectedItems: data.data.selectedItems || [],
+        itemSettings: data.data.itemSettings || {
+          showSelectedOnly: false,
+          showSelectedCategories: false,
+          limitSingleChoice: false,
+          addAttributeCharges: false,
+          useProductPrices: false,
+          showChoiceAsDropdown: false,
+        },
       }
       
       onSave(transformedItem)
-    onClose()
+      onClose()
       toast.success(`Product ${currentItem.id ? 'updated' : 'created'} successfully`)
     } catch (error) {
       console.error('Error saving item:', error)
@@ -413,13 +450,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item ? 'Edit Item' : 'Add New Item'}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid grid-cols-7 w-full">
+        <Tabs defaultValue="details">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="price-changes">Price Changes</TabsTrigger>
@@ -766,7 +803,35 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           </TabsContent>
 
           <TabsContent value="items">
-            <p>Items content</p>
+            <MenuItemsTab
+              items={[
+                { id: '999', name: 'Original Chicken Tex Mex or Veggie Legend Wrap', price: 0 },
+                { id: '998', name: 'Any Drink', price: 0 },
+              ]}
+              selectedItems={currentItem.selectedItems || []}
+              onItemSelect={(itemId) => {
+                setCurrentItem(prev => ({
+                  ...prev,
+                  selectedItems: prev.selectedItems?.includes(itemId)
+                    ? prev.selectedItems.filter(id => id !== itemId)
+                    : [...(prev.selectedItems || []), itemId]
+                }))
+              }}
+              settings={currentItem.itemSettings || {
+                showSelectedOnly: false,
+                showSelectedCategories: false,
+                limitSingleChoice: false,
+                addAttributeCharges: false,
+                useProductPrices: false,
+                showChoiceAsDropdown: false,
+              }}
+              onSettingsChange={(newSettings) => {
+                setCurrentItem(prev => ({
+                  ...prev,
+                  itemSettings: newSettings
+                }))
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="availability" className="space-y-6">

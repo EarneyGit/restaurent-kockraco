@@ -12,35 +12,6 @@ import { AttributeTypesModal } from '@/components/menus/attribute-types-modal'
 import PageLayout from "@/components/layout/page-layout"
 import { toast } from 'react-hot-toast'
 
-// Dummy items to add to each category
-const dummyItems = [
-  {
-    id: '1-1',
-    name: 'Chicken Tikka Masala with Rice',
-    price: 8.99,
-    hideItem: false,
-    delivery: true,
-    collection: true,
-    dineIn: true,
-    description: 'Tender chicken pieces in a rich, creamy tomato sauce',
-    weight: 450,
-    calorificValue: '650 kcal',
-    calorieDetails: 'Protein: 35g, Carbs: 75g, Fat: 22g'
-  },
-  {
-    id: '1-2',
-    name: 'Vegetable Biryani',
-    price: 7.99,
-    hideItem: false,
-    delivery: true,
-    collection: true,
-    dineIn: true,
-    description: 'Mixed vegetables and aromatic rice cooked with Indian spices',
-    weight: 400,
-    calorificValue: '550 kcal',
-    calorieDetails: 'Protein: 12g, Carbs: 85g, Fat: 18g'
-  }
-]
 
 export default function MenuSetupPage() {
   const [categories, setCategories] = useState<Category[]>([])

@@ -26,6 +26,15 @@ export interface MenuItem {
     mayContain: string[]
   }
   priceChanges?: PriceChange[]
+  selectedItems?: string[]
+  itemSettings?: {
+    showSelectedOnly: boolean
+    showSelectedCategories: boolean
+    limitSingleChoice: boolean
+    addAttributeCharges: boolean
+    useProductPrices: boolean
+    showChoiceAsDropdown: boolean
+  }
 }
 
 export interface DayAvailability {
