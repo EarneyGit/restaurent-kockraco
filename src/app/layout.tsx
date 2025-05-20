@@ -3,7 +3,13 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import Sidebar from "@/components/layout/sidebar"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: true,
+})
 
 export const metadata: Metadata = {
   title: "Restaurant Management System",

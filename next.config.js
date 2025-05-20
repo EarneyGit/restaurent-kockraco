@@ -6,6 +6,14 @@ const nextConfig = {
     unoptimized: true,
   },
   output: 'standalone',
+  webpack: (config, { isServer }) => {
+    // Handle date-fns locale imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'date-fns/locale': 'date-fns/locale/en-US',
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig 

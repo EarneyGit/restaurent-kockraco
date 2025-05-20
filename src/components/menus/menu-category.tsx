@@ -23,6 +23,14 @@ interface MenuCategoryProps {
   allCategories: Category[]
 }
 
+const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+
+const DEFAULT_AVAILABILITY = {
+  isAvailable: true,
+  type: 'All Day',
+  times: []
+} as const
+
 export function MenuCategory({ category, onDelete, onUpdate, allCategories }: MenuCategoryProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -139,10 +147,10 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         throw new Error('Failed to delete item')
       }
 
-      onUpdate({
-        ...category,
+    onUpdate({
+      ...category,
         items: category.items?.filter(item => item.id !== itemId) || []
-      })
+    })
       toast.success('Product deleted successfully')
     } catch (error) {
       console.error('Error deleting item:', error)
@@ -158,7 +166,32 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       }
       const data = await response.json()
       if (data.success) {
-        setEditingItem(data.data)
+        // Transform API response to match MenuItem type
+        const transformedItem: MenuItem = {
+          id: data.data.id || data.data._id,
+          name: data.data.name,
+          description: data.data.description,
+          price: data.data.price,
+          weight: data.data.weight,
+          calorificValue: data.data.calorificValue,
+          calorieDetails: data.data.calorieDetails,
+          hideItem: data.data.hideItem,
+          delivery: data.data.delivery,
+          collection: data.data.collection,
+          dineIn: data.data.dineIn,
+          category: data.data.category.id || data.data.category._id,
+          images: data.data.images || [],
+          availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+            ...acc,
+            [day]: { ...DEFAULT_AVAILABILITY }
+          }), {}),
+          allergens: data.data.allergens || {
+            contains: [],
+            mayContain: []
+          },
+          priceChanges: data.data.priceChanges || []
+        }
+        setEditingItem(transformedItem)
       } else {
         throw new Error(data.message || 'Failed to fetch product details')
       }
@@ -461,13 +494,13 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               </Button>
             </div>
 
-            <EditItemModal
-              item={editingItem}
+              <EditItemModal
+                item={editingItem}
               categoryId={category.id}
               open={!!editingItem}
-              onClose={() => setEditingItem(null)}
-              onSave={handleSaveItem}
-            />
+                onClose={() => setEditingItem(null)}
+                onSave={handleSaveItem}
+              />
 
             <EditItemModal
               item={null}

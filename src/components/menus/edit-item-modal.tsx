@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -67,16 +67,44 @@ const DEFAULT_PRICE_CHANGE: PriceChange = {
 }
 
 export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditItemModalProps) {
-  const [currentItem, setCurrentItem] = useState<MenuItem>(
-    item || {
-      id: '',
+  const [currentItem, setCurrentItem] = useState<MenuItem>(() => {
+    if (item) {
+      // If item exists, we're in edit mode
+      return {
+        id: item.id,
+        name: item.name || '',
+        description: item.description || '',
+        price: item.price || 0,
+        weight: item.weight || 0,
+        calorificValue: item.calorificValue || '',
+        calorieDetails: item.calorieDetails || '',
+        hideItem: item.hideItem || false,
+        delivery: item.delivery || true,
+        collection: item.collection || true,
+        dineIn: item.dineIn || true,
+        category: categoryId,
+        images: item.images || [],
+        availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...DEFAULT_AVAILABILITY }
+        }), {}),
+        allergens: item.allergens || {
+          contains: [],
+          mayContain: []
+        },
+        priceChanges: item.priceChanges || []
+      }
+    } else {
+      // If no item, we're in add new mode
+      return {
+        id: '',
       name: '',
       price: 0,
       hideItem: false,
       delivery: true,
       collection: true,
       dineIn: true,
-      category: categoryId,
+        category: categoryId,
       availability: DAYS_OF_WEEK.reduce((acc, day) => ({
         ...acc,
         [day]: { ...DEFAULT_AVAILABILITY }
@@ -87,7 +115,38 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       },
       priceChanges: []
     }
-  )
+    }
+  })
+
+  // Effect to update currentItem when item prop changes
+  useEffect(() => {
+    if (item) {
+      setCurrentItem({
+        id: item.id,
+        name: item.name || '',
+        description: item.description || '',
+        price: item.price || 0,
+        weight: item.weight || 0,
+        calorificValue: item.calorificValue || '',
+        calorieDetails: item.calorieDetails || '',
+        hideItem: item.hideItem || false,
+        delivery: item.delivery || true,
+        collection: item.collection || true,
+        dineIn: item.dineIn || true,
+        category: categoryId,
+        images: item.images || [],
+        availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...DEFAULT_AVAILABILITY }
+        }), {}),
+        allergens: item.allergens || {
+          contains: [],
+          mayContain: []
+        },
+        priceChanges: item.priceChanges || []
+      })
+    }
+  }, [item, categoryId])
 
   const [editingPriceChange, setEditingPriceChange] = useState<PriceChange | null>(null)
 
@@ -129,25 +188,27 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('branchId', "6829cec57032455faec894ab")
       formData.append('category', categoryId)
 
-      // Add availability
+      // Add availability, allergens, and priceChanges
+      // These are already objects, so we just need to stringify them
       formData.append('availability', JSON.stringify(currentItem.availability))
-
-      // Add allergens
       formData.append('allergens', JSON.stringify(currentItem.allergens))
-
-      // Add price changes
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
 
       // Handle images
       if (currentItem.images) {
+        // Handle new image files
         currentItem.images.forEach((image) => {
           if (image instanceof File || image instanceof Blob) {
             formData.append('images', image)
           }
-          else if (typeof image === 'string' && !image.startsWith('blob:')) {
-            formData.append('existingImages', image)
-          }
         })
+
+        // Handle existing image URLs
+        const existingImages = currentItem.images
+          .filter(image => typeof image === 'string' && !image.startsWith('blob:'))
+        if (existingImages.length > 0) {
+          formData.append('existingImages', JSON.stringify(existingImages))
+        }
       }
 
       const url = currentItem.id ? 
@@ -167,8 +228,29 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       }
 
       const data = await response.json()
-      onSave(data.data)
-      onClose()
+      
+      // Transform the response data to match MenuItem type
+      const transformedItem = {
+        id: data.data.id,
+        name: data.data.name,
+        description: data.data.description,
+        price: data.data.price,
+        weight: data.data.weight,
+        calorificValue: data.data.calorificValue,
+        calorieDetails: data.data.calorieDetails,
+        hideItem: data.data.hideItem,
+        delivery: data.data.delivery,
+        collection: data.data.collection,
+        dineIn: data.data.dineIn,
+        category: data.data.category.id,
+        images: data.data.images || [],
+        availability: data.data.availability,
+        allergens: data.data.allergens,
+        priceChanges: data.data.priceChanges || []
+      }
+      
+      onSave(transformedItem)
+    onClose()
       toast.success(`Product ${currentItem.id ? 'updated' : 'created'} successfully`)
     } catch (error) {
       console.error('Error saving item:', error)

@@ -106,7 +106,17 @@ export default function MenuSetupPage() {
       )
 
       if (response.data.success) {
-        setCategories(prev => [...prev, { ...response.data.data, items: [] }])
+        // Transform the response data to match the Category type
+        const newCategory = {
+          ...response.data.data,
+          id: response.data.data._id || response.data.data.id,
+          items: [],
+          availability: response.data.data.availability || {},
+          printers: response.data.data.printers || []
+        }
+        
+        // Update categories state with the new category
+        setCategories(prevCategories => [...prevCategories, newCategory])
         setIsAddModalOpen(false)
         toast.success('Category added successfully')
       } else {
