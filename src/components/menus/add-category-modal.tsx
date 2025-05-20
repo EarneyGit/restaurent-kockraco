@@ -22,6 +22,7 @@ interface AddCategoryModalProps {
   open: boolean
   onClose: () => void
   onAdd: (category: Category) => void
+  onSuccess: () => Promise<void>
 }
 
 type TabType = 'settings' | 'availability' | 'printers'
@@ -49,7 +50,7 @@ const PRINTERS = [
   'Bar (P3)'
 ] as const
 
-export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps) {
+export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategoryModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('settings')
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -107,7 +108,16 @@ export function AddCategoryModal({ open, onClose, onAdd }: AddCategoryModalProps
       })
 
       if (response.data.success) {
-        onAdd(response.data.data)
+        // Transform the response data to match the Category type
+        const newCategory = {
+          ...response.data.data,
+          id: response.data.data._id || response.data.data.id,
+          items: [],
+          availability: response.data.data.availability || formData.availability,
+          printers: response.data.data.printers || formData.printers
+        }
+        onAdd(newCategory)
+        await onSuccess()
         toast.success('Category created successfully')
         resetForm()
         onClose()

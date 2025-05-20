@@ -106,17 +106,8 @@ export default function MenuSetupPage() {
       )
 
       if (response.data.success) {
-        // Transform the response data to match the Category type
-        const newCategory = {
-          ...response.data.data,
-          id: response.data.data._id || response.data.data.id,
-          items: [],
-          availability: response.data.data.availability || {},
-          printers: response.data.data.printers || []
-        }
-        
-        // Update categories state with the new category
-        setCategories(prevCategories => [...prevCategories, newCategory])
+        // Instead of making a new API call, directly add the category to state
+        setCategories(prevCategories => [...prevCategories, category])
         setIsAddModalOpen(false)
         toast.success('Category added successfully')
       } else {
@@ -262,6 +253,7 @@ export default function MenuSetupPage() {
           open={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddCategory}
+          onSuccess={fetchCategories}
         />
 
         <AttributeTypesModal
