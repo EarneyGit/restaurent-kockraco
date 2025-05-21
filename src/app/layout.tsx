@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import Sidebar from "@/components/layout/sidebar"
+import { AuthProvider } from '@/contexts/auth-context'
+import { Toaster } from 'react-hot-toast'
+import ClientLayout from '../components/layout/client-layout'
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,14 +26,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <main className="flex min-h-screen bg-gray-100">
-          <div className="w-64 fixed h-screen overflow-hidden">
-            <Sidebar />
-          </div>
-          <div className="flex-1 ml-64 flex flex-col">
-            {children}
-          </div>
-        </main>
+        <AuthProvider>
+          <ClientLayout>{children}</ClientLayout>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   )

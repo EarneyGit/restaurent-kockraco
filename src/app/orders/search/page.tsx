@@ -73,11 +73,47 @@ export default function SearchOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchOrders = async (search: string = '') => {
+  const fetchOrders = async (searchType?: string) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch(`http://localhost:5000/api/orders?searchText=${search}`)
+      
+      // If no search text or no search type, fetch all orders
+      if (!searchText.trim() || !searchType) {
+        const response = await fetch('http://localhost:5000/api/orders')
+        const data = await response.json()
+        
+        if (data.success) {
+          setOrders(data.data)
+        } else {
+          setError('Failed to fetch orders')
+        }
+        setLoading(false)
+        return
+      }
+
+      // Build endpoint for filtered search
+      let endpoint = 'http://localhost:5000/api/orders?'
+      switch (searchType) {
+        case 'orderNumber':
+          endpoint += `orderNumber=${searchText}`
+          break
+        case 'name':
+          endpoint += `userName=${searchText}`
+          break
+        case 'phone':
+          endpoint += `mobileNumber=${searchText}`
+          break
+        case 'postcode':
+          endpoint += `postCode=${searchText}`
+          break
+        default:
+          setError('Invalid search type')
+          setLoading(false)
+          return
+      }
+
+      const response = await fetch(endpoint)
       const data = await response.json()
       
       if (data.success) {
@@ -93,17 +129,21 @@ export default function SearchOrdersPage() {
   }
 
   useEffect(() => {
+    // Initially fetch all orders
     fetchOrders()
   }, [])
-
-  const handleSearch = (searchType?: string) => {
-    fetchOrders(searchText)
-  }
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setSearchText(value)
-    fetchOrders(value)
+    // If search text is cleared, fetch all orders
+    if (!value.trim()) {
+      fetchOrders()
+    }
+  }
+
+  const handleSearch = (searchType: string) => {
+    fetchOrders(searchType)
   }
 
   const handleNavigate = (path: string) => {
@@ -133,16 +173,40 @@ export default function SearchOrdersPage() {
             className="mb-4"
           />
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="w-full" onClick={() => handleSearch('orderNumber')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={() => handleSearch('orderNumber')}
+              disabled={!searchText.trim()}
+            >
               Order Number
             </Button>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => handleSearch('name')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={() => handleSearch('name')}
+              disabled={!searchText.trim()}
+            >
               Name
             </Button>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => handleSearch('postcode')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={() => handleSearch('postcode')}
+              disabled={!searchText.trim()}
+            >
               Postcode
             </Button>
-            <Button variant="outline" size="sm" className="w-full" onClick={() => handleSearch('phone')}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full" 
+              onClick={() => handleSearch('phone')}
+              disabled={!searchText.trim()}
+            >
               Mobile Number
             </Button>
           </div>
@@ -283,7 +347,7 @@ export default function SearchOrdersPage() {
                     {selectedOrder.products.map((item) => (
                       <tr key={item._id} className="border-t">
                         <td className="py-2">
-                          <div>{item.product.name}</div>
+                          <div>{item.product?.name || 'Unknown Product'}</div>
                         </td>
                         <td className="py-2 text-center">{item.quantity}</td>
                         <td className="py-2 text-right">£{(item.price * item.quantity).toFixed(2)}</td>
