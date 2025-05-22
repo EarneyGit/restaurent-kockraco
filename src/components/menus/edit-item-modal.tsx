@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,14 +14,15 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { useDropzone } from 'react-dropzone'
-import { Image as LucideImage, X, Plus, Minus, Percent, PoundSterling, Edit, Trash2 } from 'lucide-react'
+import { Image as LucideImage, X, Plus, Minus, Percent, PoundSterling, Edit, Trash2, Copy } from 'lucide-react'
 import Image from 'next/image'
 import { MenuItem, DayAvailability, TimeSlot, Allergen, PriceChange } from '@/types/menu'
-import { Switch } from '@/components/ui/switch'
+import { StableSwitch } from '@/components/ui/stable-switch'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { toast } from 'react-hot-toast'
 import { MenuItemsTab } from './menu-items-tab'
+import React from 'react'
 
 interface EditItemModalProps {
   item: MenuItem | null
@@ -83,6 +84,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
+        includeAttributes: item.includeAttributes || false,
+        includeDiscounts: item.includeDiscounts || false,
         category: categoryId,
         images: item.images || [],
         availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -114,6 +117,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: true,
         collection: true,
         dineIn: true,
+        includeAttributes: false,
+        includeDiscounts: false,
         category: categoryId,
         availability: DAYS_OF_WEEK.reduce((acc, day) => ({
           ...acc,
@@ -137,9 +142,83 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }
   })
 
+  const [menuItems, setMenuItems] = useState<{id: string, name: string, price: number, categoryId: string}[]>([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(false);
+  const [currentTab, setCurrentTab] = useState('details');
+
+  // Effect to fetch menu items for the Items tab
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      if (!open) return; // Only fetch when modal is open
+      
+      setLoadingMenuItems(true);
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        console.log("response", response);
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+          // Transform products to the format needed by MenuItemsTab
+          const items = data.data.map((product: any) => ({
+            id: product._id || product.id,
+            name: product.name,
+            price: product.price || 0,
+            categoryId: product.category?._id || product.category?.id || product.category
+          }));
+          
+          // Ensure current item is available for selection if we're in edit mode
+          // Filter out the current item only if we're creating a new item or it has no id
+          const currentItemId = item?.id;
+          const filteredItems = currentItemId ? 
+            // When editing, include all items except the current one to avoid circular references
+            items.filter(menuItem => menuItem.id !== currentItemId) : 
+            items;
+            
+          console.log("Menu items fetched:", filteredItems);
+          console.log("Current selectedItems:", currentItem.selectedItems);
+          
+          setMenuItems(filteredItems);
+        } else {
+          throw new Error(data.message || 'Failed to fetch products');
+        }
+      } catch (error) {
+        console.error('Error fetching menu items:', error);
+        toast.error('Failed to load menu items');
+        // Fallback to sample data if API fails
+        setMenuItems([
+          { id: '999', name: 'Original Chicken Tex Mex or Veggie Legend Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
+          { id: '998', name: 'Special Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
+          { id: '997', name: 'Any Drink', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
+          { id: '996', name: 'Chicken and Rice', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
+          { id: '995', name: 'Chocolate Cake', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
+          { id: '994', name: 'Ice Cream', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
+        ]);
+      } finally {
+        setLoadingMenuItems(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, [open, item?.id]);
+
   // Effect to update currentItem when item prop changes
   useEffect(() => {
+    console.log("itemitem", item);
     if (item) {
+      // Process selectedItems from the API response format
+      let processedSelectedItems = item.selectedItems || [];
+      
+      // Handle when selectedItems are objects instead of strings
+      if (processedSelectedItems.length > 0 && typeof processedSelectedItems[0] === 'object') {
+        processedSelectedItems = processedSelectedItems.map((item: any) => item._id || item.id);
+      }
+      
+      // Direct access to itemSettings properties with fallbacks
+      console.log("Raw itemSettings from API:", item.itemSettings);
+      
       setCurrentItem({
         id: item.id,
         name: item.name || '',
@@ -152,6 +231,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
+        includeAttributes: item.includeAttributes || false,
+        includeDiscounts: item.includeDiscounts || false,
         category: categoryId,
         images: item.images || [],
         availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -163,15 +244,15 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           mayContain: []
         },
         priceChanges: item.priceChanges || [],
-        selectedItems: item.selectedItems || [],
-        itemSettings: item.itemSettings || {
-          showSelectedOnly: false,
-          showSelectedCategories: false,
-          limitSingleChoice: false,
-          addAttributeCharges: false,
-          useProductPrices: false,
-          showChoiceAsDropdown: false,
-        },
+        selectedItems: processedSelectedItems,
+        itemSettings: {
+          showSelectedOnly: Boolean(item.itemSettings?.showSelectedOnly),
+          showSelectedCategories: Boolean(item.itemSettings?.showSelectedCategories),
+          limitSingleChoice: Boolean(item.itemSettings?.limitSingleChoice),
+          addAttributeCharges: Boolean(item.itemSettings?.addAttributeCharges),
+          useProductPrices: Boolean(item.itemSettings?.useProductPrices),
+          showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
+        }
       })
     }
   }, [item, categoryId])
@@ -195,6 +276,10 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     if (image instanceof File || image instanceof Blob) {
       return URL.createObjectURL(image)
     }
+    // For server-side images, add the base URL if the path is relative
+    if (typeof image === 'string' && image.startsWith('/')) {
+      return `http://localhost:5000${image}`
+    }
     return image
   }
 
@@ -213,37 +298,58 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('delivery', currentItem.delivery.toString())
       formData.append('collection', currentItem.collection.toString())
       formData.append('dineIn', currentItem.dineIn.toString())
+      formData.append('includeAttributes', (currentItem.includeAttributes || false).toString())
+      formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString())
       formData.append('branchId', "6829cec57032455faec894ab")
       formData.append('category', categoryId)
 
-      // Add availability, allergens, and priceChanges
-      // These are already objects, so we just need to stringify them
+      // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))
       formData.append('allergens', JSON.stringify(currentItem.allergens))
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
+      
+      // Add selectedItems and itemSettings
+      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []))
+      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {
+        showSelectedOnly: false,
+        showSelectedCategories: false,
+        limitSingleChoice: false,
+        addAttributeCharges: false,
+        useProductPrices: false,
+        showChoiceAsDropdown: false,
+      }))
 
       // Handle images
       if (currentItem.images) {
-        // Handle new image files
-        currentItem.images.forEach((image) => {
-          if (image instanceof File || image instanceof Blob) {
-            formData.append('images', image)
-          }
+        // Handle new image files (those added in the current session)
+        const newImages = currentItem.images.filter(image => image instanceof File || image instanceof Blob)
+        newImages.forEach((image) => {
+          formData.append('images', image)
         })
 
-        // Handle existing image URLs
+        // Handle existing image URLs (those loaded from the server)
         const existingImages = currentItem.images
-          .filter(image => typeof image === 'string' && !image.startsWith('blob:'))
+          .filter(image => typeof image === 'string')
+          .filter(image => !image.startsWith('blob:'))
+          
         if (existingImages.length > 0) {
+          // Tell the backend to keep these existing images
           formData.append('existingImages', JSON.stringify(existingImages))
+        } else if (currentItem.id && newImages.length === 0) {
+          // If we're updating an item, and there are no new or existing images,
+          // send an empty array to indicate all images should be removed
+          formData.append('existingImages', JSON.stringify([]))
         }
       }
 
-      const url = currentItem.id ? 
-        `http://localhost:5000/api/products/${currentItem.id}` :
+      // Get the correct ID for the API call
+      const productId = currentItem.id || item?.id
+      
+      const url = productId ? 
+        `http://localhost:5000/api/products/${productId}` :
         'http://localhost:5000/api/products'
 
-      const method = currentItem.id ? 'PUT' : 'POST'
+      const method = productId ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
         method,
@@ -257,25 +363,37 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
 
       const data = await response.json()
       
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to save item')
+      }
+
       // Transform the response data to match MenuItem type
-      const transformedItem = {
-        id: data.data.id,
+      const transformedItem: MenuItem = {
+        id: data.data._id || data.data.id, // Handle both _id and id
         name: data.data.name,
-        description: data.data.description,
+        description: data.data.description || '',
         price: data.data.price,
-        weight: data.data.weight,
-        calorificValue: data.data.calorificValue,
-        calorieDetails: data.data.calorieDetails,
-        hideItem: data.data.hideItem,
-        delivery: data.data.delivery,
-        collection: data.data.collection,
-        dineIn: data.data.dineIn,
-        category: data.data.category.id,
+        weight: data.data.weight || 0,
+        calorificValue: data.data.calorificValue || '',
+        calorieDetails: data.data.calorieDetails || '',
+        hideItem: data.data.hideItem || false,
+        delivery: data.data.delivery || true,
+        collection: data.data.collection || true,
+        dineIn: data.data.dineIn || true,
+        includeAttributes: data.data.includeAttributes || false,
+        includeDiscounts: data.data.includeDiscounts || false,
+        category: data.data.category._id || data.data.category.id, // Handle both _id and id
         images: data.data.images || [],
-        availability: data.data.availability,
-        allergens: data.data.allergens,
+        availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...DEFAULT_AVAILABILITY }
+        }), {}),
+        allergens: data.data.allergens || {
+          contains: [],
+          mayContain: []
+        },
         priceChanges: data.data.priceChanges || [],
-        selectedItems: data.data.selectedItems || [],
+        selectedItems: data.data.selectedItems?.map(item => typeof item === 'object' ? item._id || item.id : item) || [],
         itemSettings: data.data.itemSettings || {
           showSelectedOnly: false,
           showSelectedCategories: false,
@@ -286,9 +404,9 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         },
       }
       
+      toast.success(`Item ${productId ? 'updated' : 'created'} successfully`);
       onSave(transformedItem)
       onClose()
-      toast.success(`Product ${currentItem.id ? 'updated' : 'created'} successfully`)
     } catch (error) {
       console.error('Error saving item:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save item')
@@ -448,6 +566,277 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }))
   }
 
+  // Memoize the onSettingsChange callback to prevent infinite rerenders
+  const handleItemSettingsChange = useCallback((newSettings) => {
+    console.log("Setting new item settings:", newSettings);
+    // Convert all settings values to boolean to ensure consistency
+    const processedSettings = {
+      showSelectedOnly: Boolean(newSettings.showSelectedOnly),
+      showSelectedCategories: Boolean(newSettings.showSelectedCategories),
+      limitSingleChoice: Boolean(newSettings.limitSingleChoice),
+      addAttributeCharges: Boolean(newSettings.addAttributeCharges),
+      useProductPrices: Boolean(newSettings.useProductPrices),
+      showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown)
+    };
+    
+    setCurrentItem(prev => ({
+      ...prev,
+      itemSettings: processedSettings
+    }));
+  }, []);
+  
+  // Memoize the onItemSelect callback to prevent infinite rerenders
+  const handleItemSelect = useCallback((itemId) => {
+    console.log("Item selection triggered for:", itemId);
+    setCurrentItem(prev => {
+      // Ensure selectedItems is an array
+      const currentSelectedItems = prev.selectedItems || [];
+      
+      // Check if the item is currently selected
+      const isCurrentlySelected = currentSelectedItems.includes(itemId);
+      
+      console.log("Item is currently selected:", isCurrentlySelected);
+      console.log("Current selected items:", currentSelectedItems);
+      
+      let newSelectedItems;
+      
+      if (isCurrentlySelected) {
+        // If deselecting an item, just remove it from selected items
+        newSelectedItems = currentSelectedItems.filter(id => id !== itemId);
+      } else {
+        // If selecting an item, add it to selected items
+        newSelectedItems = [...currentSelectedItems, itemId];
+      }
+      
+      console.log("New selected items:", newSelectedItems);
+      
+      return {
+        ...prev,
+        selectedItems: newSelectedItems
+      };
+    });
+  }, []);
+  
+  // Memoize Switch handlers to prevent infinite loops
+  const handleIncludeAttributesChange = useCallback((checked) => {
+    setCurrentItem(prev => ({ ...prev, includeAttributes: checked }));
+  }, []);
+  
+  const handleIncludeDiscountsChange = useCallback((checked) => {
+    setCurrentItem(prev => ({ ...prev, includeDiscounts: checked }));
+  }, []);
+  
+  const handlePriceChangeActiveToggle = useCallback((id: string) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      priceChanges: prev.priceChanges?.map(pc =>
+        pc.id === id ? { ...pc, active: !pc.active } : pc
+      ) || []
+    }));
+  }, []);
+  
+  const handleAvailabilityToggleCallback = useCallback((day: typeof DAYS_OF_WEEK[number]) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      availability: {
+        ...prev.availability,
+        [day]: {
+          ...prev.availability?.[day],
+          isAvailable: !prev.availability?.[day]?.isAvailable
+        }
+      }
+    }));
+  }, []);
+
+  // Use useMemo instead of useEffect for callbacksRef to prevent unnecessary updates
+  const callbacks = useMemo(() => {
+    // Create callbacks for price changes
+    const priceChangeCallbacks: Record<string, () => void> = {};
+    (currentItem.priceChanges || []).forEach(priceChange => {
+      priceChangeCallbacks[priceChange.id] = () => {
+        handlePriceChangeActiveToggle(priceChange.id);
+      };
+    });
+    
+    // Create callbacks for days
+    const dayCallbacks: Record<string, () => void> = {};
+    DAYS_OF_WEEK.forEach(day => {
+      dayCallbacks[day] = () => {
+        handleAvailabilityToggleCallback(day);
+      };
+    });
+    
+    return {
+      priceChanges: priceChangeCallbacks,
+      days: dayCallbacks
+    };
+  }, [currentItem.priceChanges, handlePriceChangeActiveToggle, handleAvailabilityToggleCallback]);
+
+  // Replace callbacksRef.current with callbacks from useMemo
+  const callbacksRef = React.useRef(callbacks);
+  
+  // Update ref only when callbacks change
+  React.useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
+
+  // Memoize the items and settings to prevent unnecessary rerenders
+  const memoizedMenuItems = useMemo(() => menuItems, [JSON.stringify(menuItems.map(item => item.id))]);
+  const memoizedSelectedItems = useMemo(() => currentItem.selectedItems || [], [JSON.stringify(currentItem.selectedItems)]);
+  
+  // Force boolean conversion to ensure switch components get proper values
+  const memoizedItemSettings = useMemo(() => {
+    const settings = {
+      showSelectedOnly: Boolean(currentItem.itemSettings?.showSelectedOnly),
+      showSelectedCategories: Boolean(currentItem.itemSettings?.showSelectedCategories),
+      limitSingleChoice: Boolean(currentItem.itemSettings?.limitSingleChoice),
+      addAttributeCharges: Boolean(currentItem.itemSettings?.addAttributeCharges),
+      useProductPrices: Boolean(currentItem.itemSettings?.useProductPrices),
+      showChoiceAsDropdown: Boolean(currentItem.itemSettings?.showChoiceAsDropdown),
+    };
+    
+    // Debug specific boolean values to ensure they're being properly converted
+    console.log("Raw itemSettings:", currentItem.itemSettings);
+    console.log("Individual settings - direct access:", {
+      limitSingleChoice: currentItem.itemSettings?.limitSingleChoice, 
+      addAttributeCharges: currentItem.itemSettings?.addAttributeCharges,
+      useProductPrices: currentItem.itemSettings?.useProductPrices
+    });
+    console.log("Individual settings - after Boolean conversion:", {
+      limitSingleChoice: Boolean(currentItem.itemSettings?.limitSingleChoice), 
+      addAttributeCharges: Boolean(currentItem.itemSettings?.addAttributeCharges),
+      useProductPrices: Boolean(currentItem.itemSettings?.useProductPrices)
+    });
+    
+    return settings;
+  }, [
+    currentItem.itemSettings?.showSelectedOnly,
+    currentItem.itemSettings?.showSelectedCategories,
+    currentItem.itemSettings?.limitSingleChoice,
+    currentItem.itemSettings?.addAttributeCharges,
+    currentItem.itemSettings?.useProductPrices,
+    currentItem.itemSettings?.showChoiceAsDropdown
+  ]);
+
+  // Log the memoized settings when they change
+  useEffect(() => {
+    console.log("Memoized item settings updated:", memoizedItemSettings);
+  }, [memoizedItemSettings]);
+
+  // Function to duplicate the current product
+  const handleDuplicate = async () => {
+    if (!item?.id) {
+      toast.error('Cannot duplicate an unsaved item');
+      return;
+    }
+
+    try {
+      // Create a new formData with all the current item data
+      const formData = new FormData();
+      
+      // Set a new name with "(Copy)" suffix
+      formData.append('name', `${currentItem.name} (Copy)`);
+      formData.append('price', currentItem.price.toString());
+      formData.append('description', currentItem.description || '');
+      formData.append('weight', (currentItem.weight || '').toString());
+      formData.append('calorificValue', currentItem.calorificValue || '');
+      formData.append('calorieDetails', currentItem.calorieDetails || '');
+      formData.append('hideItem', currentItem.hideItem.toString());
+      formData.append('delivery', currentItem.delivery.toString());
+      formData.append('collection', currentItem.collection.toString());
+      formData.append('dineIn', currentItem.dineIn.toString());
+      formData.append('includeAttributes', (currentItem.includeAttributes || false).toString());
+      formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString());
+      formData.append('branchId', "6829cec57032455faec894ab");
+      formData.append('category', categoryId);
+
+      // Add structured data
+      formData.append('availability', JSON.stringify(currentItem.availability));
+      formData.append('allergens', JSON.stringify(currentItem.allergens));
+      formData.append('priceChanges', JSON.stringify(currentItem.priceChanges));
+      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []));
+      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {}));
+      // Handle existing images - we'll reference them as URLs
+      if (currentItem.images && currentItem.images.length > 0) {
+        const existingImages = currentItem.images
+          .filter(image => typeof image === 'string')
+          .filter(image => !image.startsWith('blob:'));
+          
+        if (existingImages.length > 0) {
+          formData.append('existingImages', JSON.stringify(existingImages));
+        }
+        
+        // Also handle any new image files that have been added but not saved yet
+        const newImages = currentItem.images.filter(image => image instanceof File || image instanceof Blob);
+        newImages.forEach((image) => {
+          formData.append('images', image);
+        });
+      }
+
+      // Create the new product
+      const response = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to duplicate item');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to duplicate item');
+      }
+
+      toast.success('Item duplicated successfully');
+      
+      // Transform the response data to match MenuItem type
+      const duplicatedItem: MenuItem = {
+        id: data.data._id || data.data.id,
+        name: data.data.name,
+        description: data.data.description || '',
+        price: data.data.price,
+        weight: data.data.weight || 0,
+        calorificValue: data.data.calorificValue || '',
+        calorieDetails: data.data.calorieDetails || '',
+        hideItem: data.data.hideItem || false,
+        delivery: data.data.delivery || true,
+        collection: data.data.collection || true,
+        dineIn: data.data.dineIn || true,
+        includeAttributes: data.data.includeAttributes || false,
+        includeDiscounts: data.data.includeDiscounts || false,
+        category: data.data.category._id || data.data.category.id,
+        images: data.data.images || [],
+        availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+          ...acc,
+          [day]: { ...DEFAULT_AVAILABILITY }
+        }), {}),
+        allergens: data.data.allergens || {
+          contains: [],
+          mayContain: []
+        },
+        priceChanges: data.data.priceChanges || [],
+        selectedItems: data.data.selectedItems?.map(item => typeof item === 'object' ? item._id || item.id : item) || [],
+        itemSettings: data.data.itemSettings || {
+          showSelectedOnly: false,
+          showSelectedCategories: false,
+          limitSingleChoice: false,
+          addAttributeCharges: false,
+          useProductPrices: false,
+          showChoiceAsDropdown: false,
+        },
+      };
+      
+      // Save the duplicated item
+      onSave(duplicatedItem);
+      onClose();
+    } catch (error) {
+      console.error('Error duplicating item:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to duplicate item');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -455,7 +844,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           <DialogTitle>{item ? 'Edit Item' : 'Add New Item'}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="details">
+        <Tabs defaultValue="details" onValueChange={setCurrentTab}>
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
@@ -526,6 +915,26 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                   onChange={(e) => handleTextChange(e, 'calorieDetails')}
                 />
               </div>
+
+              {/* <div className="flex flex-col space-y-3">
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="includeAttributes"
+                    checked={currentItem.includeAttributes || false}
+                    onCheckedChange={handleIncludeAttributesChange}
+                  />
+                  <Label htmlFor="includeAttributes">Include Attributes</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="includeDiscounts"
+                    checked={currentItem.includeDiscounts || false}
+                    onCheckedChange={handleIncludeDiscountsChange}
+                  />
+                  <Label htmlFor="includeDiscounts">Include Discounts</Label>
+                </div>
+              </div> */}
             </div>
           </TabsContent>
 
@@ -573,9 +982,9 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <Switch
+                      <StableSwitch
                         checked={priceChange.active}
-                        onCheckedChange={() => togglePriceChangeActive(priceChange.id)}
+                        onCheckedChange={callbacksRef.current.priceChanges[priceChange.id]}
                       />
                       <div>
                         <h4 className="font-medium">{priceChange.name}</h4>
@@ -803,35 +1212,19 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           </TabsContent>
 
           <TabsContent value="items">
-            <MenuItemsTab
-              items={[
-                { id: '999', name: 'Original Chicken Tex Mex or Veggie Legend Wrap', price: 0 },
-                { id: '998', name: 'Any Drink', price: 0 },
-              ]}
-              selectedItems={currentItem.selectedItems || []}
-              onItemSelect={(itemId) => {
-                setCurrentItem(prev => ({
-                  ...prev,
-                  selectedItems: prev.selectedItems?.includes(itemId)
-                    ? prev.selectedItems.filter(id => id !== itemId)
-                    : [...(prev.selectedItems || []), itemId]
-                }))
-              }}
-              settings={currentItem.itemSettings || {
-                showSelectedOnly: false,
-                showSelectedCategories: false,
-                limitSingleChoice: false,
-                addAttributeCharges: false,
-                useProductPrices: false,
-                showChoiceAsDropdown: false,
-              }}
-              onSettingsChange={(newSettings) => {
-                setCurrentItem(prev => ({
-                  ...prev,
-                  itemSettings: newSettings
-                }))
-              }}
-            />
+            {loadingMenuItems ? (
+              <div className="flex items-center justify-center p-8">
+                <p>Loading menu items...</p>
+              </div>
+            ) : (
+              <MenuItemsTab
+                items={memoizedMenuItems}
+                selectedItems={memoizedSelectedItems}
+                onItemSelect={handleItemSelect}
+                settings={memoizedItemSettings}
+                onSettingsChange={handleItemSettingsChange}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="availability" className="space-y-6">
@@ -841,9 +1234,9 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <div key={day} className="space-y-4 border-b pb-4 last:border-b-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <Switch
-                        checked={dayAvailability?.isAvailable}
-                        onCheckedChange={() => handleAvailabilityToggle(day)}
+                      <StableSwitch
+                        checked={dayAvailability?.isAvailable ?? false}
+                        onCheckedChange={callbacksRef.current.days[day]}
                       />
                       <Label className="capitalize">{day}</Label>
                     </div>
@@ -962,13 +1355,83 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           </TabsContent>
 
           <TabsContent value="settings">
-            <p>Settings content</p>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium mb-4">Product Settings</h3>
+              
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="hideItem"
+                    checked={currentItem.hideItem || false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hideItem: checked }))}
+                  />
+                  <Label htmlFor="hideItem">Hide Item</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="includeAttributes"
+                    checked={currentItem.includeAttributes || false}
+                    onCheckedChange={handleIncludeAttributesChange}
+                  />
+                  <Label htmlFor="includeAttributes">Include Attributes</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="includeDiscounts"
+                    checked={currentItem.includeDiscounts || false}
+                    onCheckedChange={handleIncludeDiscountsChange}
+                  />
+                  <Label htmlFor="includeDiscounts">Include Discounts</Label>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-medium mt-6 mb-4">Availability Options</h3>
+              
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="delivery"
+                    checked={currentItem.delivery !== false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, delivery: checked }))}
+                  />
+                  <Label htmlFor="delivery">Available for Delivery</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="collection"
+                    checked={currentItem.collection !== false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collection: checked }))}
+                  />
+                  <Label htmlFor="collection">Available for Collection</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="dineIn"
+                    checked={currentItem.dineIn !== false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, dineIn: checked }))}
+                  />
+                  <Label htmlFor="dineIn">Available for Dine-In</Label>
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+        <div className="flex justify-between gap-2 mt-4">
+          {item && currentTab !== "items" && (
+            <Button variant="outline" onClick={handleDuplicate} className="flex items-center">
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicate
+            </Button>
+          )}
+          <div className={`flex justify-end gap-2 ${currentTab !== "items" || !item ? "" : "w-full"} ml-auto`}>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave}>Save Changes</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

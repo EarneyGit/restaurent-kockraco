@@ -118,7 +118,6 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
         }
         onAdd(newCategory)
         await onSuccess()
-        toast.success('Category created successfully')
         resetForm()
         onClose()
       }

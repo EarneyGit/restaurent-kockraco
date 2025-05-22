@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Trash2, ChevronDown, ChevronUp, Edit, Plus, Settings, ArrowUpDown } from 'lucide-react'
 import {
@@ -36,25 +36,123 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
-  const [includeAttributes, setIncludeAttributes] = useState(false)
-  const [includeDiscounts, setIncludeDiscounts] = useState(false)
+  const [includeAttributes, setIncludeAttributes] = useState(category.includeAttributes || false)
+  const [includeDiscounts, setIncludeDiscounts] = useState(category.includeDiscounts || false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [products, setProducts] = useState<MenuItem[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleCloneItem = (itemId: string) => {
-    const itemToClone = category.items?.find(item => item.id === itemId)
-    if (!itemToClone) return
-
-    const clonedItem: MenuItem = {
-      ...itemToClone,
-      id: Math.random().toString(36).substr(2, 9),
-      name: `Copy of ${itemToClone.name}`
+  // Fetch products when category is expanded
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`http://localhost:5000/api/products?category=${category.id}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        // Transform API response to match MenuItem type
+        const transformedProducts = data.data.map((product: any) => ({
+          id: product._id || product.id,
+          name: product.name,
+          description: product.description || '',
+          price: product.price,
+          weight: product.weight || 0,
+          calorificValue: product.calorificValue || '',
+          calorieDetails: product.calorieDetails || '',
+          hideItem: product.hideItem || false,
+          delivery: product.delivery === true,
+          collection: product.collection === true,
+          dineIn: product.dineIn === true,
+          category: product.category._id || product.category.id,
+          images: product.images || [],
+          availability: product.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
+            ...acc,
+            [day]: { ...DEFAULT_AVAILABILITY }
+          }), {}),
+          allergens: product.allergens || {
+            contains: [],
+            mayContain: []
+          },
+          priceChanges: product.priceChanges || []
+        }))
+        setProducts(transformedProducts)
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      toast.error('Failed to fetch products')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    onUpdate({
-      ...category,
-      items: [...(category.items || []), clonedItem]
-    })
+  // Handle accordion state change
+  const handleAccordionChange = (value: string) => {
+    const isOpen = value === category.id
+    setIsExpanded(isOpen)
+    if (isOpen) {
+      fetchProducts()
+    }
+  }
+
+  const handleCloneItem = async (itemId: string) => {
+    try {
+      // Find the item to clone in the products array
+      const itemToClone = products.find(item => item.id === itemId);
+      if (!itemToClone) {
+        toast.error('Product not found');
+        return;
+      }
+
+      // Create a new product based on the cloned item
+      const formData = new FormData();
+      formData.append('name', `Copy of ${itemToClone.name}`);
+      formData.append('price', itemToClone.price.toString());
+      formData.append('description', itemToClone.description || '');
+      formData.append('weight', (itemToClone.weight || '').toString());
+      formData.append('calorificValue', itemToClone.calorificValue || '');
+      formData.append('calorieDetails', itemToClone.calorieDetails || '');
+      formData.append('hideItem', itemToClone.hideItem.toString());
+      formData.append('delivery', itemToClone.delivery.toString());
+      formData.append('collection', itemToClone.collection.toString());
+      formData.append('dineIn', itemToClone.dineIn.toString());
+      formData.append('branchId', "6829cec57032455faec894ab");
+      formData.append('category', category.id);
+
+      // Add availability, allergens, and priceChanges as JSON strings
+      if (itemToClone.availability) {
+        formData.append('availability', JSON.stringify(itemToClone.availability));
+      }
+      if (itemToClone.allergens) {
+        formData.append('allergens', JSON.stringify(itemToClone.allergens));
+      }
+      if (itemToClone.priceChanges) {
+        formData.append('priceChanges', JSON.stringify(itemToClone.priceChanges));
+      }
+
+      // Make API call to create the new product
+      const response = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to duplicate product');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to duplicate product');
+      }
+
+      // After successful creation, refresh products
+      await fetchProducts();
+      toast.success('Product duplicated successfully');
+    } catch (error) {
+      console.error('Error duplicating product:', error);
+      toast.error('Failed to duplicate product');
+    }
   }
 
   const handleToggleDelivery = async (item: MenuItem, checked: boolean) => {
@@ -71,12 +169,18 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         throw new Error('Failed to update delivery status')
       }
 
-      onUpdate({
-        ...category,
-        items: category.items?.map(i => 
-          i.id === item.id ? { ...i, delivery: checked } : i
-        ) || []
-      })
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error('Failed to update delivery status')
+      }
+
+      // Update the products array with the new delivery status
+      setProducts(prevProducts => 
+        prevProducts.map(p => 
+          p.id === item.id ? { ...p, delivery: checked } : p
+        )
+      )
+      toast.success('Product updated successfully')
     } catch (error) {
       console.error('Error updating delivery status:', error)
       toast.error('Failed to update delivery status')
@@ -97,12 +201,18 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         throw new Error('Failed to update collection status')
       }
 
-      onUpdate({
-        ...category,
-        items: category.items?.map(i => 
-          i.id === item.id ? { ...i, collection: checked } : i
-        ) || []
-      })
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error('Failed to update collection status')
+      }
+
+      // Update the products array with the new collection status
+      setProducts(prevProducts => 
+        prevProducts.map(p => 
+          p.id === item.id ? { ...p, collection: checked } : p
+        )
+      )
+      toast.success('Product updated successfully')
     } catch (error) {
       console.error('Error updating collection status:', error)
       toast.error('Failed to update collection status')
@@ -123,12 +233,18 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         throw new Error('Failed to update dine in status')
       }
 
-      onUpdate({
-        ...category,
-        items: category.items?.map(i => 
-          i.id === item.id ? { ...i, dineIn: checked } : i
-        ) || []
-      })
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error('Failed to update dine in status')
+      }
+
+      // Update the products array with the new dine in status
+      setProducts(prevProducts => 
+        prevProducts.map(p => 
+          p.id === item.id ? { ...p, dineIn: checked } : p
+        )
+      )
+      toast.success('Product updated successfully')
     } catch (error) {
       console.error('Error updating dine in status:', error)
       toast.error('Failed to update dine in status')
@@ -136,7 +252,12 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!itemId) {
+      toast.error('Invalid product ID')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete this item?')) return
     
     try {
       const response = await fetch(`http://localhost:5000/api/products/${itemId}`, {
@@ -147,10 +268,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         throw new Error('Failed to delete item')
       }
 
-    onUpdate({
-      ...category,
-        items: category.items?.filter(item => item.id !== itemId) || []
-    })
+      // Remove the item from the products array
+      setProducts(products.filter(item => item.id !== itemId))
       toast.success('Product deleted successfully')
     } catch (error) {
       console.error('Error deleting item:', error)
@@ -159,27 +278,34 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   }
 
   const handleEditItem = async (item: MenuItem) => {
+    if (!item?.id) {
+      toast.error('Invalid product ID')
+      return
+    }
+
     try {
+      console.log("Fetching product details for:", item.id);
       const response = await fetch(`http://localhost:5000/api/products/${item.id}`)
       if (!response.ok) {
         throw new Error('Failed to fetch product details')
       }
       const data = await response.json()
       if (data.success) {
+        console.log("API response for product:", data.data);
         // Transform API response to match MenuItem type
         const transformedItem: MenuItem = {
-          id: data.data.id || data.data._id,
+          id: data.data._id || data.data.id, // Handle both _id and id
           name: data.data.name,
-          description: data.data.description,
+          description: data.data.description || '',
           price: data.data.price,
-          weight: data.data.weight,
-          calorificValue: data.data.calorificValue,
-          calorieDetails: data.data.calorieDetails,
-          hideItem: data.data.hideItem,
-          delivery: data.data.delivery,
-          collection: data.data.collection,
-          dineIn: data.data.dineIn,
-          category: data.data.category.id || data.data.category._id,
+          weight: data.data.weight || 0,
+          calorificValue: data.data.calorificValue || '',
+          calorieDetails: data.data.calorieDetails || '',
+          hideItem: data.data.hideItem || false,
+          delivery: data.data.delivery || true,
+          collection: data.data.collection || true,
+          dineIn: data.data.dineIn || true,
+          category: data.data.category._id || data.data.category.id, // Handle both _id and id
           images: data.data.images || [],
           availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
             ...acc,
@@ -189,8 +315,21 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
             contains: [],
             mayContain: []
           },
-          priceChanges: data.data.priceChanges || []
+          priceChanges: data.data.priceChanges || [],
+          // Add missing fields
+          selectedItems: data.data.selectedItems || [],
+          itemSettings: data.data.itemSettings || {
+            showSelectedOnly: false,
+            showSelectedCategories: false,
+            limitSingleChoice: false,
+            addAttributeCharges: false,
+            useProductPrices: false,
+            showChoiceAsDropdown: false
+          },
+          includeAttributes: data.data.includeAttributes || false,
+          includeDiscounts: data.data.includeDiscounts || false
         }
+        console.log("Transformed item for edit modal:", transformedItem);
         setEditingItem(transformedItem)
       } else {
         throw new Error(data.message || 'Failed to fetch product details')
@@ -201,14 +340,21 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
     }
   }
 
-  const handleSaveItem = (updatedItem: MenuItem) => {
-    onUpdate({
-      ...category,
-      items: category.items?.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-      ) || []
-    })
-    setEditingItem(null)
+  const handleSaveItem = async (updatedItem: MenuItem) => {
+    try {
+      // Find the index of the updated item in products array
+      const itemIndex = products.findIndex(item => item.id === updatedItem.id)
+      if (itemIndex !== -1) {
+        // Update the products array with the new item data
+        const newProducts = [...products]
+        newProducts[itemIndex] = updatedItem
+        setProducts(newProducts)
+      }
+      setEditingItem(null)
+    } catch (error) {
+      console.error('Error updating product:', error)
+      toast.error('Failed to update product')
+    }
   }
 
   const handleAddItem = () => {
@@ -277,12 +423,74 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
     setSelectedItems([])
   }
 
+  // Handle change for category's includeAttributes
+  const handleIncludeAttributesChange = async (checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append('includeAttributes', checked.toString())
+      
+      const response = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
+        method: 'PUT',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update include attributes setting')
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error('Failed to update include attributes setting')
+      }
+
+      // Update local state only, don't call onUpdate
+      setIncludeAttributes(checked)
+      
+      // Show success message
+      toast.success('Category updated successfully')
+    } catch (error) {
+      console.error('Error updating include attributes setting:', error)
+      toast.error('Failed to update include attributes setting')
+    }
+  }
+
+  // Handle change for category's includeDiscounts  
+  const handleIncludeDiscountsChange = async (checked: boolean) => {
+    try {
+      const formData = new FormData()
+      formData.append('includeDiscounts', checked.toString())
+      
+      const response = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
+        method: 'PUT',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update include discounts setting')
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error('Failed to update include discounts setting')
+      }
+
+      // Update local state only, don't call onUpdate
+      setIncludeDiscounts(checked)
+      
+      // Show success message
+      toast.success('Category updated successfully')
+    } catch (error) {
+      console.error('Error updating include discounts setting:', error)
+      toast.error('Failed to update include discounts setting')
+    }
+  }
+
   // Calculate availability status based on category availability
   const availabilityStatus = category.hidden ? 'Hidden' : 'Available'
   const availabilityColor = category.hidden ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
 
   return (
-    <Accordion type="single" collapsible>
+    <Accordion type="single" collapsible onValueChange={handleAccordionChange}>
       <AccordionItem value={category.id} className="border rounded-lg bg-white">
         <div className="flex items-center justify-between p-4 w-full">
           <div className="flex items-center gap-4">
@@ -373,14 +581,14 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               <div className="flex items-center gap-2">
                 <Switch
                   checked={includeAttributes}
-                  onCheckedChange={setIncludeAttributes}
+                  onCheckedChange={handleIncludeAttributesChange}
                 />
                 <span className="text-sm">Include Attributes?</span>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={includeDiscounts}
-                  onCheckedChange={setIncludeDiscounts}
+                  onCheckedChange={handleIncludeDiscountsChange}
                 />
                 <span className="text-sm">Include Discounts?</span>
               </div>
@@ -390,98 +598,102 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
         <AccordionContent>
           <div className="p-4">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.length === (category.items?.length || 0)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedItems(category.items?.map(item => item.id) || [])
-                        } else {
-                          setSelectedItems([])
-                        }
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                  </th>
-                  <th className="text-left p-2">Name</th>
-                  <th className="text-left p-2">Price</th>
-                  <th className="text-center p-2">Delivery</th>
-                  <th className="text-center p-2">Collection</th>
-                  <th className="text-center p-2">Dine In</th>
-                  <th className="text-right p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {category.items?.map((item) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2">
+            {isLoading ? (
+              <div className="text-center py-4">Loading products...</div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">
                       <input
                         type="checkbox"
-                        checked={selectedItems.includes(item.id)}
+                        checked={selectedItems.length === products.length}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedItems(prev => [...prev, item.id])
+                            setSelectedItems(products.map(item => item.id))
                           } else {
-                            setSelectedItems(prev => prev.filter(id => id !== item.id))
+                            setSelectedItems([])
                           }
                         }}
                         className="rounded border-gray-300"
                       />
-                    </td>
-                    <td className="p-2">{item.name}</td>
-                    <td className="p-2">£{item.price.toFixed(2)}</td>
-                    <td className="text-center p-2">
-                      <Switch
-                        checked={item.delivery}
-                        onCheckedChange={(checked) => handleToggleDelivery(item, checked)}
-                      />
-                    </td>
-                    <td className="text-center p-2">
-                      <Switch
-                        checked={item.collection}
-                        onCheckedChange={(checked) => handleToggleCollection(item, checked)}
-                      />
-                    </td>
-                    <td className="text-center p-2">
-                      <Switch
-                        checked={item.dineIn}
-                        onCheckedChange={(checked) => handleToggleDineIn(item, checked)}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCloneItem(item.id)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditItem(item)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteItem(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+                    </th>
+                    <th className="text-left p-2">Name</th>
+                    <th className="text-left p-2">Price</th>
+                    <th className="text-center p-2">Delivery</th>
+                    <th className="text-center p-2">Collection</th>
+                    <th className="text-center p-2">Dine In</th>
+                    <th className="text-right p-2">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {products.map((item) => (
+                    <tr key={item.id} className="border-b hover:bg-gray-50">
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(item.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedItems(prev => [...prev, item.id])
+                            } else {
+                              setSelectedItems(prev => prev.filter(id => id !== item.id))
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                      </td>
+                      <td className="p-2">{item.name}</td>
+                      <td className="p-2">£{item.price.toFixed(2)}</td>
+                      <td className="text-center p-2">
+                        <Switch
+                          checked={item.delivery}
+                          onCheckedChange={(checked) => handleToggleDelivery(item, checked)}
+                        />
+                      </td>
+                      <td className="text-center p-2">
+                        <Switch
+                          checked={item.collection}
+                          onCheckedChange={(checked) => handleToggleCollection(item, checked)}
+                        />
+                      </td>
+                      <td className="text-center p-2">
+                        <Switch
+                          checked={item.dineIn}
+                          onCheckedChange={(checked) => handleToggleDineIn(item, checked)}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCloneItem(item.id)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditItem(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
             <div className="flex justify-between mt-4">
               <Button variant="outline" size="sm" className="text-emerald-500" onClick={handleAddItem}>
@@ -494,13 +706,13 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               </Button>
             </div>
 
-              <EditItemModal
-                item={editingItem}
+            <EditItemModal
+              item={editingItem}
               categoryId={category.id}
               open={!!editingItem}
-                onClose={() => setEditingItem(null)}
-                onSave={handleSaveItem}
-              />
+              onClose={() => setEditingItem(null)}
+              onSave={handleSaveItem}
+            />
 
             <EditItemModal
               item={null}

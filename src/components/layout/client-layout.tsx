@@ -5,9 +5,15 @@ import { useAuth } from '@/contexts/auth-context'
 import Sidebar from './sidebar'
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname() || ''
   const { isAuthenticated, isLoading } = useAuth()
   const isLoginPage = pathname === '/login'
+  const isLiveOrdersPage = pathname.startsWith('/orders/live') || 
+                          pathname.startsWith('/orders/today') || 
+                          pathname.startsWith('/orders/search') ||
+                          pathname.startsWith('/orders/take-offline') ||
+                          pathname.startsWith('/orders/settings') ||
+                          pathname.startsWith('/orders/lead-times')
 
   // Don't show anything until authentication is checked
   if (isLoading) {
@@ -16,8 +22,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </div>
   }
 
-  // Show sidebar only if authenticated and not on login page
-  const showSidebar = isAuthenticated && !isLoginPage
+  // Show sidebar only if authenticated, not on login page, and not on live orders page
+  const showSidebar = isAuthenticated && !isLoginPage && !isLiveOrdersPage
 
   // Don't render children if not authenticated and not on login page
   // This prevents the dashboard from flashing before redirect

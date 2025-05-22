@@ -6,6 +6,8 @@ export interface MenuItem {
   delivery: boolean
   collection: boolean
   dineIn: boolean
+  includeAttributes?: boolean
+  includeDiscounts?: boolean
   description?: string
   weight?: number
   calorificValue?: string
@@ -54,6 +56,8 @@ export interface Category {
   displayOrder: number
   hidden: boolean
   imageUrl?: string
+  includeAttributes?: boolean
+  includeDiscounts?: boolean
   availability: {
     [key: string]: 'All Day' | 'Specific Times' | 'Not Available'
   }

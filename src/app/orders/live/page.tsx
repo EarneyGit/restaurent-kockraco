@@ -135,7 +135,7 @@ export default function LiveOrdersPage() {
         </div>
         <div className="flex items-center">
           <span className="mr-2">Admin user</span>
-          <Button variant="ghost" size="sm" onClick={() => handleNavigate('/orders/live/exit')}>
+          <Button variant="ghost" size="sm" onClick={() => handleNavigate('/')}>
             Exit <X className="ml-2 h-4 w-4" />
           </Button>
         </div>
