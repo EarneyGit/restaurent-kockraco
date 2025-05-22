@@ -106,6 +106,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        tillProviderProductId: item.tillProviderProductId || '',
+        cssClass: item.cssClass || '',
+        freeDelivery: item.freeDelivery || false,
+        collectionOnly: item.collectionOnly || false,
+        deleted: item.deleted || false,
+        hidePrice: item.hidePrice || false,
       }
     } else {
       // If no item, we're in add new mode
@@ -138,6 +144,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        tillProviderProductId: '',
+        cssClass: '',
+        freeDelivery: false,
+        collectionOnly: false,
+        deleted: false,
+        hidePrice: false,
       }
     }
   })
@@ -252,7 +264,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           addAttributeCharges: Boolean(item.itemSettings?.addAttributeCharges),
           useProductPrices: Boolean(item.itemSettings?.useProductPrices),
           showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
-        }
+        },
+        tillProviderProductId: item.tillProviderProductId || '',
+        cssClass: item.cssClass || '',
+        freeDelivery: item.freeDelivery || false,
+        collectionOnly: item.collectionOnly || false,
+        deleted: item.deleted || false,
+        hidePrice: item.hidePrice || false,
       })
     }
   }, [item, categoryId])
@@ -302,6 +320,14 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString())
       formData.append('branchId', "6829cec57032455faec894ab")
       formData.append('category', categoryId)
+      
+      // Add new fields
+      formData.append('tillProviderProductId', currentItem.tillProviderProductId || '')
+      formData.append('cssClass', currentItem.cssClass || '')
+      formData.append('freeDelivery', (currentItem.freeDelivery || false).toString())
+      formData.append('collectionOnly', (currentItem.collectionOnly || false).toString())
+      formData.append('deleted', (currentItem.deleted || false).toString())
+      formData.append('hidePrice', (currentItem.hidePrice || false).toString())
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))
@@ -402,6 +428,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        tillProviderProductId: data.data.tillProviderProductId || '',
+        cssClass: data.data.cssClass || '',
+        freeDelivery: data.data.freeDelivery || false,
+        collectionOnly: data.data.collectionOnly || false,
+        deleted: data.data.deleted || false,
+        hidePrice: data.data.hidePrice || false,
       }
       
       toast.success(`Item ${productId ? 'updated' : 'created'} successfully`);
@@ -749,13 +781,22 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString());
       formData.append('branchId', "6829cec57032455faec894ab");
       formData.append('category', categoryId);
+      
+      // Add new fields
+      formData.append('tillProviderProductId', currentItem.tillProviderProductId || '');
+      formData.append('cssClass', currentItem.cssClass || '');
+      formData.append('freeDelivery', (currentItem.freeDelivery || false).toString());
+      formData.append('collectionOnly', (currentItem.collectionOnly || false).toString());
+      formData.append('deleted', (currentItem.deleted || false).toString());
+      formData.append('hidePrice', (currentItem.hidePrice || false).toString());
 
-      // Add structured data
+      // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability));
       formData.append('allergens', JSON.stringify(currentItem.allergens));
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges));
       formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []));
       formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {}));
+
       // Handle existing images - we'll reference them as URLs
       if (currentItem.images && currentItem.images.length > 0) {
         const existingImages = currentItem.images
@@ -826,6 +867,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        tillProviderProductId: data.data.tillProviderProductId || '',
+        cssClass: data.data.cssClass || '',
+        freeDelivery: data.data.freeDelivery || false,
+        collectionOnly: data.data.collectionOnly || false,
+        deleted: data.data.deleted || false,
+        hidePrice: data.data.hidePrice || false,
       };
       
       // Save the duplicated item
@@ -1217,13 +1264,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <p>Loading menu items...</p>
               </div>
             ) : (
-              <MenuItemsTab
+            <MenuItemsTab
                 items={memoizedMenuItems}
                 selectedItems={memoizedSelectedItems}
                 onItemSelect={handleItemSelect}
                 settings={memoizedItemSettings}
                 onSettingsChange={handleItemSettingsChange}
-              />
+            />
             )}
           </TabsContent>
 
@@ -1356,65 +1403,59 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
 
           <TabsContent value="settings">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium mb-4">Product Settings</h3>
-              
-              <div className="flex flex-col space-y-3">
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="hideItem"
-                    checked={currentItem.hideItem || false}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hideItem: checked }))}
-                  />
-                  <Label htmlFor="hideItem">Hide Item</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="includeAttributes"
-                    checked={currentItem.includeAttributes || false}
-                    onCheckedChange={handleIncludeAttributesChange}
-                  />
-                  <Label htmlFor="includeAttributes">Include Attributes</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="includeDiscounts"
-                    checked={currentItem.includeDiscounts || false}
-                    onCheckedChange={handleIncludeDiscountsChange}
-                  />
-                  <Label htmlFor="includeDiscounts">Include Discounts</Label>
-                </div>
+              <div>
+                <Label htmlFor="tillProviderProductId">Till Provider Product ID</Label>
+                <Input
+                  id="tillProviderProductId"
+                  value={currentItem.tillProviderProductId || ''}
+                  onChange={(e) => handleTextChange(e, 'tillProviderProductId')}
+                />
               </div>
-              
-              <h3 className="text-lg font-medium mt-6 mb-4">Availability Options</h3>
-              
+
+              <div>
+                <Label htmlFor="cssClass">CSS Class</Label>
+                <Input
+                  id="cssClass"
+                  value={currentItem.cssClass || ''}
+                  onChange={(e) => handleTextChange(e, 'cssClass')}
+                />
+              </div>
+
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="delivery"
-                    checked={currentItem.delivery !== false}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, delivery: checked }))}
+                    id="freeDelivery"
+                    checked={currentItem.freeDelivery || false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
                   />
-                  <Label htmlFor="delivery">Available for Delivery</Label>
+                  <Label htmlFor="freeDelivery">Free Delivery</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="collection"
-                    checked={currentItem.collection !== false}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collection: checked }))}
+                    id="collectionOnly"
+                    checked={currentItem.collectionOnly || false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
                   />
-                  <Label htmlFor="collection">Available for Collection</Label>
+                  <Label htmlFor="collectionOnly">Collection Only</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="dineIn"
-                    checked={currentItem.dineIn !== false}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, dineIn: checked }))}
+                    id="deleted"
+                    checked={currentItem.deleted || false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
                   />
-                  <Label htmlFor="dineIn">Available for Dine-In</Label>
+                  <Label htmlFor="deleted">Deleted</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="hidePrice"
+                    checked={currentItem.hidePrice || false}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
+                  />
+                  <Label htmlFor="hidePrice">Hide Price</Label>
                 </div>
               </div>
             </div>
@@ -1429,8 +1470,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
             </Button>
           )}
           <div className={`flex justify-end gap-2 ${currentTab !== "items" || !item ? "" : "w-full"} ml-auto`}>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>Save Changes</Button>
           </div>
         </div>
       </DialogContent>

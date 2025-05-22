@@ -385,7 +385,7 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
         </div>
       ) : (
         // Show categories with items
-        <div className="border rounded-lg">
+      <div className="border rounded-lg">
           {filteredCategories.map((category) => {
             const categoryItems = getItemsForCategory(category.id);
             const selectedCount = getSelectedCountForCategory(category.id);
@@ -453,9 +453,9 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
                     ) : (
                       // Show all items in this category
                       categoryItems.map(item => (
-                        <div
-                          key={item.id}
-                          className={cn(
+          <div
+            key={item.id}
+            className={cn(
                             'flex items-center justify-between p-4 border-t',
                             memoizedSelectedItems.includes(item.id) ? 'bg-gray-50' : ''
                           )}
@@ -463,12 +463,12 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
                           <div className="flex items-center space-x-4 ml-8">
                             <StableSwitch
                               checked={memoizedSelectedItems.includes(item.id)}
-                              onCheckedChange={() => onItemSelect(item.id)}
-                            />
-                            <span className="text-gray-600">{item.name}</span>
-                          </div>
-                          <span className="font-medium">£{item.price.toFixed(2)}</span>
-                        </div>
+                onCheckedChange={() => onItemSelect(item.id)}
+              />
+              <span className="text-gray-600">{item.name}</span>
+            </div>
+            <span className="font-medium">£{item.price.toFixed(2)}</span>
+          </div>
                       ))
                     )}
                   </div>
@@ -476,7 +476,7 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
               </div>
             );
           })}
-        </div>
+      </div>
       )}
 
       <div className="space-y-4 mt-6">

@@ -37,6 +37,12 @@ export interface MenuItem {
     useProductPrices: boolean
     showChoiceAsDropdown: boolean
   }
+  tillProviderProductId?: string
+  cssClass?: string
+  freeDelivery?: boolean
+  collectionOnly?: boolean
+  deleted?: boolean
+  hidePrice?: boolean
 }
 
 export interface DayAvailability {
