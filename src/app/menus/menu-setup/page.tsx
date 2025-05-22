@@ -189,7 +189,7 @@ export default function MenuSetupPage() {
           open={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddCategory}
-          onSuccess={() => {}}
+          onSuccess={async () => Promise.resolve()}
         />
 
         <AttributeTypesModal
