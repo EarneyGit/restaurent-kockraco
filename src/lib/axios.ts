@@ -1,8 +1,9 @@
 'use client';
 
 import axios from 'axios';
+import { BaseUrl } from './config';
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = `${BaseUrl}/api`;
 
 // Define types for config objects
 interface ConfigType {

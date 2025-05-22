@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
+import { BaseUrl } from '@/lib/config'
 
 const timeOptions = [
   '5 mins', '10 mins', '15 mins', '20 mins', '25 mins', '30 mins', 
@@ -17,21 +18,31 @@ export default function LeadTimesPage() {
   const [collectionTime, setCollectionTime] = useState('20 mins')
   const [deliveryTime, setDeliveryTime] = useState('45 mins')
   const [isLoading, setIsLoading] = useState(false)
+  const [leadTimes, setLeadTimes] = useState({})
 
   // Fetch current lead times on component mount
   useEffect(() => {
     const fetchLeadTimes = async () => {
+      setIsLoading(true)
       try {
-        const response = await fetch('http://localhost:5000/api/settings/lead-times')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setCollectionTime(data.data.collection || '20 mins')
-            setDeliveryTime(data.data.delivery || '45 mins')
-          }
+        const response = await fetch(`${BaseUrl}/api/settings/lead-times`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch lead times')
+        }
+        
+        const data = await response.json()
+        if (data.success) {
+          setLeadTimes(data.data)
+          setCollectionTime(data.data.collection || '20 mins')
+          setDeliveryTime(data.data.delivery || '45 mins')
+        } else {
+          toast.error(data.message || 'Failed to fetch lead times')
         }
       } catch (error) {
-        console.error('Failed to fetch lead times:', error)
+        console.error('Error fetching lead times:', error)
+        toast.error('Failed to fetch lead times')
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -41,7 +52,7 @@ export default function LeadTimesPage() {
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('http://localhost:5000/api/settings/lead-times', {
+      const response = await fetch(`${BaseUrl}/api/settings/lead-times`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '@/contexts/auth-context'
-import axios from 'axios'
+import api from '@/lib/axios'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,7 +25,8 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData)
+      const formData = new FormData(e.target as HTMLFormElement)
+      const response = await api.post('/auth/login', Object.fromEntries(formData.entries()))
       const { data } = response
 
       if (data.success) {

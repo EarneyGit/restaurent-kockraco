@@ -23,6 +23,7 @@ import { format } from 'date-fns'
 import { toast } from 'react-hot-toast'
 import { MenuItemsTab } from './menu-items-tab'
 import React from 'react'
+import { BaseUrl } from '@/lib/config'
 
 interface EditItemModalProps {
   item: MenuItem | null
@@ -67,7 +68,6 @@ const DEFAULT_PRICE_CHANGE: PriceChange = {
   daysOfWeek: [],
   active: true
 }
-
 export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditItemModalProps) {
   const [currentItem, setCurrentItem] = useState<MenuItem>(() => {
     if (item) {
@@ -84,8 +84,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
-        includeAttributes: item.includeAttributes || false,
-        includeDiscounts: item.includeDiscounts || false,
         category: categoryId,
         images: item.images || [],
         availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -123,8 +121,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: true,
         collection: true,
         dineIn: true,
-        includeAttributes: false,
-        includeDiscounts: false,
         category: categoryId,
         availability: DAYS_OF_WEEK.reduce((acc, day) => ({
           ...acc,
@@ -153,7 +149,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       }
     }
   })
-
+  
   const [menuItems, setMenuItems] = useState<{id: string, name: string, price: number, categoryId: string}[]>([]);
   const [loadingMenuItems, setLoadingMenuItems] = useState(false);
   const [currentTab, setCurrentTab] = useState('details');
@@ -165,7 +161,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       
       setLoadingMenuItems(true);
       try {
-        const response = await fetch('http://localhost:5000/api/products');
+        const response = await fetch(`${BaseUrl}/api/products`);
         console.log("response", response);
         if (!response.ok) {
           throw new Error('Failed to fetch products');
@@ -218,7 +214,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
 
   // Effect to update currentItem when item prop changes
   useEffect(() => {
-    console.log("itemitem", item);
     if (item) {
       // Process selectedItems from the API response format
       let processedSelectedItems = item.selectedItems || [];
@@ -228,8 +223,28 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         processedSelectedItems = processedSelectedItems.map((item: any) => item._id || item.id);
       }
       
-      // Direct access to itemSettings properties with fallbacks
+      // Ensure itemSettings is properly processed from the API response
+      const itemSettings = {
+        showSelectedOnly: Boolean(item.itemSettings?.showSelectedOnly),
+        showSelectedCategories: Boolean(item.itemSettings?.showSelectedCategories),
+        limitSingleChoice: Boolean(item.itemSettings?.limitSingleChoice),
+        addAttributeCharges: Boolean(item.itemSettings?.addAttributeCharges),
+        useProductPrices: Boolean(item.itemSettings?.useProductPrices),
+        showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
+      };
+      
       console.log("Raw itemSettings from API:", item.itemSettings);
+      console.log("Processed itemSettings:", itemSettings);
+      
+      // Log top-level settings to debug
+      console.log("Top-level settings from API:", {
+        tillProviderProductId: item.tillProviderProductId,
+        cssClass: item.cssClass,
+        freeDelivery: item.freeDelivery,
+        collectionOnly: item.collectionOnly,
+        deleted: item.deleted,
+        hidePrice: item.hidePrice
+      });
       
       setCurrentItem({
         id: item.id,
@@ -243,8 +258,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
-        includeAttributes: item.includeAttributes || false,
-        includeDiscounts: item.includeDiscounts || false,
         category: categoryId,
         images: item.images || [],
         availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -257,20 +270,14 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         },
         priceChanges: item.priceChanges || [],
         selectedItems: processedSelectedItems,
-        itemSettings: {
-          showSelectedOnly: Boolean(item.itemSettings?.showSelectedOnly),
-          showSelectedCategories: Boolean(item.itemSettings?.showSelectedCategories),
-          limitSingleChoice: Boolean(item.itemSettings?.limitSingleChoice),
-          addAttributeCharges: Boolean(item.itemSettings?.addAttributeCharges),
-          useProductPrices: Boolean(item.itemSettings?.useProductPrices),
-          showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
-        },
+        itemSettings: itemSettings,
+        // Explicitly convert all top-level settings to their proper types
         tillProviderProductId: item.tillProviderProductId || '',
         cssClass: item.cssClass || '',
-        freeDelivery: item.freeDelivery || false,
-        collectionOnly: item.collectionOnly || false,
-        deleted: item.deleted || false,
-        hidePrice: item.hidePrice || false,
+        freeDelivery: Boolean(item.freeDelivery),
+        collectionOnly: Boolean(item.collectionOnly),
+        deleted: Boolean(item.deleted),
+        hidePrice: Boolean(item.hidePrice),
       })
     }
   }, [item, categoryId])
@@ -296,7 +303,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }
     // For server-side images, add the base URL if the path is relative
     if (typeof image === 'string' && image.startsWith('/')) {
-      return `http://localhost:5000${image}`
+      return `${BaseUrl}${image}`
     }
     return image
   }
@@ -316,26 +323,33 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('delivery', currentItem.delivery.toString())
       formData.append('collection', currentItem.collection.toString())
       formData.append('dineIn', currentItem.dineIn.toString())
-      formData.append('includeAttributes', (currentItem.includeAttributes || false).toString())
-      formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString())
-      formData.append('branchId', "6829cec57032455faec894ab")
       formData.append('category', categoryId)
+      formData.append('branchId', "6829cec57032455faec894ab")
       
-      // Add new fields
+      // Add new fields with proper boolean to string conversion
       formData.append('tillProviderProductId', currentItem.tillProviderProductId || '')
       formData.append('cssClass', currentItem.cssClass || '')
-      formData.append('freeDelivery', (currentItem.freeDelivery || false).toString())
-      formData.append('collectionOnly', (currentItem.collectionOnly || false).toString())
-      formData.append('deleted', (currentItem.deleted || false).toString())
-      formData.append('hidePrice', (currentItem.hidePrice || false).toString())
+      formData.append('freeDelivery', Boolean(currentItem.freeDelivery).toString())
+      formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString())
+      formData.append('deleted', Boolean(currentItem.deleted).toString())
+      formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
+
+      // Log top-level settings being sent to the server
+      console.log("Sending top-level settings to server:", {
+        freeDelivery: Boolean(currentItem.freeDelivery),
+        collectionOnly: Boolean(currentItem.collectionOnly),
+        deleted: Boolean(currentItem.deleted),
+        hidePrice: Boolean(currentItem.hidePrice)
+      });
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))
       formData.append('allergens', JSON.stringify(currentItem.allergens))
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
       
-      // Add selectedItems and itemSettings
+      // Add selectedItems and ensure itemSettings is correctly formatted
       formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []))
+      console.log("Saving itemSettings:", currentItem.itemSettings);
       formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {
         showSelectedOnly: false,
         showSelectedCategories: false,
@@ -372,8 +386,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       const productId = currentItem.id || item?.id
       
       const url = productId ? 
-        `http://localhost:5000/api/products/${productId}` :
-        'http://localhost:5000/api/products'
+        `${BaseUrl}/api/products/${productId}` :
+        `${BaseUrl}/api/products`
 
       const method = productId ? 'PUT' : 'POST'
 
@@ -406,8 +420,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: data.data.delivery || true,
         collection: data.data.collection || true,
         dineIn: data.data.dineIn || true,
-        includeAttributes: data.data.includeAttributes || false,
-        includeDiscounts: data.data.includeDiscounts || false,
         category: data.data.category._id || data.data.category.id, // Handle both _id and id
         images: data.data.images || [],
         availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -428,12 +440,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        // Explicitly convert top-level settings to ensure proper types
         tillProviderProductId: data.data.tillProviderProductId || '',
         cssClass: data.data.cssClass || '',
-        freeDelivery: data.data.freeDelivery || false,
-        collectionOnly: data.data.collectionOnly || false,
-        deleted: data.data.deleted || false,
-        hidePrice: data.data.hidePrice || false,
+        freeDelivery: Boolean(data.data.freeDelivery),
+        collectionOnly: Boolean(data.data.collectionOnly),
+        deleted: Boolean(data.data.deleted),
+        hidePrice: Boolean(data.data.hidePrice),
       }
       
       toast.success(`Item ${productId ? 'updated' : 'created'} successfully`);
@@ -589,14 +602,14 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }))
   }
 
-  const togglePriceChangeActive = (id: string) => {
+  const togglePriceChangeActive = useCallback((id: string) => {
     setCurrentItem(prev => ({
       ...prev,
       priceChanges: prev.priceChanges?.map(pc =>
         pc.id === id ? { ...pc, active: !pc.active } : pc
       ) || []
-    }))
-  }
+    }));
+  }, []);
 
   // Memoize the onSettingsChange callback to prevent infinite rerenders
   const handleItemSettingsChange = useCallback((newSettings) => {
@@ -610,6 +623,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       useProductPrices: Boolean(newSettings.useProductPrices),
       showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown)
     };
+    
+    console.log("Processed settings before state update:", processedSettings);
     
     setCurrentItem(prev => ({
       ...prev,
@@ -650,23 +665,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
   }, []);
   
   // Memoize Switch handlers to prevent infinite loops
-  const handleIncludeAttributesChange = useCallback((checked) => {
-    setCurrentItem(prev => ({ ...prev, includeAttributes: checked }));
-  }, []);
-  
-  const handleIncludeDiscountsChange = useCallback((checked) => {
-    setCurrentItem(prev => ({ ...prev, includeDiscounts: checked }));
-  }, []);
-  
-  const handlePriceChangeActiveToggle = useCallback((id: string) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      priceChanges: prev.priceChanges?.map(pc =>
-        pc.id === id ? { ...pc, active: !pc.active } : pc
-      ) || []
-    }));
-  }, []);
-  
   const handleAvailabilityToggleCallback = useCallback((day: typeof DAYS_OF_WEEK[number]) => {
     setCurrentItem(prev => ({
       ...prev,
@@ -686,7 +684,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     const priceChangeCallbacks: Record<string, () => void> = {};
     (currentItem.priceChanges || []).forEach(priceChange => {
       priceChangeCallbacks[priceChange.id] = () => {
-        handlePriceChangeActiveToggle(priceChange.id);
+        togglePriceChangeActive(priceChange.id);
       };
     });
     
@@ -702,7 +700,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       priceChanges: priceChangeCallbacks,
       days: dayCallbacks
     };
-  }, [currentItem.priceChanges, handlePriceChangeActiveToggle, handleAvailabilityToggleCallback]);
+  }, [currentItem.priceChanges, togglePriceChangeActive, handleAvailabilityToggleCallback]);
 
   // Replace callbacksRef.current with callbacks from useMemo
   const callbacksRef = React.useRef(callbacks);
@@ -727,18 +725,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       showChoiceAsDropdown: Boolean(currentItem.itemSettings?.showChoiceAsDropdown),
     };
     
-    // Debug specific boolean values to ensure they're being properly converted
-    console.log("Raw itemSettings:", currentItem.itemSettings);
-    console.log("Individual settings - direct access:", {
-      limitSingleChoice: currentItem.itemSettings?.limitSingleChoice, 
-      addAttributeCharges: currentItem.itemSettings?.addAttributeCharges,
-      useProductPrices: currentItem.itemSettings?.useProductPrices
-    });
-    console.log("Individual settings - after Boolean conversion:", {
-      limitSingleChoice: Boolean(currentItem.itemSettings?.limitSingleChoice), 
-      addAttributeCharges: Boolean(currentItem.itemSettings?.addAttributeCharges),
-      useProductPrices: Boolean(currentItem.itemSettings?.useProductPrices)
-    });
+    console.log("Current item settings state:", currentItem.itemSettings);
+    console.log("Memoized settings:", settings);
     
     return settings;
   }, [
@@ -777,18 +765,16 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('delivery', currentItem.delivery.toString());
       formData.append('collection', currentItem.collection.toString());
       formData.append('dineIn', currentItem.dineIn.toString());
-      formData.append('includeAttributes', (currentItem.includeAttributes || false).toString());
-      formData.append('includeDiscounts', (currentItem.includeDiscounts || false).toString());
-      formData.append('branchId', "6829cec57032455faec894ab");
       formData.append('category', categoryId);
+      formData.append('branchId', "6829cec57032455faec894ab");
       
-      // Add new fields
+      // Add new fields with proper boolean conversion
       formData.append('tillProviderProductId', currentItem.tillProviderProductId || '');
       formData.append('cssClass', currentItem.cssClass || '');
-      formData.append('freeDelivery', (currentItem.freeDelivery || false).toString());
-      formData.append('collectionOnly', (currentItem.collectionOnly || false).toString());
-      formData.append('deleted', (currentItem.deleted || false).toString());
-      formData.append('hidePrice', (currentItem.hidePrice || false).toString());
+      formData.append('freeDelivery', Boolean(currentItem.freeDelivery).toString());
+      formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString());
+      formData.append('deleted', Boolean(currentItem.deleted).toString());
+      formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability));
@@ -796,6 +782,15 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges));
       formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []));
       formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {}));
+      
+      // Log what we're sending to the server
+      console.log("Duplicating item with settings:", {
+        freeDelivery: Boolean(currentItem.freeDelivery),
+        collectionOnly: Boolean(currentItem.collectionOnly),
+        deleted: Boolean(currentItem.deleted),
+        hidePrice: Boolean(currentItem.hidePrice),
+        itemSettings: currentItem.itemSettings
+      });
 
       // Handle existing images - we'll reference them as URLs
       if (currentItem.images && currentItem.images.length > 0) {
@@ -815,7 +810,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       }
 
       // Create the new product
-      const response = await fetch('http://localhost:5000/api/products', {
+      const response = await fetch(`${BaseUrl}/api/products`, {
         method: 'POST',
         body: formData,
       });
@@ -845,8 +840,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         delivery: data.data.delivery || true,
         collection: data.data.collection || true,
         dineIn: data.data.dineIn || true,
-        includeAttributes: data.data.includeAttributes || false,
-        includeDiscounts: data.data.includeDiscounts || false,
         category: data.data.category._id || data.data.category.id,
         images: data.data.images || [],
         availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
@@ -867,12 +860,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
+        // Explicitly convert top-level settings to ensure proper types
         tillProviderProductId: data.data.tillProviderProductId || '',
         cssClass: data.data.cssClass || '',
-        freeDelivery: data.data.freeDelivery || false,
-        collectionOnly: data.data.collectionOnly || false,
-        deleted: data.data.deleted || false,
-        hidePrice: data.data.hidePrice || false,
+        freeDelivery: Boolean(data.data.freeDelivery),
+        collectionOnly: Boolean(data.data.collectionOnly),
+        deleted: Boolean(data.data.deleted),
+        hidePrice: Boolean(data.data.hidePrice),
       };
       
       // Save the duplicated item
@@ -962,26 +956,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                   onChange={(e) => handleTextChange(e, 'calorieDetails')}
                 />
               </div>
-
-              {/* <div className="flex flex-col space-y-3">
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="includeAttributes"
-                    checked={currentItem.includeAttributes || false}
-                    onCheckedChange={handleIncludeAttributesChange}
-                  />
-                  <Label htmlFor="includeAttributes">Include Attributes</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="includeDiscounts"
-                    checked={currentItem.includeDiscounts || false}
-                    onCheckedChange={handleIncludeDiscountsChange}
-                  />
-                  <Label htmlFor="includeDiscounts">Include Discounts</Label>
-                </div>
-              </div> */}
             </div>
           </TabsContent>
 
@@ -1425,7 +1399,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="freeDelivery"
-                    checked={currentItem.freeDelivery || false}
+                    checked={Boolean(currentItem.freeDelivery)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
                   />
                   <Label htmlFor="freeDelivery">Free Delivery</Label>
@@ -1434,7 +1408,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="collectionOnly"
-                    checked={currentItem.collectionOnly || false}
+                    checked={Boolean(currentItem.collectionOnly)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
                   />
                   <Label htmlFor="collectionOnly">Collection Only</Label>
@@ -1443,7 +1417,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="deleted"
-                    checked={currentItem.deleted || false}
+                    checked={Boolean(currentItem.deleted)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
                   />
                   <Label htmlFor="deleted">Deleted</Label>
@@ -1452,7 +1426,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="hidePrice"
-                    checked={currentItem.hidePrice || false}
+                    checked={Boolean(currentItem.hidePrice)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
                   />
                   <Label htmlFor="hidePrice">Hide Price</Label>

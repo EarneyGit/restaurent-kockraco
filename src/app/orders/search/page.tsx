@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronLeft, X, Mail, Phone } from "lucide-react"
+import { BaseUrl } from '@/lib/config'
 
 interface Product {
   _id: string
@@ -72,6 +73,7 @@ export default function SearchOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchMessage, setSearchMessage] = useState<string | null>(null)
 
   const fetchOrders = async (searchType?: string) => {
     try {
@@ -80,11 +82,12 @@ export default function SearchOrdersPage() {
       
       // If no search text or no search type, fetch all orders
       if (!searchText.trim() || !searchType) {
-        const response = await fetch('http://localhost:5000/api/orders')
+        const response = await fetch(`${BaseUrl}/api/orders`)
         const data = await response.json()
         
         if (data.success) {
           setOrders(data.data)
+          setSearchMessage(`Found ${data.data.length} orders`)
         } else {
           setError('Failed to fetch orders')
         }
@@ -93,7 +96,7 @@ export default function SearchOrdersPage() {
       }
 
       // Build endpoint for filtered search
-      let endpoint = 'http://localhost:5000/api/orders?'
+      let endpoint = `${BaseUrl}/api/orders?`
       switch (searchType) {
         case 'orderNumber':
           endpoint += `orderNumber=${searchText}`
@@ -118,6 +121,7 @@ export default function SearchOrdersPage() {
       
       if (data.success) {
         setOrders(data.data)
+        setSearchMessage(`Found ${data.data.length} orders`)
       } else {
         setError('Failed to fetch orders')
       }

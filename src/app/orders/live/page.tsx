@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Menu, X } from "lucide-react"
+import { BaseUrl } from '@/lib/config'
 
 interface DeliveryAddress {
   street: string
@@ -72,8 +73,22 @@ export default function LiveOrdersPage() {
     const fetchOrders = async () => {
       try {
         setLoading(true)
-        const apiStatus = getApiStatus(activeTab)
-        const response = await fetch(`http://localhost:5000/api/orders?status=${apiStatus}`)
+        let apiStatus = ''
+        switch (activeTab) {
+          case 'new':
+            apiStatus = 'new'
+            break
+          case 'in-progress':
+            apiStatus = 'processing'
+            break
+          case 'complete':
+            apiStatus = 'completed'
+            break
+          default:
+            apiStatus = 'new'
+        }
+        
+        const response = await fetch(`${BaseUrl}/api/orders?status=${apiStatus}`)
         const data = await response.json()
         
         if (data.success) {

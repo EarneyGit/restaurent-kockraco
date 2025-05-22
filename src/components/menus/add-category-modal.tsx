@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import axios from 'axios'
+import api from '@/lib/axios'
 import {
   Dialog,
   DialogContent,
@@ -101,7 +101,7 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
       });
       console.log('Form data being sent:', formDataObject);
 
-      const response = await axios.post(`${BaseUrl}/api/categories`, formDataToSend, {
+      const response = await api.post('/categories', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

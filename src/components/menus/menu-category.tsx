@@ -15,6 +15,7 @@ import { EditItemModal } from './edit-item-modal'
 import { Category, MenuItem } from '@/types/menu'
 import { EditCategoryModal } from './edit-category-modal'
 import { toast } from 'react-hot-toast'
+import { BaseUrl } from '@/lib/config'
 
 interface MenuCategoryProps {
   category: Category
@@ -47,7 +48,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const fetchProducts = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`http://localhost:5000/api/products?category=${category.id}`)
+      const response = await fetch(`${BaseUrl}/api/products?category=${category.id}`)
       const data = await response.json()
       
       if (data.success) {
@@ -131,7 +132,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       }
 
       // Make API call to create the new product
-      const response = await fetch('http://localhost:5000/api/products', {
+      const response = await fetch(`${BaseUrl}/api/products`, {
         method: 'POST',
         body: formData
       });
@@ -160,7 +161,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('delivery', checked.toString())
       
-      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
         method: 'PUT',
         body: formData
       })
@@ -192,7 +193,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('collection', checked.toString())
       
-      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
         method: 'PUT',
         body: formData
       })
@@ -224,7 +225,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('dineIn', checked.toString())
       
-      const response = await fetch(`http://localhost:5000/api/products/${item.id}`, {
+      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
         method: 'PUT',
         body: formData
       })
@@ -260,7 +261,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
     if (!confirm('Are you sure you want to delete this item?')) return
     
     try {
-      const response = await fetch(`http://localhost:5000/api/products/${itemId}`, {
+      const response = await fetch(`${BaseUrl}/api/products/${itemId}`, {
         method: 'DELETE'
       })
 
@@ -285,13 +286,40 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
     try {
       console.log("Fetching product details for:", item.id);
-      const response = await fetch(`http://localhost:5000/api/products/${item.id}`)
+      const response = await fetch(`${BaseUrl}/api/products/${item.id}`)
       if (!response.ok) {
         throw new Error('Failed to fetch product details')
       }
       const data = await response.json()
       if (data.success) {
         console.log("API response for product:", data.data);
+        
+        // Process item settings with proper boolean conversion
+        const itemSettings = {
+          showSelectedOnly: Boolean(data.data.itemSettings?.showSelectedOnly),
+          showSelectedCategories: Boolean(data.data.itemSettings?.showSelectedCategories),
+          limitSingleChoice: Boolean(data.data.itemSettings?.limitSingleChoice),
+          addAttributeCharges: Boolean(data.data.itemSettings?.addAttributeCharges),
+          useProductPrices: Boolean(data.data.itemSettings?.useProductPrices),
+          showChoiceAsDropdown: Boolean(data.data.itemSettings?.showChoiceAsDropdown)
+        };
+        
+        // Log top-level settings from the API response
+        console.log("Top-level settings from API:", {
+          tillProviderProductId: data.data.tillProviderProductId,
+          cssClass: data.data.cssClass,
+          freeDelivery: data.data.freeDelivery,
+          collectionOnly: data.data.collectionOnly,
+          deleted: data.data.deleted,
+          hidePrice: data.data.hidePrice
+        });
+        
+        // Process selectedItems to ensure they're in the correct format
+        let processedSelectedItems = data.data.selectedItems || [];
+        if (processedSelectedItems.length > 0 && typeof processedSelectedItems[0] === 'object') {
+          processedSelectedItems = processedSelectedItems.map((item: any) => item._id || item.id);
+        }
+        
         // Transform API response to match MenuItem type
         const transformedItem: MenuItem = {
           id: data.data._id || data.data.id, // Handle both _id and id
@@ -316,18 +344,15 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
             mayContain: []
           },
           priceChanges: data.data.priceChanges || [],
-          // Add missing fields
-          selectedItems: data.data.selectedItems || [],
-          itemSettings: data.data.itemSettings || {
-            showSelectedOnly: false,
-            showSelectedCategories: false,
-            limitSingleChoice: false,
-            addAttributeCharges: false,
-            useProductPrices: false,
-            showChoiceAsDropdown: false
-          },
-          includeAttributes: data.data.includeAttributes || false,
-          includeDiscounts: data.data.includeDiscounts || false
+          selectedItems: processedSelectedItems,
+          itemSettings: itemSettings,
+          // Explicitly convert all top-level settings to their proper types
+          tillProviderProductId: data.data.tillProviderProductId || '',
+          cssClass: data.data.cssClass || '',
+          freeDelivery: Boolean(data.data.freeDelivery),
+          collectionOnly: Boolean(data.data.collectionOnly),
+          deleted: Boolean(data.data.deleted),
+          hidePrice: Boolean(data.data.hidePrice),
         }
         console.log("Transformed item for edit modal:", transformedItem);
         setEditingItem(transformedItem)
@@ -382,7 +407,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         const formData = new FormData()
         formData.append('category', targetCategoryId)
         
-        await fetch(`http://localhost:5000/api/products/${item.id}`, {
+        await fetch(`${BaseUrl}/api/products/${item.id}`, {
           method: 'PUT',
           body: formData
         })
@@ -429,7 +454,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('includeAttributes', checked.toString())
       
-      const response = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
+      const response = await fetch(`${BaseUrl}/api/categories/${category.id}`, {
         method: 'PUT',
         body: formData
       })
@@ -460,7 +485,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('includeDiscounts', checked.toString())
       
-      const response = await fetch(`http://localhost:5000/api/categories/${category.id}`, {
+      const response = await fetch(`${BaseUrl}/api/categories/${category.id}`, {
         method: 'PUT',
         body: formData
       })

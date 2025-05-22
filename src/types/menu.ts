@@ -6,8 +6,6 @@ export interface MenuItem {
   delivery: boolean
   collection: boolean
   dineIn: boolean
-  includeAttributes?: boolean
-  includeDiscounts?: boolean
   description?: string
   weight?: number
   calorificValue?: string

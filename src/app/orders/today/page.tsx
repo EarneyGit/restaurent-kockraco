@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, X } from "lucide-react"
+import { BaseUrl } from '@/lib/config'
 
 interface Product {
   name: string
@@ -44,7 +45,10 @@ export default function TodayOrdersPage() {
     const fetchTodayOrders = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:5000/api/orders?today=true')
+        const response = await fetch(`${BaseUrl}/api/orders?today=true`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders')
+        }
         const data = await response.json()
         
         if (data.success) {
