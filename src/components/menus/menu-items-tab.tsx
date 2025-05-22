@@ -516,4 +516,7 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
       </div>
     </div>
   );
-}); 
+});
+
+// Add display name
+MenuItemsTab.displayName = 'MenuItemsTab'; 

@@ -356,7 +356,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         // Handle existing image URLs (those loaded from the server)
         const existingImages = currentItem.images
           .filter(image => typeof image === 'string')
-          .filter(image => !image.startsWith('blob:'))
+          .filter(image => typeof image === 'string' && !image.startsWith('blob:'))
           
         if (existingImages.length > 0) {
           // Tell the backend to keep these existing images
@@ -801,7 +801,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       if (currentItem.images && currentItem.images.length > 0) {
         const existingImages = currentItem.images
           .filter(image => typeof image === 'string')
-          .filter(image => !image.startsWith('blob:'));
+          .filter(image => typeof image === 'string' && !image.startsWith('blob:'));
           
         if (existingImages.length > 0) {
           formData.append('existingImages', JSON.stringify(existingImages));

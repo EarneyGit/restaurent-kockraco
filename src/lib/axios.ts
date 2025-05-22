@@ -1,30 +1,89 @@
-import axios from 'axios'
+'use client';
 
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
-})
+import axios from 'axios';
 
-// Request interceptor for adding auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+const BASE_URL = 'http://localhost:5000/api';
 
-// Response interceptor for handling auth errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth data and redirect to login
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+// Define types for config objects
+interface ConfigType {
+  headers?: Record<string, string>;
+  [key: string]: any;
+}
+
+// Helper function to get auth header
+function getAuthHeader() {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
     }
-    return Promise.reject(error)
   }
-)
+  return {};
+}
 
-export default api 
+// Helper to handle auth errors
+async function handleAuthError(error: any) {
+  if (typeof window !== 'undefined' && error.response?.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+  return Promise.reject(error);
+}
+
+const api = {
+  get: async (url: string, config: ConfigType = {}) => {
+    try {
+      return await axios.get(`${BASE_URL}${url}`, {
+        ...config,
+        headers: {
+          ...getAuthHeader(),
+          ...(config.headers || {}),
+        },
+      });
+    } catch (error) {
+      return handleAuthError(error);
+    }
+  },
+  post: async (url: string, data = {}, config: ConfigType = {}) => {
+    try {
+      return await axios.post(`${BASE_URL}${url}`, data, {
+        ...config,
+        headers: {
+          ...getAuthHeader(),
+          ...(config.headers || {}),
+        },
+      });
+    } catch (error) {
+      return handleAuthError(error);
+    }
+  },
+  put: async (url: string, data = {}, config: ConfigType = {}) => {
+    try {
+      return await axios.put(`${BASE_URL}${url}`, data, {
+        ...config,
+        headers: {
+          ...getAuthHeader(),
+          ...(config.headers || {}),
+        },
+      });
+    } catch (error) {
+      return handleAuthError(error);
+    }
+  },
+  delete: async (url: string, config: ConfigType = {}) => {
+    try {
+      return await axios.delete(`${BASE_URL}${url}`, {
+        ...config,
+        headers: {
+          ...getAuthHeader(),
+          ...(config.headers || {}),
+        },
+      });
+    } catch (error) {
+      return handleAuthError(error);
+    }
+  },
+};
+
+export default api; 
