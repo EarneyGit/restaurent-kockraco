@@ -1,128 +1,105 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from 'react-hot-toast'
+import api from '@/lib/axios'
 
-interface MenuItem {
-  id: number
+interface StockItem {
+  id: string
   name: string
   isManaged: boolean
   quantity: number
+  lowStockThreshold: number
+  isLowStock: boolean
 }
 
-interface Category {
+interface StockCategory {
+  id: string
   name: string
-  items: MenuItem[]
+  items: StockItem[]
   isExpanded: boolean
 }
 
 export default function StockControlPage() {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      name: 'Lunch Time Deals',
-      isExpanded: true,
-      items: [
-        { id: 1, name: 'Original Chicken Tex Mex or Veggie Legend Wrap and Drink', isManaged: false, quantity: 0 },
-        { id: 2, name: 'Special Wrap and Drink', isManaged: false, quantity: 0 },
-        { id: 3, name: 'Quarter Grilled Chicken Meal', isManaged: false, quantity: 0 },
-        { id: 4, name: 'Half Grilled Chicken Meal', isManaged: false, quantity: 0 },
-        { id: 5, name: 'Chicken Rice and Drink', isManaged: false, quantity: 0 },
-        { id: 6, name: 'Quarter Chicken Gravy Fries and Drink', isManaged: false, quantity: 0 }
-      ]
-    },
-    {
-      name: 'Meal Deals',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Grilled Chicken',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Fried Chicken',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Chicken Wings',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Wraps',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Special Wraps',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Loaded Feasts',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Classic Sides',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Special Sides',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Salads',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Kids',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Sauces and Dips',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Desserts',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Milkshakes',
-      isExpanded: false,
-      items: []
-    },
-    {
-      name: 'Soft Drinks',
-      isExpanded: false,
-      items: []
-    }
-  ])
+  const [categories, setCategories] = useState<StockCategory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
-  const toggleCategory = (categoryName: string) => {
+  // Extract data fetching logic into a reusable function
+  const fetchData = async () => {
+    try {
+      // Fetch categories
+      const categoriesResponse = await api.get('/categories')
+      const productsResponse = await api.get('/products')
+      
+      if (categoriesResponse.data.success && productsResponse.data.success) {
+        const categoriesData = categoriesResponse.data.data
+        const productsData = productsResponse.data.data
+        
+        // Transform products data to match stock interface
+        const transformedProducts = productsData.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          isManaged: product.stockManagement?.isManaged || false,
+          quantity: product.stockManagement?.quantity || 0,
+          lowStockThreshold: product.stockManagement?.lowStockThreshold || 10,
+          isLowStock: (product.stockManagement?.quantity || 0) <= (product.stockManagement?.lowStockThreshold || 10),
+          categoryId: product.category?.id || product.category?._id
+        }))
+        
+        // Group products by category
+        const categoriesWithProducts = categoriesData.map((category: any) => {
+          const categoryProducts = transformedProducts.filter(
+            (product: any) => product.categoryId === (category.id || category._id)
+          )
+          
+          return {
+            id: category.id || category._id,
+            name: category.name,
+            items: categoryProducts,
+            isExpanded: categoryProducts.some((item: StockItem) => item.isManaged) // Expand if has managed items
+          }
+        })
+        
+        setCategories(categoriesWithProducts)
+      } else {
+        throw new Error('Failed to fetch data')
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      toast.error('Failed to fetch categories and products')
+    }
+  }
+
+  // Fetch categories and products with stock information
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      await fetchData()
+      setIsLoading(false)
+    }
+
+    loadData()
+  }, [])
+
+  const toggleCategory = (categoryId: string) => {
     setCategories(categories.map(category => 
-      category.name === categoryName 
+      category.id === categoryId 
         ? { ...category, isExpanded: !category.isExpanded }
         : category
     ))
   }
 
-  const toggleItemManaged = (categoryName: string, itemId: number) => {
+  const toggleItemManaged = (categoryId: string, itemId: string) => {
     setCategories(categories.map(category => 
-      category.name === categoryName
+      category.id === categoryId
         ? {
             ...category,
             items: category.items.map(item =>
@@ -135,9 +112,9 @@ export default function StockControlPage() {
     ))
   }
 
-  const updateItemQuantity = (categoryName: string, itemId: number, quantity: number) => {
+  const updateItemQuantity = (categoryId: string, itemId: string, quantity: number) => {
     setCategories(categories.map(category => 
-      category.name === categoryName
+      category.id === categoryId
         ? {
             ...category,
             items: category.items.map(item =>
@@ -150,13 +127,63 @@ export default function StockControlPage() {
     ))
   }
 
-  const getManagedItemsCount = (category: Category) => {
+  const getManagedItemsCount = (category: StockCategory) => {
     return category.items.filter(item => item.isManaged).length
   }
 
-  const handleSaveChanges = () => {
-    // Here you would typically save the changes to your backend
-    console.log('Saving changes:', categories)
+  const handleSaveChanges = async () => {
+    setIsSaving(true)
+    try {
+      // Collect all products for bulk update
+      const allProducts: any[] = []
+      
+      categories.forEach(category => {
+        category.items.forEach(item => {
+          allProducts.push({
+            id: item.id,
+            isManaged: item.isManaged,
+            quantity: item.quantity
+          })
+        })
+      })
+
+      // Call the bulk update API
+      const response = await api.put('/products/stock/bulk-update', {
+        products: allProducts
+      })
+
+      if (response.data.success) {
+        const { successCount, errorCount, errors } = response.data.data
+        
+        if (errorCount > 0) {
+          console.warn('Some products failed to update:', errors)
+          toast.error(`${successCount} products updated, ${errorCount} failed`)
+        } else {
+          toast.success(`Stock updated successfylly`);
+        }
+
+        // Refetch all data to get updated stock status
+        await fetchData()
+        
+        // Update the last updated timestamp
+        setLastUpdated(new Date().toISOString())
+      } else {
+        throw new Error(response.data.message || 'Failed to update stock')
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error)
+      toast.error('Failed to save changes')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const getTotalManagedItems = () => {
+    return categories.reduce((total, category) => total + getManagedItemsCount(category), 0)
+  }
+
+  const getTotalItems = () => {
+    return categories.reduce((total, category) => total + category.items.length, 0)
   }
 
   return (
@@ -167,10 +194,7 @@ export default function StockControlPage() {
         <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
+            <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
         </div>
@@ -188,89 +212,137 @@ export default function StockControlPage() {
               You don't have to set stock details for your full menu. Doing so will prevent your customers from ordering items that are out of stock.
             </p>
             
-            <Button 
-              onClick={handleSaveChanges}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
-            >
-              Save Changes
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
-            {categories.map((category) => (
-              <div key={category.name} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div 
-                  className="flex justify-between items-center p-4 cursor-pointer"
-                  onClick={() => toggleCategory(category.name)}
-                >
-                  <h3 className="font-medium">
-                    {category.name} ({getManagedItemsCount(category)} Managed Items)
-                  </h3>
-                  <button className="text-gray-500 hover:text-gray-700">
-                    {category.isExpanded ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-
-                <div className={cn(
-                  "border-t",
-                  category.isExpanded ? "block" : "hidden"
-                )}>
-                  {category.items.length > 0 ? (
-                    <div className="p-4">
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead>
-                            <tr className="text-left text-sm text-gray-500">
-                              <th className="px-4 py-2">Item name</th>
-                              <th className="px-4 py-2 text-center">Managed?</th>
-                              <th className="px-4 py-2 text-center">Quantity</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {category.items.map((item) => (
-                              <tr key={item.id}>
-                                <td className="px-4 py-3 text-sm">{item.name}</td>
-                                <td className="px-4 py-3 text-center">
-                                  <div className="flex justify-center">
-                                    <Switch
-                                      checked={item.isManaged}
-                                      onCheckedChange={() => toggleItemManaged(category.name, item.id)}
-                                    />
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <Input 
-                                    type="number"
-                                    min="0"
-                                    className="w-20 text-center"
-                                    value={item.quantity}
-                                    onChange={(e) => updateItemQuantity(
-                                      category.name,
-                                      item.id,
-                                      parseInt(e.target.value) || 0
-                                    )}
-                                    disabled={!item.isManaged}
-                                  />
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-gray-500">
-                      No items are currently being managed in this category.
+            {!isLoading && (
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  <div>Managing {getTotalManagedItems()} of {getTotalItems()} products across {categories.length} categories</div>
+                  {lastUpdated && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Last updated: {new Date(lastUpdated).toLocaleString()}
                     </div>
                   )}
                 </div>
+                <Button 
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
-            ))}
+            )}
           </div>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {categories.map((category) => (
+                <div key={category.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div 
+                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <h3 className="font-medium">
+                      {category.name} ({getManagedItemsCount(category)} Managed Items)
+                    </h3>
+                    <button className="text-gray-500 hover:text-gray-700">
+                      {category.isExpanded ? (
+                        <ChevronUp className="h-5 w-5" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className={cn(
+                    "border-t",
+                    category.isExpanded ? "block" : "hidden"
+                  )}>
+                    {category.items.length > 0 ? (
+                      <div className="p-4">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full">
+                            <thead>
+                              <tr className="text-left text-sm text-gray-500">
+                                <th className="px-4 py-2">Item name</th>
+                                <th className="px-4 py-2 text-center">Managed?</th>
+                                <th className="px-4 py-2 text-center">Quantity</th>
+                                <th className="px-4 py-2 text-center">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {category.items.map((item) => (
+                                <tr key={item.id} className={cn(
+                                  item.isLowStock && item.isManaged ? "bg-red-50" : ""
+                                )}>
+                                  <td className="px-4 py-3 text-sm">
+                                    <div>
+                                      <div className="font-medium">{item.name}</div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <div className="flex justify-center">
+                                      <Switch
+                                        checked={item.isManaged}
+                                        onCheckedChange={() => toggleItemManaged(category.id, item.id)}
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <Input 
+                                      type="number"
+                                      min="0"
+                                      className="w-20 text-center"
+                                      value={item.quantity}
+                                      onChange={(e) => updateItemQuantity(
+                                        category.id,
+                                        item.id,
+                                        parseInt(e.target.value) || 0
+                                      )}
+                                      disabled={!item.isManaged}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {item.isManaged ? (
+                                      <span className={cn(
+                                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                        item.isLowStock 
+                                          ? "bg-red-100 text-red-800" 
+                                          : "bg-green-100 text-green-800"
+                                      )}>
+                                        {item.isLowStock ? "Low Stock" : "In Stock"}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Not Managed
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No products found in this category.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {categories.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-gray-500">No categories found. Add some categories in Menu Setup first.</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </PageLayout>
