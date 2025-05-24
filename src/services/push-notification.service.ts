@@ -76,7 +76,7 @@ export interface ApiResponse<T> {
 }
 
 class PushNotificationService {
-  private baseUrl = '/api/push-notifications';
+  private baseUrl = '/push-notifications';
 
   // Get all push notifications
   async getPushNotifications(params?: PaginationParams): Promise<ApiResponse<PushNotification[]>> {
