@@ -1,27 +1,96 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2, Eye } from 'lucide-react'
 import { RepeatingPushModal } from '@/components/marketing/repeating-push-modal'
-
-interface RepeatingMessage {
-  id: string
-  messageText: string
-  startRun: string
-  endRun: string
-  lastRun: string | null
-  nextRun: string | null
-  status: 'active' | 'inactive'
-}
+import { repeatingPushNotificationService, RepeatingPushNotification } from '@/services/repeating-push-notification.service'
+import { toast } from 'sonner'
 
 export default function RepeatingPushPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [messages, setMessages] = useState<RepeatingMessage[]>([])
+  const [messages, setMessages] = useState<RepeatingPushNotification[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
 
-  const handleSaveMessage = (message: RepeatingMessage) => {
-    setMessages(prev => [...prev, message])
+  // Load notifications on component mount
+  useEffect(() => {
+    loadNotifications()
+  }, [])
+
+  const loadNotifications = async () => {
+    try {
+      setLoading(true)
+      const response = await repeatingPushNotificationService.getRepeatingPushNotifications()
+      if (response.success) {
+        setMessages(response.data)
+      } else {
+        toast.error('Failed to load repeating notifications')
+      }
+    } catch (error) {
+      console.error('Error loading repeating notifications:', error)
+      toast.error('Failed to load repeating notifications')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveMessage = async (message: {
+    messageText: string
+    startRun: string
+    endRun: string
+    status: 'active' | 'inactive'
+  }) => {
+    try {
+      setCreating(true)
+      const response = await repeatingPushNotificationService.createRepeatingPushNotification({
+        messageText: message.messageText,
+        startRun: message.startRun,
+        endRun: message.endRun,
+        status: message.status,
+        frequency: 'daily',
+        interval: 1
+      })
+
+      if (response.success) {
+        setIsModalOpen(false)
+        toast.success('Repeating push notification created successfully!')
+        // Refresh the list to show the new notification
+        await loadNotifications()
+      } else {
+        toast.error(response.message || 'Failed to create repeating notification')
+      }
+    } catch (error: any) {
+      console.error('Error creating repeating notification:', error)
+      toast.error(error.response?.data?.message || 'Failed to create repeating notification')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleToggleStatus = async (id: string) => {
+    try {
+      const response = await repeatingPushNotificationService.toggleRepeatingPushNotificationStatus(id)
+      if (response.success) {
+        toast.success(`Notification ${response.data.status === 'active' ? 'activated' : 'deactivated'} successfully`)
+        await loadNotifications()
+      } else {
+        toast.error('Failed to toggle notification status')
+      }
+    } catch (error: any) {
+      console.error('Error toggling notification status:', error)
+      toast.error(error.response?.data?.message || 'Failed to toggle notification status')
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+  }
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleString()
   }
 
   return (
@@ -32,10 +101,7 @@ export default function RepeatingPushPage() {
         <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
+            <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
         </div>
@@ -46,15 +112,25 @@ export default function RepeatingPushPage() {
           <h1 className="text-2xl font-medium">Repeating Push Messages</h1>
           <Button 
             onClick={() => setIsModalOpen(true)}
+            disabled={creating}
             className="bg-emerald-500 hover:bg-emerald-600 text-white"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            {creating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
             Create New
           </Button>
         </div>
 
         <div className="bg-white rounded-lg shadow">
-          {messages.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-500">Loading repeating notifications...</p>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               No repeating messages have been created yet.
             </div>
@@ -74,29 +150,32 @@ export default function RepeatingPushPage() {
                 </thead>
                 <tbody>
                   {messages.map((message) => (
-                    <tr key={message.id} className="border-b">
-                      <td className="p-4">{message.messageText}</td>
-                      <td className="p-4">{new Date(message.startRun).toLocaleString()}</td>
-                      <td className="p-4">{new Date(message.endRun).toLocaleString()}</td>
-                      <td className="p-4">{message.lastRun ? new Date(message.lastRun).toLocaleString() : '-'}</td>
-                      <td className="p-4">{message.nextRun ? new Date(message.nextRun).toLocaleString() : '-'}</td>
+                    <tr key={message._id} className="border-b hover:bg-gray-50">
+                      <td className="p-4 max-w-xs">
+                        <div className="truncate" title={message.messageText}>
+                          {message.messageText}
+                        </div>
+                      </td>
+                      <td className="p-4">{formatDate(message.startRun)}</td>
+                      <td className="p-4">{formatDate(message.endRun)}</td>
+                      <td className="p-4">{formatDate(message.lastRun)}</td>
+                      <td className="p-4">{formatDate(message.nextRun)}</td>
                       <td className="p-4">
-                        <span className={`capitalize px-2 py-1 rounded-full text-sm ${
-                          message.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`capitalize px-2 py-1 rounded-full text-sm ${getStatusColor(message.status)}`}>
                           {message.status}
                         </span>
                       </td>
                       <td className="p-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            // Handle edit
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(message._id)}
+                            className={message.status === 'active' ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
+                          >
+                            {message.status === 'active' ? 'Pause' : 'Resume'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

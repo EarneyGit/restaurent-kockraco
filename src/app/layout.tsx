@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from '@/contexts/auth-context'
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from 'sonner'
 import ClientLayout from '../components/layout/client-layout'
 
 const inter = Inter({
@@ -28,7 +28,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ClientLayout>{children}</ClientLayout>
-          <Toaster />
+          <Toaster position="top-right" richColors />
         </AuthProvider>
       </body>
     </html>

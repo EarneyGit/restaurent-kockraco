@@ -26,12 +26,9 @@ interface RepeatingPushModalProps {
   open: boolean
   onClose: () => void
   onSave: (message: {
-    id: string
     messageText: string
     startRun: string
     endRun: string
-    lastRun: string | null
-    nextRun: string | null
     status: 'active' | 'inactive'
   }) => void
 }
@@ -84,12 +81,9 @@ export function RepeatingPushModal({ open, onClose, onSave }: RepeatingPushModal
     }
 
     const message = {
-      id: Math.random().toString(36).substr(2, 9),
       messageText,
       startRun: formatDateTime(startDate, startTime),
       endRun: formatDateTime(endDate, endTime),
-      lastRun: null,
-      nextRun: formatDateTime(startDate, startTime),
       status: isActive ? 'active' as const : 'inactive' as const
     }
 
