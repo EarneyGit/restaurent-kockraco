@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser)
+        
         setToken(storedToken)
         setUser(parsedUser)
         
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
         }
       } catch (error) {
+        console.error('Error parsing stored user data:', error)
         // Handle JSON parse error
         localStorage.removeItem('token')
         localStorage.removeItem('user')
