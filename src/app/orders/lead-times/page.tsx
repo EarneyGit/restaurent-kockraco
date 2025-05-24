@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { ChevronLeft, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
@@ -15,31 +16,51 @@ const timeOptions = [
   '125 mins', '130 mins', '135 mins', '140 mins', '145 mins', '150 mins'
 ]
 
+interface LeadTimesData {
+  collection: string
+  delivery: string
+}
+
 export default function LeadTimesPage() {
   const [collectionTime, setCollectionTime] = useState('20 mins')
   const [deliveryTime, setDeliveryTime] = useState('45 mins')
   const [isLoading, setIsLoading] = useState(false)
-  const [leadTimes, setLeadTimes] = useState({})
+  const [isFetching, setIsFetching] = useState(true)
+  const [leadTimes, setLeadTimes] = useState<LeadTimesData | null>(null)
 
   // Fetch current lead times on component mount
   useEffect(() => {
     const fetchLeadTimes = async () => {
-      setIsLoading(true)
+      setIsFetching(true)
       try {
         const response = await api.get('/settings/lead-times')
-        const data = response.data
-        if (data.success) {
-          setLeadTimes(data.data)
-          setCollectionTime(data.data.collection || '20 mins')
-          setDeliveryTime(data.data.delivery || '45 mins')
+        
+        if (response.data.success) {
+          const data = response.data.data
+          setLeadTimes(data)
+          setCollectionTime(data.collection || '20 mins')
+          setDeliveryTime(data.delivery || '45 mins')
+          toast.success('Lead times loaded successfully')
         } else {
-          toast.error(data.message || 'Failed to fetch lead times')
+          toast.error(response.data.message || 'Failed to fetch lead times')
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching lead times:', error)
-        toast.error('Failed to fetch lead times')
+        
+        // Handle specific error cases
+        if (error.response?.status === 401) {
+          toast.error('Unauthorized access. Please login again.')
+        } else if (error.response?.status === 403) {
+          toast.error('Access denied. Admin privileges required.')
+        } else if (error.response?.status === 404) {
+          toast.error('Branch not found')
+        } else if (error.response?.data?.message) {
+          toast.error(error.response.data.message)
+        } else {
+          toast.error('Failed to fetch lead times. Please try again.')
+        }
       } finally {
-        setIsLoading(false)
+        setIsFetching(false)
       }
     }
 
@@ -47,84 +68,182 @@ export default function LeadTimesPage() {
   }, [])
 
   const handleSave = async () => {
+    if (!collectionTime || !deliveryTime) {
+      toast.error('Please select both collection and delivery times')
+      return
+    }
+
     setIsLoading(true)
     try {
       const response = await api.put('/settings/lead-times', {
         collection: collectionTime,
         delivery: deliveryTime
       })
-      const data = response.data
 
-      if (data.success) {
+      if (response.data.success) {
+        setLeadTimes(response.data.data)
         toast.success('Lead times updated successfully')
       } else {
-        toast.error(data.message || 'Failed to update lead times')
+        toast.error(response.data.message || 'Failed to update lead times')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating lead times:', error)
-      toast.error('An error occurred while updating lead times')
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        toast.error('Unauthorized access. Please login again.')
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. You are not authorized to update lead times.')
+      } else if (error.response?.status === 400) {
+        toast.error(error.response.data.message || 'Invalid input data')
+      } else if (error.response?.status === 404) {
+        toast.error('Branch not found')
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error('An error occurred while updating lead times. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleNavigate = (path: string) => {
+    window.location.href = path
+  }
+
+  // Show loading state while fetching initial data
+  if (isFetching) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="flex justify-between items-center bg-white border-b">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => handleNavigate('/orders/live')}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <span className="font-medium">Restaurant Settings</span>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2">Admin user</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleNavigate('/orders/live/exit')}
+            >
+              Exit <X className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </header>
+
+        <div className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            <span className="ml-2 text-gray-600">Loading lead times...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="p-6 max-w-md">
-      <h1 className="text-3xl font-semibold mb-8">Change Lead Times</h1>
-      
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <label htmlFor="collection-time" className="text-lg font-medium">
-            Collection
-          </label>
-          <div className="w-40">
-            <Select value={collectionTime} onValueChange={setCollectionTime}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select time" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px] overflow-y-auto">
-                <SelectGroup>
-                  {timeOptions.map(time => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <label htmlFor="delivery-time" className="text-lg font-medium">
-            Delivery
-          </label>
-          <div className="w-40">
-            <Select value={deliveryTime} onValueChange={setDeliveryTime}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select time" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px] overflow-y-auto">
-                <SelectGroup>
-                  {timeOptions.map(time => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="pt-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="flex justify-between items-center px-4 py-3 bg-white border-b">
+        <div className="flex items-center gap-4">
           <Button 
-            onClick={handleSave}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white w-24"
-            disabled={isLoading}
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleNavigate('/orders/live')}
           >
-            Save
+            <ChevronLeft className="h-6 w-6" />
           </Button>
+          <span className="font-medium">Restaurant Settings</span>
+        </div>
+        <div className="flex items-center">
+          <span className="mr-2">Admin user</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => handleNavigate('/orders/live/exit')}
+          >
+            Exit <X className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="p-6">
+        <h1 className="text-3xl font-semibold mb-8">Change Lead Times</h1>
+        
+        <div className="bg-white rounded-lg shadow-sm p-6 max-w-md">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <label htmlFor="collection-time" className="text-lg font-medium">
+                Collection
+              </label>
+              <div className="w-40">
+                <Select value={collectionTime} onValueChange={setCollectionTime} disabled={isLoading}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[400px] overflow-y-auto">
+                    <SelectGroup>
+                      {timeOptions.map(time => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <label htmlFor="delivery-time" className="text-lg font-medium">
+                Delivery
+              </label>
+              <div className="w-40">
+                <Select value={deliveryTime} onValueChange={setDeliveryTime} disabled={isLoading}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[400px] overflow-y-auto">
+                    <SelectGroup>
+                      {timeOptions.map(time => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+
+            
+            <div className="pt-4">
+              <Button 
+                onClick={handleSave}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white w-24"
+                disabled={isLoading || isFetching}
+              >
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </div>
+                ) : (
+                  'Save'
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
