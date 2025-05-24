@@ -7,18 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from 'react-hot-toast'
-import { useAuth } from '@/contexts/auth-context'
+import { ArrowLeft } from 'lucide-react'
 import api from '@/lib/axios'
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter()
-  const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
+  const [email, setEmail] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,27 +22,21 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const response = await api.post('/auth/login', {
-        email: formData.email,
-        password: formData.password
+      const response = await api.post('/auth/forgot-password-otp', {
+        email: email
       })
       const { data } = response
 
       if (data.success) {
-        try {
-          login(data.token, data.user)
-          toast.success('Logged in successfully')
-          router.push('/')
-        } catch (error: any) {
-          setError(error.message)
-          toast.error(error.message)
-        }
+        toast.success('OTP sent to your email successfully')
+        // Navigate to OTP verification page with email
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}&type=forgot-password`)
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'An error occurred during login'
+      const errorMessage = error.response?.data?.message || 'An error occurred while sending OTP'
       setError(errorMessage)
       toast.error(errorMessage)
-      console.error('Login error:', error)
+      console.error('Forgot password error:', error)
     } finally {
       setIsLoading(false)
     }
@@ -55,9 +45,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Login to Dashboard</h1>
-        <p className="text-center text-gray-600 mb-6">
-          Only administrators, managers, and staff members are allowed to access the dashboard.
+        <div className="flex items-center mb-6">
+          <Link href="/login" className="mr-3">
+            <ArrowLeft className="h-5 w-5 text-gray-600 hover:text-gray-800" />
+          </Link>
+          <h1 className="text-2xl font-bold">Forgot Password</h1>
+        </div>
+        
+        <p className="text-gray-600 mb-6">
+          Enter your email address and we'll send you an OTP to reset your password.
         </p>
         
         {error && (
@@ -68,25 +64,13 @@ export default function LoginPage() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email Address</Label>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -94,18 +78,18 @@ export default function LoginPage() {
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !email}
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Sending OTP...' : 'Send OTP'}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <Link 
-            href="/forgot-password" 
+            href="/login" 
             className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
           >
-            Forgot your password?
+            Back to Login
           </Link>
         </div>
       </div>

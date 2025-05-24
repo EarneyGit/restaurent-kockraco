@@ -8,6 +8,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname() || ''
   const { isAuthenticated, isLoading } = useAuth()
   const isLoginPage = pathname === '/login'
+  const isForgotPasswordPage = pathname === '/forgot-password'
+  const isVerifyOtpPage = pathname === '/verify-otp'
+  const isResetPasswordPage = pathname === '/reset-password'
+  const isAuthPage = isLoginPage || isForgotPasswordPage || isVerifyOtpPage || isResetPasswordPage
   const isLiveOrdersPage = pathname.startsWith('/orders/live') || 
                           pathname.startsWith('/orders/today') || 
                           pathname.startsWith('/orders/search') ||
@@ -22,12 +26,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </div>
   }
 
-  // Show sidebar only if authenticated, not on login page, and not on live orders page
-  const showSidebar = isAuthenticated && !isLoginPage && !isLiveOrdersPage
+  // Show sidebar only if authenticated, not on auth pages, and not on live orders page
+  const showSidebar = isAuthenticated && !isAuthPage && !isLiveOrdersPage
 
-  // Don't render children if not authenticated and not on login page
+  // Don't render children if not authenticated and not on auth pages
   // This prevents the dashboard from flashing before redirect
-  if (!isAuthenticated && !isLoginPage) {
+  if (!isAuthenticated && !isAuthPage) {
     return null
   }
 

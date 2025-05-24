@@ -5,6 +5,8 @@ import { format, subDays, startOfDay, endOfDay, subWeeks, subMonths } from 'date
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { LogOut } from 'lucide-react'
 
 // Sample data generator from dashboard
 interface DayData {
@@ -74,7 +76,8 @@ const generateSampleData = (days: number) => {
 type DateFilter = 'yesterday' | 'today' | 'lastWeek' | 'thisWeek' | 'lastMonth' | 'thisMonth' | 'last30Days' | 'custom'
 
 export default function HomePage() {
-  const [selectedFilter, setSelectedFilter] = useState<DateFilter>('yesterday')
+  const { logout, user } = useAuth()
+  const [selectedFilter, setSelectedFilter] = useState<DateFilter>('today')
   const [dateRange, setDateRange] = useState<{from: Date; to: Date}>({
     from: startOfDay(subDays(new Date(), 1)),
     to: endOfDay(subDays(new Date(), 1))
@@ -95,10 +98,17 @@ export default function HomePage() {
     }>
   } | null>(null)
   const [customDateRange, setCustomDateRange] = useState({
-    from: format(new Date(), 'yyyy-MM-dd'),
-    to: format(new Date(), 'yyyy-MM-dd')
+    from: '',
+    to: ''
   })
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
+
+  // Use actual user data if available
+  const displayName = user?.name || 'Admin User'
+
+  const handleLogout = () => {
+    logout()
+  }
 
   const handleFilterChange = (filter: DateFilter) => {
     setSelectedFilter(filter)
@@ -238,14 +248,22 @@ export default function HomePage() {
       {/* Header with location and view store button */}
       <div className="flex items-center justify-between mb-6 border-b pb-4">
         <div className="flex-1"></div>
-        <h1 className="text-2xl font-medium text-center flex-1">Admin User</h1>
-        <div className="flex items-center justify-end flex-1">
+        <h1 className="text-2xl font-medium text-center flex-1">{displayName}</h1>
+        <div className="flex items-center justify-end flex-1 space-x-4">
           <button className="flex items-center text-gray-700">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
             </svg>
             View Your Store
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
           </button>
         </div>
       </div>

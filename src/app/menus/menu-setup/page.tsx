@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast'
 import axios from 'axios'
 import api from '@/lib/axios'
 import { BaseUrl } from '@/lib/config'
+import CommonHeader from '@/components/layout/common-header'
 
 export default function MenuSetupPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -124,16 +125,7 @@ export default function MenuSetupPage() {
   return (
     <PageLayout>
       {/* Header */}
-      <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
-        <div className="flex justify-end flex-1">
-          <button className="flex items-center text-gray-700 font-medium">
-            <Eye className="h-5 w-5 mr-1" />
-            View Your Store
-          </button>
-        </div>
-      </header>
+      <CommonHeader />
       
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="flex justify-between items-center mb-6">

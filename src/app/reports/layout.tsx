@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePathname, useRouter } from 'next/navigation'
+import CommonHeader from '@/components/layout/common-header'
 
 const tabs = [
   { id: 'end-of-night', label: 'End of Night', path: '/reports' },
@@ -42,16 +43,7 @@ export default function ReportsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
-        <div className="flex justify-end flex-1">
-          <button className="flex items-center text-gray-700 font-medium">
-            <Eye className="h-5 w-5 mr-1" />
-            View Your Store
-          </button>
-        </div>
-      </header>
+      <CommonHeader />
 
       <div className="border-b bg-white">
         <div className="flex">

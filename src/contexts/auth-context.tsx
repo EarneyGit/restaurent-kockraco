@@ -71,14 +71,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Protect routes only after loading is complete
     if (!isLoading) {
       const isLoginPage = pathname === '/login'
+      const isForgotPasswordPage = pathname === '/forgot-password'
+      const isVerifyOtpPage = pathname === '/verify-otp'
+      const isResetPasswordPage = pathname === '/reset-password'
+      const isAuthPage = isLoginPage || isForgotPasswordPage || isVerifyOtpPage || isResetPasswordPage
       
       if (!token || !isAuthorized) {
-        if (!isLoginPage) {
+        if (!isAuthPage) {
           router.push('/login')
         }
-      } else if (token && isLoginPage) {
-        router.push('/')
       }
+      // Remove the automatic redirect from login page when authenticated
+      // This allows users to manually access login page even when logged in
     }
   }, [token, pathname, isLoading, router, isAuthorized])
 

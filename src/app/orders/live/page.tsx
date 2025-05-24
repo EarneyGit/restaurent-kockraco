@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut } from "lucide-react"
 import { BaseUrl } from '@/lib/config'
+import { useAuth } from '@/contexts/auth-context'
 
 interface DeliveryAddress {
   street: string
@@ -49,11 +50,13 @@ interface Order {
 }
 
 export default function LiveOrdersPage() {
+  const { logout } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'new' | 'in-progress' | 'complete'>('new')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [orderCount, setOrderCount] = useState(0)
 
   // Map UI status to API status
   const getApiStatus = (uiStatus: 'new' | 'in-progress' | 'complete') => {
@@ -123,6 +126,10 @@ export default function LiveOrdersPage() {
     window.location.href = path
   }
 
+  const handleLogout = () => {
+    logout()
+  }
+
   const filteredOrders = orders.filter(order => order.status === activeTab)
 
   const formatDate = (dateString: string) => {
@@ -148,9 +155,22 @@ export default function LiveOrdersPage() {
           </Button>
           <span className="font-medium">Live Orders</span>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
           <span className="mr-2">Admin user</span>
-          <Button variant="ghost" size="sm" onClick={() => handleNavigate('/')}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout}
+            className="text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => handleNavigate('/')}
+          >
             Exit <X className="ml-2 h-4 w-4" />
           </Button>
         </div>
