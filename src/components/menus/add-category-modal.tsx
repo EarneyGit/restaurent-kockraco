@@ -91,8 +91,10 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
         formDataToSend.append('image', formData.imageFile)
       }
 
-      // Add branchId
-      formDataToSend.append('branchId', '6829bf447ecc1e0e2bd7931f')
+      // Add other fields
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('displayOrder', formData.displayOrder.toString())
+      formDataToSend.append('hidden', formData.hidden.toString())
 
       // Log the form data for debugging
       const formDataObject: any = {};

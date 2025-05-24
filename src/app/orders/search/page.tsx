@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronLeft, X, Mail, Phone } from "lucide-react"
 import { BaseUrl } from '@/lib/config'
+import { toast } from 'react-hot-toast'
+import api from '@/lib/axios'
 
 interface Product {
   _id: string
@@ -82,48 +84,43 @@ export default function SearchOrdersPage() {
       
       // If no search text or no search type, fetch all orders
       if (!searchText.trim() || !searchType) {
-        const response = await fetch(`${BaseUrl}/api/orders`)
-        const data = await response.json()
-        
+        const response = await api.get('/orders')
+        const data = response.data
         if (data.success) {
           setOrders(data.data)
           setSearchMessage(`Found ${data.data.length} orders`)
         } else {
-          setError('Failed to fetch orders')
+          throw new Error(data.message || 'Failed to fetch orders')
         }
-        setLoading(false)
         return
       }
 
-      // Build endpoint for filtered search
-      let endpoint = `${BaseUrl}/api/orders?`
+      // Build search endpoint based on search type
+      let endpoint = ''
       switch (searchType) {
         case 'orderNumber':
-          endpoint += `orderNumber=${searchText}`
+          endpoint = `/orders?orderNumber=${encodeURIComponent(searchText)}`
           break
-        case 'name':
-          endpoint += `userName=${searchText}`
+        case 'customerName':
+          endpoint = `/orders?customerName=${encodeURIComponent(searchText)}`
           break
         case 'phone':
-          endpoint += `mobileNumber=${searchText}`
+          endpoint = `/orders?phone=${encodeURIComponent(searchText)}`
           break
-        case 'postcode':
-          endpoint += `postCode=${searchText}`
+        case 'email':
+          endpoint = `/orders?email=${encodeURIComponent(searchText)}`
           break
         default:
-          setError('Invalid search type')
-          setLoading(false)
-          return
+          endpoint = '/orders'
       }
 
-      const response = await fetch(endpoint)
-      const data = await response.json()
-      
+      const response = await api.get(endpoint)
+      const data = response.data
       if (data.success) {
         setOrders(data.data)
         setSearchMessage(`Found ${data.data.length} orders`)
       } else {
-        setError('Failed to fetch orders')
+        throw new Error(data.message || 'Failed to fetch orders')
       }
     } catch (err) {
       setError('Error connecting to the server')
@@ -190,7 +187,7 @@ export default function SearchOrdersPage() {
               variant="outline" 
               size="sm" 
               className="w-full" 
-              onClick={() => handleSearch('name')}
+              onClick={() => handleSearch('customerName')}
               disabled={!searchText.trim()}
             >
               Name

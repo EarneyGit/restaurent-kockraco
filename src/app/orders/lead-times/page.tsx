@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
+import api from '@/lib/axios'
 
 const timeOptions = [
   '5 mins', '10 mins', '15 mins', '20 mins', '25 mins', '30 mins', 
@@ -25,12 +26,8 @@ export default function LeadTimesPage() {
     const fetchLeadTimes = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`${BaseUrl}/api/settings/lead-times`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch lead times')
-        }
-        
-        const data = await response.json()
+        const response = await api.get('/settings/lead-times')
+        const data = response.data
         if (data.success) {
           setLeadTimes(data.data)
           setCollectionTime(data.data.collection || '20 mins')
@@ -52,26 +49,16 @@ export default function LeadTimesPage() {
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${BaseUrl}/api/settings/lead-times`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          collection: collectionTime,
-          delivery: deliveryTime
-        })
+      const response = await api.put('/settings/lead-times', {
+        collection: collectionTime,
+        delivery: deliveryTime
       })
+      const data = response.data
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          toast.success('Lead times updated successfully')
-        } else {
-          toast.error(data.message || 'Failed to update lead times')
-        }
+      if (data.success) {
+        toast.success('Lead times updated successfully')
       } else {
-        toast.error('Failed to update lead times')
+        toast.error(data.message || 'Failed to update lead times')
       }
     } catch (error) {
       console.error('Error updating lead times:', error)

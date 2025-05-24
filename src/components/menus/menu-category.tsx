@@ -16,6 +16,7 @@ import { Category, MenuItem } from '@/types/menu'
 import { EditCategoryModal } from './edit-category-modal'
 import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
+import api from '@/lib/axios'
 
 interface MenuCategoryProps {
   category: Category
@@ -48,8 +49,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const fetchProducts = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`${BaseUrl}/api/products?category=${category.id}`)
-      const data = await response.json()
+      const response = await api.get(`/products?category=${category.id}`)
+      const data = response.data
       
       if (data.success) {
         // Transform API response to match MenuItem type
@@ -117,7 +118,6 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       formData.append('delivery', itemToClone.delivery.toString());
       formData.append('collection', itemToClone.collection.toString());
       formData.append('dineIn', itemToClone.dineIn.toString());
-      formData.append('branchId', "6829cec57032455faec894ab");
       formData.append('category', category.id);
 
       // Add availability, allergens, and priceChanges as JSON strings
@@ -132,16 +132,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       }
 
       // Make API call to create the new product
-      const response = await fetch(`${BaseUrl}/api/products`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to duplicate product');
-      }
-
-      const data = await response.json();
+      const response = await api.post('/products', formData)
+      const data = response.data
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to duplicate product');
@@ -161,16 +153,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('delivery', checked.toString())
       
-      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
-        method: 'PUT',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update delivery status')
-      }
-
-      const data = await response.json()
+      const response = await api.put(`/products/${item.id}`, formData)
+      const data = response.data
       if (!data.success) {
         throw new Error('Failed to update delivery status')
       }
@@ -193,16 +177,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('collection', checked.toString())
       
-      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
-        method: 'PUT',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update collection status')
-      }
-
-      const data = await response.json()
+      const response = await api.put(`/products/${item.id}`, formData)
+      const data = response.data
       if (!data.success) {
         throw new Error('Failed to update collection status')
       }
@@ -225,16 +201,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('dineIn', checked.toString())
       
-      const response = await fetch(`${BaseUrl}/api/products/${item.id}`, {
-        method: 'PUT',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update dine in status')
-      }
-
-      const data = await response.json()
+      const response = await api.put(`/products/${item.id}`, formData)
+      const data = response.data
       if (!data.success) {
         throw new Error('Failed to update dine in status')
       }
@@ -261,13 +229,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
     if (!confirm('Are you sure you want to delete this item?')) return
     
     try {
-      const response = await fetch(`${BaseUrl}/api/products/${itemId}`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to delete item')
-      }
+      const response = await api.delete(`/products/${itemId}`)
+      const data = response.data
 
       // Remove the item from the products array
       setProducts(products.filter(item => item.id !== itemId))
@@ -286,11 +249,8 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
     try {
       console.log("Fetching product details for:", item.id);
-      const response = await fetch(`${BaseUrl}/api/products/${item.id}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch product details')
-      }
-      const data = await response.json()
+      const response = await api.get(`/products/${item.id}`)
+      const data = response.data
       if (data.success) {
         console.log("API response for product:", data.data);
         
@@ -407,10 +367,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         const formData = new FormData()
         formData.append('category', targetCategoryId)
         
-        await fetch(`${BaseUrl}/api/products/${item.id}`, {
-          method: 'PUT',
-          body: formData
-        })
+        await api.put(`/products/${item.id}`, formData)
       } catch (error) {
         console.error(`Error moving item ${item.id}:`, error)
       }
@@ -454,16 +411,9 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('includeAttributes', checked.toString())
       
-      const response = await fetch(`${BaseUrl}/api/categories/${category.id}`, {
-        method: 'PUT',
-        body: formData
-      })
+      const response = await api.put(`/categories/${category.id}`, formData)
+      const data = response.data
 
-      if (!response.ok) {
-        throw new Error('Failed to update include attributes setting')
-      }
-
-      const data = await response.json()
       if (!data.success) {
         throw new Error('Failed to update include attributes setting')
       }
@@ -485,16 +435,9 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       const formData = new FormData()
       formData.append('includeDiscounts', checked.toString())
       
-      const response = await fetch(`${BaseUrl}/api/categories/${category.id}`, {
-        method: 'PUT',
-        body: formData
-      })
+      const response = await api.put(`/categories/${category.id}`, formData)
+      const data = response.data
 
-      if (!response.ok) {
-        throw new Error('Failed to update include discounts setting')
-      }
-
-      const data = await response.json()
       if (!data.success) {
         throw new Error('Failed to update include discounts setting')
       }

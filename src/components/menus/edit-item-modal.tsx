@@ -24,6 +24,7 @@ import { toast } from 'react-hot-toast'
 import { MenuItemsTab } from './menu-items-tab'
 import React from 'react'
 import { BaseUrl } from '@/lib/config'
+import api from '@/lib/axios'
 
 interface EditItemModalProps {
   item: MenuItem | null
@@ -161,13 +162,9 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       
       setLoadingMenuItems(true);
       try {
-        const response = await fetch(`${BaseUrl}/api/products`);
+        const response = await api.get('/products');
         console.log("response", response);
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        
-        const data = await response.json();
+        const data = response.data;
         if (data.success) {
           // Transform products to the format needed by MenuItemsTab
           const items = data.data.map((product: any) => ({
@@ -324,7 +321,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collection', currentItem.collection.toString())
       formData.append('dineIn', currentItem.dineIn.toString())
       formData.append('category', categoryId)
-      formData.append('branchId', "6829cec57032455faec894ab")
       
       // Add new fields with proper boolean to string conversion
       formData.append('tillProviderProductId', currentItem.tillProviderProductId || '')
@@ -386,22 +382,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       const productId = currentItem.id || item?.id
       
       const url = productId ? 
-        `${BaseUrl}/api/products/${productId}` :
-        `${BaseUrl}/api/products`
+        `/products/${productId}` : 
+        `/products`
 
       const method = productId ? 'PUT' : 'POST'
 
-      const response = await fetch(url, {
-        method,
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to save item')
-      }
-
-      const data = await response.json()
+      const response = await api[method.toLowerCase()](url, formData)
+      const data = response.data
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to save item')
@@ -766,7 +753,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collection', currentItem.collection.toString());
       formData.append('dineIn', currentItem.dineIn.toString());
       formData.append('category', categoryId);
-      formData.append('branchId', "6829cec57032455faec894ab");
       
       // Add new fields with proper boolean conversion
       formData.append('tillProviderProductId', currentItem.tillProviderProductId || '');
@@ -810,16 +796,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       }
 
       // Create the new product
-      const response = await fetch(`${BaseUrl}/api/products`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to duplicate item');
-      }
-
-      const data = await response.json();
+      const response = await api.post('/products', formData);
+      const data = response.data;
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to duplicate item');

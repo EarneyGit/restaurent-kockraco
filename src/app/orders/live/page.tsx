@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 import { Menu, X, LogOut } from "lucide-react"
 import { BaseUrl } from '@/lib/config'
 import { useAuth } from '@/contexts/auth-context'
+import { toast } from 'react-hot-toast'
+import api from '@/lib/axios'
 
 interface DeliveryAddress {
   street: string
@@ -72,45 +74,47 @@ export default function LiveOrdersPage() {
     }
   }
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true)
-        let apiStatus = ''
-        switch (activeTab) {
-          case 'new':
-            apiStatus = 'new'
-            break
-          case 'in-progress':
-            apiStatus = 'processing'
-            break
-          case 'complete':
-            apiStatus = 'completed'
-            break
-          default:
-            apiStatus = 'new'
-        }
-        
-        const response = await fetch(`${BaseUrl}/api/orders?status=${apiStatus}`)
-        const data = await response.json()
-        
-        if (data.success) {
-          // Map API status back to UI status
-          const mappedOrders = data.data.map((order: any) => ({
-            ...order,
-            status: activeTab // Use the UI status instead of API status
-          }))
-          setOrders(mappedOrders)
-        } else {
-          setError('Failed to fetch orders')
-        }
-      } catch (err) {
-        setError('Error connecting to the server')
-      } finally {
-        setLoading(false)
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Map frontend status to API status
+      let apiStatus = ''
+      switch (activeTab) {
+        case 'new':
+          apiStatus = 'pending'
+          break
+        case 'in-progress':
+          apiStatus = 'processing'
+          break
+        case 'complete':
+          apiStatus = 'completed'
+          break
+        default:
+          apiStatus = 'pending'
       }
-    }
 
+      const response = await api.get(`/orders?status=${apiStatus}`)
+      const data = response.data
+      if (data.success) {
+        // Map API status back to UI status
+        const mappedOrders = data.data.map((order: any) => ({
+          ...order,
+          status: activeTab // Use the UI status instead of API status
+        }))
+        setOrders(mappedOrders)
+      } else {
+        setError('Failed to fetch orders')
+      }
+    } catch (err) {
+      setError('Error connecting to the server')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchOrders()
     // Set up polling every 30 seconds
     const interval = setInterval(fetchOrders, 30000)

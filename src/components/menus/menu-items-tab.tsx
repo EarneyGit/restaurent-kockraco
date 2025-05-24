@@ -5,6 +5,7 @@ import { Checkbox } from '@radix-ui/react-checkbox';
 import { ChevronDown, ChevronUp, Plus, Minus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { BaseUrl } from '@/lib/config';
+import api from '@/lib/axios'
 
 interface MenuItem {
   id: string;
@@ -79,12 +80,8 @@ export const MenuItemsTab: React.FC<MenuItemsTabProps> = React.memo(({
     const fetchCategories = async () => {
       setLoadingCategories(true);
       try {
-        const response = await fetch(`${BaseUrl}/api/categories`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch categories');
-        }
-        
-        const data = await response.json();
+        const response = await api.get('/categories');
+        const data = response.data;
         if (data.success) {
           // Map API response to component format
           const fetchedCategories = data.data.map((category: any) => {

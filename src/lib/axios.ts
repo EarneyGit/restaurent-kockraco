@@ -72,6 +72,19 @@ const api = {
       return handleAuthError(error);
     }
   },
+  patch: async (url: string, data = {}, config: ConfigType = {}) => {
+    try {
+      return await (axios as any).patch(`${BASE_URL}${url}`, data, {
+        ...config,
+        headers: {
+          ...getAuthHeader(),
+          ...(config.headers || {}),
+        },
+      });
+    } catch (error) {
+      return handleAuthError(error);
+    }
+  },
   delete: async (url: string, config: ConfigType = {}) => {
     try {
       return await axios.delete(`${BASE_URL}${url}`, {
