@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -12,23 +12,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-
-interface AttributeType {
-  id: string
-  name: string
-  type: 'single' | 'multiple' | 'multiple-times'
-  displayOrder: number
-}
+import { Textarea } from '@/components/ui/textarea'
+import { Attribute, DAYS_OF_WEEK, DayOfWeek } from '@/types/attribute'
 
 interface EditAttributeTypeModalProps {
-  attributeType: AttributeType
+  attributeType: Attribute
   open: boolean
   onClose: () => void
-  onSave: (attributeType: AttributeType) => void
+  onSave: (attributeType: Attribute) => void
 }
-
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const
-type DayOfWeek = typeof DAYS_OF_WEEK[number]
 
 export function EditAttributeTypeModal({
   attributeType,
@@ -36,62 +28,133 @@ export function EditAttributeTypeModal({
   onClose,
   onSave,
 }: EditAttributeTypeModalProps) {
-  const [formData, setFormData] = useState<AttributeType>(attributeType)
-  const [requiresSelection, setRequiresSelection] = useState(true)
-  const [availableDays, setAvailableDays] = useState<DayOfWeek[]>([...DAYS_OF_WEEK])
+  const [formData, setFormData] = useState<Attribute>(attributeType)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Update form data when attributeType changes
+  useEffect(() => {
+    setFormData(attributeType)
+    setErrors({})
+  }, [attributeType])
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required'
+    } else if (formData.name.length > 100) {
+      newErrors.name = 'Name cannot be more than 100 characters'
+    }
+
+    if (formData.displayOrder < 0) {
+      newErrors.displayOrder = 'Display order must be at least 0'
+    }
+
+    if (formData.description && formData.description.length > 500) {
+      newErrors.description = 'Description cannot be more than 500 characters'
+    }
+
+    if (formData.availableDays.length === 0) {
+      newErrors.availableDays = 'At least one day must be selected'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+
     onSave(formData)
   }
 
   const toggleDay = (day: DayOfWeek) => {
-    setAvailableDays(prev =>
-      prev.includes(day)
-        ? prev.filter(d => d !== day)
-        : [...prev, day]
-    )
+    setFormData(prev => ({
+      ...prev,
+      availableDays: prev.availableDays.includes(day)
+        ? prev.availableDays.filter(d => d !== day)
+        : [...prev.availableDays, day]
+    }))
   }
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
-      type: e.target.value as AttributeType['type']
+      type: e.target.value as Attribute['type']
     }))
   }
 
+  const isEditing = !!(formData._id || formData.id)
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {attributeType.id ? 'Edit Attribute Type' : 'Add Attribute Type'}
+            {isEditing ? 'Edit Attribute Type' : 'Add Attribute Type'}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">
+              Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter attribute type name"
+              className={errors.name ? 'border-red-500' : ''}
             />
+            {errors.name && (
+              <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
-            <Label htmlFor="displayOrder">Display Order</Label>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter description (optional)"
+              className={errors.description ? 'border-red-500' : ''}
+              rows={3}
+            />
+            {errors.description && (
+              <p className="text-sm text-red-500 mt-1">{errors.description}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="displayOrder">
+              Display Order <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="displayOrder"
               type="number"
+              min="0"
               value={formData.displayOrder}
-              onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => setFormData(prev => ({ 
+                ...prev, 
+                displayOrder: parseInt(e.target.value) || 0 
+              }))}
+              className={errors.displayOrder ? 'border-red-500' : ''}
             />
+            {errors.displayOrder && (
+              <p className="text-sm text-red-500 mt-1">{errors.displayOrder}</p>
+            )}
           </div>
 
           <div>
-            <Label>Attribute Type</Label>
+            <Label>
+              Attribute Type <span className="text-red-500">*</span>
+            </Label>
             <select
               value={formData.type}
               onChange={handleTypeChange}
@@ -106,26 +169,46 @@ export function EditAttributeTypeModal({
           <div className="flex items-center gap-2">
             <Switch
               id="requiresSelection"
-              checked={requiresSelection}
-              onCheckedChange={setRequiresSelection}
+              checked={formData.requiresSelection}
+              onCheckedChange={(checked) => setFormData(prev => ({ 
+                ...prev, 
+                requiresSelection: checked 
+              }))}
             />
             <Label htmlFor="requiresSelection">Requires a selection</Label>
           </div>
 
+          <div className="flex items-center gap-2">
+            <Switch
+              id="isActive"
+              checked={formData.isActive}
+              onCheckedChange={(checked) => setFormData(prev => ({ 
+                ...prev, 
+                isActive: checked 
+              }))}
+            />
+            <Label htmlFor="isActive">Active</Label>
+          </div>
+
           <div>
-            <Label>Can Order On</Label>
+            <Label>
+              Available Days <span className="text-red-500">*</span>
+            </Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {DAYS_OF_WEEK.map(day => (
                 <div key={day} className="flex items-center gap-2">
                   <Switch
                     id={day}
-                    checked={availableDays.includes(day)}
+                    checked={formData.availableDays.includes(day)}
                     onCheckedChange={() => toggleDay(day)}
                   />
                   <Label htmlFor={day}>{day}</Label>
                 </div>
               ))}
             </div>
+            {errors.availableDays && (
+              <p className="text-sm text-red-500 mt-1">{errors.availableDays}</p>
+            )}
           </div>
 
           <DialogFooter>
@@ -133,7 +216,7 @@ export function EditAttributeTypeModal({
               Cancel
             </Button>
             <Button type="submit" disabled={!formData.name.trim()}>
-              Save Changes
+              {isEditing ? 'Update' : 'Create'} Attribute Type
             </Button>
           </DialogFooter>
         </form>

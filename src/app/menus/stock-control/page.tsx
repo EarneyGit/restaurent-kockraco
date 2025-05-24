@@ -222,13 +222,13 @@ export default function StockControlPage() {
                     </div>
                   )}
                 </div>
-                <Button 
-                  onClick={handleSaveChanges}
+            <Button 
+              onClick={handleSaveChanges}
                   disabled={isSaving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                >
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
                   {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
+            </Button>
               </div>
             )}
           </div>
@@ -238,43 +238,43 @@ export default function StockControlPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {categories.map((category) => (
+          <div className="space-y-4">
+            {categories.map((category) => (
                 <div key={category.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div 
+                <div 
                     className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
                     onClick={() => toggleCategory(category.id)}
-                  >
-                    <h3 className="font-medium">
-                      {category.name} ({getManagedItemsCount(category)} Managed Items)
-                    </h3>
-                    <button className="text-gray-500 hover:text-gray-700">
-                      {category.isExpanded ? (
-                        <ChevronUp className="h-5 w-5" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
+                >
+                  <h3 className="font-medium">
+                    {category.name} ({getManagedItemsCount(category)} Managed Items)
+                  </h3>
+                  <button className="text-gray-500 hover:text-gray-700">
+                    {category.isExpanded ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
 
-                  <div className={cn(
-                    "border-t",
-                    category.isExpanded ? "block" : "hidden"
-                  )}>
-                    {category.items.length > 0 ? (
-                      <div className="p-4">
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full">
-                            <thead>
-                              <tr className="text-left text-sm text-gray-500">
-                                <th className="px-4 py-2">Item name</th>
-                                <th className="px-4 py-2 text-center">Managed?</th>
-                                <th className="px-4 py-2 text-center">Quantity</th>
+                <div className={cn(
+                  "border-t",
+                  category.isExpanded ? "block" : "hidden"
+                )}>
+                  {category.items.length > 0 ? (
+                    <div className="p-4">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead>
+                            <tr className="text-left text-sm text-gray-500">
+                              <th className="px-4 py-2">Item name</th>
+                              <th className="px-4 py-2 text-center">Managed?</th>
+                              <th className="px-4 py-2 text-center">Quantity</th>
                                 <th className="px-4 py-2 text-center">Status</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                              {category.items.map((item) => (
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {category.items.map((item) => (
                                 <tr key={item.id} className={cn(
                                   item.isLowStock && item.isManaged ? "bg-red-50" : ""
                                 )}>
@@ -283,28 +283,28 @@ export default function StockControlPage() {
                                       <div className="font-medium">{item.name}</div>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <div className="flex justify-center">
-                                      <Switch
-                                        checked={item.isManaged}
+                                <td className="px-4 py-3 text-center">
+                                  <div className="flex justify-center">
+                                    <Switch
+                                      checked={item.isManaged}
                                         onCheckedChange={() => toggleItemManaged(category.id, item.id)}
-                                      />
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <Input 
-                                      type="number"
-                                      min="0"
-                                      className="w-20 text-center"
-                                      value={item.quantity}
-                                      onChange={(e) => updateItemQuantity(
-                                        category.id,
-                                        item.id,
-                                        parseInt(e.target.value) || 0
-                                      )}
-                                      disabled={!item.isManaged}
                                     />
-                                  </td>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <Input 
+                                    type="number"
+                                    min="0"
+                                    className="w-20 text-center"
+                                    value={item.quantity}
+                                    onChange={(e) => updateItemQuantity(
+                                        category.id,
+                                      item.id,
+                                      parseInt(e.target.value) || 0
+                                    )}
+                                    disabled={!item.isManaged}
+                                  />
+                                </td>
                                   <td className="px-4 py-3 text-center">
                                     {item.isManaged ? (
                                       <span className={cn(
@@ -321,27 +321,27 @@ export default function StockControlPage() {
                                       </span>
                                     )}
                                   </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
                         No products found in this category.
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+              </div>
+            ))}
               
               {categories.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-gray-500">No categories found. Add some categories in Menu Setup first.</div>
                 </div>
               )}
-            </div>
+          </div>
           )}
         </div>
       </div>
