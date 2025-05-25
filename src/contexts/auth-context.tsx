@@ -13,6 +13,12 @@ interface User {
     name: string
     slug: string
   }
+  branchId?: string
+  branch?: {
+    id: string
+    name: string
+    address: any
+  }
 }
 
 interface AuthContextType {

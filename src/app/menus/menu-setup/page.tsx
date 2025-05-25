@@ -27,20 +27,33 @@ export default function MenuSetupPage() {
     const fetchCategories = async () => {
       setIsLoading(true);
       try {
+        console.log('Fetching categories from API...')
         const response = await api.get('/categories');
         const { data } = response;
         
+        console.log('Raw API response:', data)
+        
         if (data.success) {
-          const transformedCategories = data.data.map((category: any) => ({
-            id: category._id || category.id,
-            name: category.name,
-            description: category.description || '',
-            hidden: category.hidden || false,
-            includeAttributes: category.includeAttributes || false,
-            includeDiscounts: category.includeDiscounts || false,
-            items: []
-          }));
+          const transformedCategories = data.data.map((category: any) => {
+            console.log('Transforming category:', category.name, category)
+            
+            return {
+              id: category._id || category.id,
+              name: category.name,
+              description: category.description || '',
+              displayOrder: category.displayOrder ?? 0,
+              hidden: category.hidden || false,
+              includeAttributes: category.includeAttributes || false,
+              includeDiscounts: category.includeDiscounts || false,
+              imageUrl: category.imageUrl || '',
+              availability: category.availability || {},
+              printers: category.printers || ['Kitchen (P2)'],
+              branch: category.branch,
+              items: []
+            }
+          });
           
+          console.log('Transformed categories:', transformedCategories)
           setCategories(transformedCategories);
         } else {
           throw new Error(data.message || 'Failed to fetch categories');

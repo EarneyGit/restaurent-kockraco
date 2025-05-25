@@ -45,6 +45,11 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const [products, setProducts] = useState<MenuItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('Edit modal state changed:', isEditModalOpen, 'for category:', category.name)
+  }, [isEditModalOpen, category.name])
+
   // Fetch products when category is expanded
   const fetchProducts = async () => {
     try {
@@ -457,6 +462,18 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const availabilityStatus = category.hidden ? 'Hidden' : 'Available'
   const availabilityColor = category.hidden ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
 
+  const handleEditCategory = () => {
+    console.log('Opening edit modal for category:', category.name)
+    console.log('Current modal state:', isEditModalOpen)
+    console.log('Category data:', category)
+    
+    // Use setTimeout to ensure state is properly set
+    setTimeout(() => {
+      setIsEditModalOpen(true)
+      console.log('Modal state set to true')
+    }, 0)
+  }
+
   return (
     <Accordion type="single" collapsible onValueChange={handleAccordionChange}>
       <AccordionItem value={category.id} className="border rounded-lg bg-white">
@@ -470,9 +487,12 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
                 variant="ghost"
                 size="sm"
                 onClick={(e) => {
+                  e.preventDefault()
                   e.stopPropagation()
-                  setIsEditModalOpen(true)
+                  console.log('Edit category button clicked for:', category.name)
+                  handleEditCategory()
                 }}
+                className="hover:bg-gray-100"
               >
                 <Edit className="h-4 w-4 text-emerald-500" />
               </Button>
@@ -693,10 +713,15 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
             <EditCategoryModal
               category={category}
               open={isEditModalOpen}
-              onClose={() => setIsEditModalOpen(false)}
+              onClose={() => {
+                console.log('Closing edit category modal')
+                setIsEditModalOpen(false)
+              }}
               onSave={(updatedCategory) => {
+                console.log('Category save handler called with:', updatedCategory)
                 onUpdate(updatedCategory)
                 setIsEditModalOpen(false)
+                console.log('Edit modal closed after save')
               }}
             />
           </div>

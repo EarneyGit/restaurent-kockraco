@@ -57,15 +57,21 @@ export interface TimeSlot {
 export interface Category {
   id: string
   name: string
+  description?: string
   displayOrder: number
   hidden: boolean
   imageUrl?: string
   includeAttributes?: boolean
   includeDiscounts?: boolean
   availability: {
-    [key: string]: 'All Day' | 'Specific Times' | 'Not Available'
+    [key: string]: CategoryDayAvailability
   }
   printers: string[]
+  branch?: {
+    _id: string
+    name: string
+    address: any
+  }
   items: MenuItem[]
 }
 
@@ -86,4 +92,10 @@ export interface PriceChange {
   timeStart?: string
   timeEnd?: string
   active: boolean
+}
+
+export interface CategoryDayAvailability {
+  type: 'All Day' | 'Specific Times' | 'Not Available'
+  startTime: string | null
+  endTime: string | null
 } 
