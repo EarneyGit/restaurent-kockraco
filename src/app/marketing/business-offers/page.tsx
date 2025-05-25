@@ -1,42 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import PageLayout from "@/components/layout/page-layout"
 import BusinessOffersModal from "@/components/marketing/business-offers-modal"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
-
-interface BusinessOffer {
-  id: number
-  title: string
-  content: string
-  startDate: Date | null
-  endDate: Date | null
-  displayOrder: number
-  image?: string
-}
+import { businessOfferService, BusinessOffer, BusinessOfferResponse } from '@/services/business-offer.service'
 
 export default function BusinessOffersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<BusinessOffer | undefined>()
-  const [offers, setOffers] = useState<BusinessOffer[]>([
-    {
-      id: 1,
-      title: "Summer Special",
-      content: "<p>Get 20% off on all main courses!</p>",
-      startDate: new Date("2024-06-01"),
-      endDate: new Date("2024-08-31"),
-      displayOrder: 1,
-    },
-    {
-      id: 2,
-      title: "Happy Hour",
-      content: "<p>Buy one get one free on selected drinks</p>",
-      startDate: new Date("2024-05-01"),
-      endDate: null,
-      displayOrder: 2,
-    },
-  ])
+  const [offers, setOffers] = useState<BusinessOffer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalOffers, setTotalOffers] = useState(0)
+
+  // Fetch offers from API
+  const fetchOffers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response: BusinessOfferResponse = await businessOfferService.getBusinessOffers(currentPage, 20)
+      
+      setOffers(response.data)
+      setTotalPages(response.pagination.totalPages)
+      setTotalOffers(response.pagination.totalOffers)
+    } catch (err: any) {
+      console.error('Error fetching business offers:', err)
+      setError(err.message || 'Failed to fetch business offers')
+      setOffers([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch offers when component mounts or page changes
+  useEffect(() => {
+    fetchOffers()
+  }, [currentPage])
 
   const handleAddOffer = () => {
     setSelectedOffer(undefined)
@@ -48,17 +52,31 @@ export default function BusinessOffersPage() {
     setIsModalOpen(true)
   }
 
-  const handleDeleteOffer = (id: number) => {
+  const handleDeleteOffer = async (id: string) => {
     if (confirm("Are you sure you want to delete this offer?")) {
-      setOffers(offers.filter((offer) => offer.id !== id))
+      try {
+        await businessOfferService.deleteBusinessOffer(id)
+        fetchOffers() // Refresh the list
+      } catch (err: any) {
+        console.error('Error deleting business offer:', err)
+        alert('Failed to delete business offer: ' + err.message)
+      }
     }
   }
 
-  const handleSaveOffer = (offer: BusinessOffer) => {
-    if (offer.id) {
-      setOffers(offers.map((o) => (o.id === offer.id ? offer : o)))
+  const handleSaveOffer = async (offer: Partial<BusinessOffer>) => {
+    try {
+      if (offer._id) {
+        // Update existing offer
+        await businessOfferService.updateBusinessOffer(offer._id, offer)
     } else {
-      setOffers([...offers, { ...offer, id: Date.now() }])
+        // Create new offer
+        await businessOfferService.createBusinessOffer(offer)
+      }
+      fetchOffers() // Refresh the list
+    } catch (err: any) {
+      console.error('Error saving business offer:', err)
+      alert('Failed to save business offer: ' + err.message)
     }
   }
 
@@ -85,46 +103,91 @@ export default function BusinessOffersPage() {
           <Button
             onClick={handleAddOffer}
             className="bg-emerald-500 hover:bg-emerald-600"
+            disabled={loading}
           >
             Add Offer
           </Button>
         </div>
         
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <button 
+              onClick={fetchOffers}
+              className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
         {/* Offers Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <span className="ml-2 text-gray-600">Loading business offers...</span>
+            </div>
+          ) : offers.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No business offers available</p>
+            </div>
+          ) : (
           <div className="p-4">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b">
                   <th className="pb-3">Title</th>
+                    <th className="pb-3">Content</th>
                   <th className="pb-3">Start Date</th>
                   <th className="pb-3">End Date</th>
                   <th className="pb-3">Display Order</th>
+                    <th className="pb-3">Status</th>
+                    <th className="pb-3">Stats</th>
                   <th className="pb-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {offers.map((offer) => (
-                  <tr key={offer.id} className="border-b">
+                    <tr key={offer._id} className="border-b">
                     <td className="py-3">{offer.title}</td>
                     <td className="py-3">
-                      {offer.startDate ? format(offer.startDate, "PP") : "-"}
+                        <div className="max-w-xs truncate">
+                          {businessOfferService.truncateContent(offer.content, 50)}
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        {offer.startDate ? businessOfferService.formatDate(offer.startDate) : "-"}
                     </td>
                     <td className="py-3">
-                      {offer.endDate ? format(offer.endDate, "PP") : "-"}
+                        {offer.endDate ? businessOfferService.formatDate(offer.endDate) : "-"}
                     </td>
                     <td className="py-3">{offer.displayOrder}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs ${businessOfferService.getOfferStatusBadgeColor(offer.isActive)}`}>
+                          {offer.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        <div className="text-sm text-gray-600">
+                          <div>Views: {offer.stats.views}</div>
+                          <div>Clicks: {offer.stats.clicks}</div>
+                        </div>
+                      </td>
                     <td className="py-3">
                       <div className="flex justify-center space-x-6">
                         <button
                           onClick={() => handleEditOffer(offer)}
                           className="text-emerald-500 hover:text-emerald-700"
+                            disabled={loading}
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteOffer(offer.id)}
+                            onClick={() => handleDeleteOffer(offer._id)}
                           className="text-red-500 hover:text-red-700"
+                            disabled={loading}
                         >
                           Delete
                         </button>
@@ -132,17 +195,39 @@ export default function BusinessOffersPage() {
                     </td>
                   </tr>
                 ))}
-                {offers.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      No offers available
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
+          )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-700">
+              Showing {offers.length} of {totalOffers} business offers
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || loading}
+              >
+                Previous
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
 
         <BusinessOffersModal
           isOpen={isModalOpen}

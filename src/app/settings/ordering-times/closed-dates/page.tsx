@@ -1,47 +1,172 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import PageLayout from "@/components/layout/page-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
-
-interface ClosedDate {
-  date: string
-  type: 'single' | 'range'
-  endDate?: string
-}
+import { orderingTimesService, type ClosedDate } from "@/services/ordering-times.service"
+import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
 export default function ClosedDatesPage() {
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [singleDate, setSingleDate] = useState("")
   const [dateRange, setDateRange] = useState({
     start: "",
     end: ""
   })
 
-  const handleAddSingleDate = () => {
-    if (!singleDate) return
-    setClosedDates(prev => [...prev, { date: singleDate, type: 'single' }])
-    setSingleDate("")
+  // Load closed dates on component mount
+  useEffect(() => {
+    loadClosedDates()
+  }, [])
+
+  const loadClosedDates = async () => {
+    try {
+      setLoading(true)
+      const response = await orderingTimesService.getClosedDates()
+      setClosedDates(response.data)
+    } catch (error) {
+      console.error('Error loading closed dates:', error)
+      toast.error('Failed to load closed dates')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleAddDateRange = () => {
-    if (!dateRange.start || !dateRange.end) return
-    setClosedDates(prev => [...prev, {
-      date: dateRange.start,
-      endDate: dateRange.end,
-      type: 'range'
-    }])
-    setDateRange({ start: "", end: "" })
+  const handleAddSingleDate = async () => {
+    if (!singleDate) {
+      toast.error('Please select a date')
+      return
+    }
+
+    try {
+      setSaving(true)
+      const newClosedDate: Omit<ClosedDate, '_id'> = {
+        date: singleDate,
+        type: 'single',
+        reason: 'Closed'
+      }
+
+      await orderingTimesService.addClosedDate(newClosedDate)
+      toast.success('Closed date added successfully')
+      setSingleDate("")
+      
+      // Reload the closed dates to get the updated list
+      await loadClosedDates()
+    } catch (error) {
+      console.error('Error adding closed date:', error)
+      toast.error('Failed to add closed date')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleDelete = (index: number) => {
-    setClosedDates(prev => prev.filter((_, i) => i !== index))
+  const handleAddDateRange = async () => {
+    if (!dateRange.start || !dateRange.end) {
+      toast.error('Please select both start and end dates')
+      return
+    }
+
+    if (new Date(dateRange.start) > new Date(dateRange.end)) {
+      toast.error('Start date must be before end date')
+      return
+    }
+
+    try {
+      setSaving(true)
+      const newClosedDate: Omit<ClosedDate, '_id'> = {
+        date: dateRange.start,
+        endDate: dateRange.end,
+        type: 'range',
+        reason: 'Closed'
+      }
+
+      await orderingTimesService.addClosedDate(newClosedDate)
+      toast.success('Closed date range added successfully')
+      setDateRange({ start: "", end: "" })
+      
+      // Reload the closed dates to get the updated list
+      await loadClosedDates()
+    } catch (error) {
+      console.error('Error adding closed date range:', error)
+      toast.error('Failed to add closed date range')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleDeleteAll = () => {
-    setClosedDates([])
+  const handleDelete = async (closedDate: ClosedDate) => {
+    if (!closedDate._id) {
+      toast.error('Cannot delete: Invalid closed date ID')
+      return
+    }
+
+    try {
+      setSaving(true)
+      await orderingTimesService.removeClosedDate(closedDate._id)
+      toast.success('Closed date deleted successfully')
+      
+      // Reload the closed dates to get the updated list
+      await loadClosedDates()
+    } catch (error) {
+      console.error('Error deleting closed date:', error)
+      toast.error('Failed to delete closed date')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (closedDates.length === 0) {
+      toast.error('No closed dates to delete')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete all closed dates? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      await orderingTimesService.removeAllClosedDates()
+      toast.success('All closed dates deleted successfully')
+      setClosedDates([])
+    } catch (error) {
+      console.error('Error deleting all closed dates:', error)
+      toast.error('Failed to delete all closed dates')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const formatClosedDate = (closedDate: ClosedDate): string => {
+    try {
+      if (closedDate.type === 'single') {
+        return format(new Date(closedDate.date), 'dd/MM/yyyy')
+      } else {
+        const startDate = format(new Date(closedDate.date), 'dd/MM/yyyy')
+        const endDate = closedDate.endDate ? format(new Date(closedDate.endDate), 'dd/MM/yyyy') : ''
+        return `${startDate} - ${endDate}`
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return 'Invalid date'
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          Loading closed dates...
+        </div>
+      </PageLayout>
+    )
   }
 
   return (
@@ -71,19 +196,20 @@ export default function ClosedDatesPage() {
                   <div className="px-4 py-3 bg-gray-50 text-sm font-medium">
                     Outlet Closed
                   </div>
-                  {closedDates.map((date, index) => (
-                    <div key={index} className="px-4 py-3 flex justify-between items-center">
-                      <span>
-                        {date.type === 'single' 
-                          ? format(new Date(date.date), 'dd/MM/yyyy')
-                          : `${format(new Date(date.date), 'dd/MM/yyyy')} - ${format(new Date(date.endDate!), 'dd/MM/yyyy')}`
-                        }
-                      </span>
+                  {closedDates.map((closedDate) => (
+                    <div key={closedDate._id} className="px-4 py-3 flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{formatClosedDate(closedDate)}</span>
+                        {closedDate.reason && (
+                          <span className="text-gray-500 ml-2">({closedDate.reason})</span>
+                        )}
+                      </div>
                       <button
-                        onClick={() => handleDelete(index)}
-                        className="text-red-500 hover:text-red-600 text-sm"
+                        onClick={() => handleDelete(closedDate)}
+                        disabled={saving}
+                        className="text-red-500 hover:text-red-600 text-sm disabled:opacity-50"
                       >
-                        Delete
+                        {saving ? 'Deleting...' : 'Delete'}
                       </button>
                     </div>
                   ))}
@@ -91,9 +217,10 @@ export default function ClosedDatesPage() {
                 <div className="flex justify-end">
                   <button
                     onClick={handleDeleteAll}
-                    className="text-red-500 hover:text-red-600 text-sm"
+                    disabled={saving}
+                    className="text-red-500 hover:text-red-600 text-sm disabled:opacity-50"
                   >
-                    Delete All
+                    {saving ? 'Deleting...' : 'Delete All'}
                   </button>
                 </div>
               </div>
@@ -112,14 +239,23 @@ export default function ClosedDatesPage() {
                   type="date"
                   value={singleDate}
                   onChange={(e) => setSingleDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
                 />
               </div>
               <Button
                 onClick={handleAddSingleDate}
+                disabled={saving || !singleDate}
                 className="w-full border border-emerald-500 text-emerald-500 hover:bg-emerald-50"
                 variant="outline"
               >
-                Add Outlet Closed Date
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Outlet Closed Date'
+                )}
               </Button>
             </div>
           </div>
@@ -137,6 +273,7 @@ export default function ClosedDatesPage() {
                     type="date"
                     value={dateRange.start}
                     onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
                   />
                 </div>
                 <div>
@@ -147,15 +284,24 @@ export default function ClosedDatesPage() {
                     type="date"
                     value={dateRange.end}
                     onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    min={dateRange.start || new Date().toISOString().split('T')[0]} // Prevent selecting dates before start date
                   />
                 </div>
               </div>
               <Button
                 onClick={handleAddDateRange}
+                disabled={saving || !dateRange.start || !dateRange.end}
                 className="w-full border border-emerald-500 text-emerald-500 hover:bg-emerald-50"
                 variant="outline"
               >
-                Add Outlet Closed Range
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Outlet Closed Range'
+                )}
               </Button>
             </div>
           </div>

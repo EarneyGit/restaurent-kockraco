@@ -11,6 +11,7 @@ import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import dynamic from "next/dynamic"
+import { BusinessOffer } from '@/services/business-offer.service'
 
 // Dynamic import of TipTap editor to avoid SSR issues
 const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
@@ -18,19 +19,23 @@ const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
   loading: () => <p>Loading editor...</p>,
 })
 
-interface BusinessOffersModalProps {
-  isOpen: boolean
-  onClose: () => void
-  offer?: {
-    id?: number
+// Form interface for the modal (uses Date objects for easier handling)
+interface BusinessOfferFormData {
+  _id?: string
     title: string
     content: string
     startDate: Date | null
     endDate: Date | null
     displayOrder: number
     image?: string
-  }
-  onSave: (offer: any) => void
+  isActive: boolean
+}
+
+interface BusinessOffersModalProps {
+  isOpen: boolean
+  onClose: () => void
+  offer?: BusinessOffer
+  onSave: (offer: Partial<BusinessOffer>) => Promise<void>
 }
 
 export default function BusinessOffersModal({
@@ -39,44 +44,52 @@ export default function BusinessOffersModal({
   offer,
   onSave,
 }: BusinessOffersModalProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-  const [displayOrder, setDisplayOrder] = useState("0")
-  const [image, setImage] = useState<string | null>(null)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [formData, setFormData] = useState<BusinessOfferFormData>({
+    title: "",
+    content: "",
+    startDate: null,
+    endDate: null,
+    displayOrder: 0,
+    image: "",
+    isActive: true
+  })
 
   useEffect(() => {
     if (offer) {
-      setTitle(offer.title)
-      setContent(offer.content)
-      setStartDate(offer.startDate)
-      setEndDate(offer.endDate)
-      setDisplayOrder(offer.displayOrder.toString())
-      setImage(offer.image ?? null)
+      // Convert API format to form format
+      setFormData({
+        _id: offer._id,
+        title: offer.title,
+        content: offer.content,
+        startDate: offer.startDate ? new Date(offer.startDate) : null,
+        endDate: offer.endDate ? new Date(offer.endDate) : null,
+        displayOrder: offer.displayOrder,
+        image: offer.image || "",
+        isActive: offer.isActive
+      })
     } else {
       resetForm()
     }
   }, [offer, isOpen])
 
   const resetForm = () => {
-    setTitle("")
-    setContent("")
-    setStartDate(null)
-    setEndDate(null)
-    setDisplayOrder("0")
-    setImage(null)
-    setImageFile(null)
+    setFormData({
+      title: "",
+      content: "",
+      startDate: null,
+      endDate: null,
+      displayOrder: 0,
+      image: "",
+      isActive: true
+    })
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setImageFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
-        setImage(reader.result as string)
+        setFormData(prev => ({ ...prev, image: reader.result as string }))
       }
       reader.readAsDataURL(file)
     }
@@ -86,17 +99,14 @@ export default function BusinessOffersModal({
     setter(date || null)
   }
 
-  const handleSave = () => {
-    onSave({
-      id: offer?.id,
-      title,
-      content,
-      startDate,
-      endDate,
-      displayOrder: parseInt(displayOrder),
-      image,
-      imageFile,
-    })
+  const handleSave = async () => {
+    // Convert form format to API format
+    const apiData: Partial<BusinessOffer> = {
+      ...formData,
+      startDate: formData.startDate ? formData.startDate.toISOString() : null,
+      endDate: formData.endDate ? formData.endDate.toISOString() : null,
+    }
+    await onSave(apiData)
     onClose()
     resetForm()
   }
@@ -113,15 +123,15 @@ export default function BusinessOffersModal({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter offer title"
             />
           </div>
 
           <div className="grid gap-2">
             <Label>Content</Label>
-            <Tiptap content={content} onChange={setContent} />
+            <Tiptap content={formData.content} onChange={(value) => setFormData(prev => ({ ...prev, content: value }))} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -133,18 +143,18 @@ export default function BusinessOffersModal({
                     variant="outline"
                     className={cn(
                       "justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
+                      !formData.startDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Pick a date"}
+                    {formData.startDate ? format(formData.startDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={startDate || undefined}
-                    onSelect={(date) => handleDateSelect(date, setStartDate)}
+                    selected={formData.startDate || undefined}
+                    onSelect={(date) => handleDateSelect(date, (date) => setFormData(prev => ({ ...prev, startDate: date })))}
                     initialFocus
                   />
                 </PopoverContent>
@@ -159,18 +169,18 @@ export default function BusinessOffersModal({
                     variant="outline"
                     className={cn(
                       "justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
+                      !formData.endDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "Pick a date"}
+                    {formData.endDate ? format(formData.endDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={endDate || undefined}
-                    onSelect={(date) => handleDateSelect(date, setEndDate)}
+                    selected={formData.endDate || undefined}
+                    onSelect={(date) => handleDateSelect(date, (date) => setFormData(prev => ({ ...prev, endDate: date })))}
                     initialFocus
                   />
                 </PopoverContent>
@@ -183,8 +193,8 @@ export default function BusinessOffersModal({
             <Input
               id="displayOrder"
               type="number"
-              value={displayOrder}
-              onChange={(e) => setDisplayOrder(e.target.value)}
+              value={formData.displayOrder}
+              onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) }))}
               min="0"
             />
           </div>
@@ -198,10 +208,10 @@ export default function BusinessOffersModal({
               onChange={handleImageChange}
               className="cursor-pointer"
             />
-            {image && (
+            {formData.image && (
               <div className="mt-2">
                 <img
-                  src={image}
+                  src={formData.image}
                   alt="Offer preview"
                   className="max-h-40 rounded-md object-cover"
                 />

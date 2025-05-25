@@ -1,8 +1,14 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import dynamic from 'next/dynamic'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Eye, Loader2 } from "lucide-react"
+import { outletService, type OutletSettings } from "@/services/outlet.service"
+import { toast } from "sonner"
 
 const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
   ssr: false,
@@ -10,102 +16,130 @@ const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
 })
 
 export default function OutletsPage() {
-  const [aboutUs, setAboutUs] = useState(`Admin user
-Address
-26 Bruce Street
-Admin user
-KY12 7AG
-United Kingdom
-Telephone
-01383223409
-Opening Times
-Monday
-11:45-14:30
-16:30-22:00
-Tuesday
-16:30-22:00
-Wednesday
-16:30-22:00
-Thursday
-11:45-14:30
-16:30-22:00
-Friday
-11:45-14:30
-16:30-22:00
-Saturday
-11:45-14:30
-16:30-23:00
-Sunday
-11:45-14:30
-16:30-22:00
+  const [outletData, setOutletData] = useState<OutletSettings | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [aboutUs, setAboutUs] = useState('')
 
-EDINBURGH
-Address
-27 Nicolson Road
-Edinburgh
-EH8 9BZ
-United Kingdom
-Telephone
-01312375516
-Opening Times
-Monday
-16:30-22:00
-Tuesday
-16:30-22:00
-Wednesday
-16:30-22:00
-Thursday
-16:30-22:00
-Friday
-16:30-23:00
-Saturday
-16:30-23:00
-Sunday
-16:30-22:00`)
+  // Form states
+  const [detailsForm, setDetailsForm] = useState({
+    name: '',
+    email: '',
+    contactNumber: '',
+    telephone: ''
+  })
 
-  // Sample outlet data
-  const outletData = {
-    name: 'Admin user',
-    aboutUs: '',
-    address: {
-      street: '26 Bruce Street',
-      city: 'Admin user',
-      postcode: 'KY12 7AG',
-      country: 'United Kingdom',
-      telephone: '01383223409'
-    },
-    openingTimes: {
-      Monday: ['11:45-14:30', '16:30-22:00'],
-      Tuesday: ['16:30-22:00'],
-      Wednesday: ['16:30-22:00'],
-      Thursday: ['11:45-14:30', '16:30-22:00'],
-      Friday: ['11:45-14:30', '16:30-23:00'],
-      Saturday: ['11:45-14:30', '16:30-23:00'],
-      Sunday: ['11:45-14:30', '16:30-22:00']
-    },
-    email: 'kockraco@gmail.com',
-    contactNumber: '+44383623409'
+  const [locationForm, setLocationForm] = useState({
+    street: '',
+    addressLine2: '',
+    city: '',
+    county: '',
+    state: '',
+    postcode: '',
+    country: ''
+  })
+
+  // Load outlet data on component mount
+  useEffect(() => {
+    loadOutletData()
+  }, [])
+
+  const loadOutletData = async () => {
+    try {
+      setLoading(true)
+      const response = await outletService.getOutletSettings()
+      const data = response.data
+      setOutletData(data)
+      
+      // Set form data
+      setDetailsForm({
+        name: data.name || '',
+        email: data.email || '',
+        contactNumber: data.contactNumber || '',
+        telephone: data.telephone || ''
+      })
+
+      setLocationForm({
+        street: data.address.street || '',
+        addressLine2: data.address.addressLine2 || '',
+        city: data.address.city || '',
+        county: data.address.county || '',
+        state: data.address.state || '',
+        postcode: data.address.postcode || '',
+        country: data.address.country || ''
+      })
+
+      setAboutUs(data.aboutUs || '')
+    } catch (error) {
+      console.error('Error loading outlet data:', error)
+      toast.error('Failed to load outlet data')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Second outlet data (Edinburgh)
-  const edinburghData = {
-    name: 'EDINBURGH',
-    address: {
-      street: '27 Nicolson Road',
-      city: 'Edinburgh',
-      postcode: 'EH8 9BZ',
-      country: 'United Kingdom',
-      telephone: '01312375516'
-    },
-    openingTimes: {
-      Monday: ['16:30-22:00'],
-      Tuesday: ['16:30-22:00'],
-      Wednesday: ['16:30-22:00'],
-      Thursday: ['16:30-22:00'],
-      Friday: ['16:30-23:00'],
-      Saturday: ['16:30-23:00'],
-      Sunday: ['16:30-22:00']
+  const handleSaveDetails = async () => {
+    try {
+      setSaving(true)
+      
+      // Validate email
+      if (detailsForm.email && !outletService.validateEmail(detailsForm.email)) {
+        toast.error('Please enter a valid email address')
+        return
+      }
+
+      // Validate phone
+      if (detailsForm.contactNumber && !outletService.validatePhone(detailsForm.contactNumber)) {
+        toast.error('Please enter a valid contact number')
+        return
+      }
+
+      await outletService.updateOutletDetails({
+        ...detailsForm,
+        aboutUs
+      })
+      
+      toast.success('Outlet details updated successfully')
+      loadOutletData() // Reload to get updated data
+    } catch (error) {
+      console.error('Error saving outlet details:', error)
+      toast.error('Failed to save outlet details')
+    } finally {
+      setSaving(false)
     }
+  }
+
+  const handleSaveLocation = async () => {
+    try {
+      setSaving(true)
+      
+      // Validate postcode
+      if (locationForm.postcode && !outletService.validatePostcode(locationForm.postcode)) {
+        toast.error('Please enter a valid UK postcode')
+        return
+      }
+
+      await outletService.updateOutletLocation(locationForm)
+      
+      toast.success('Outlet location updated successfully')
+      loadOutletData() // Reload to get updated data
+    } catch (error) {
+      console.error('Error saving outlet location:', error)
+      toast.error('Failed to save outlet location')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          Loading outlet settings...
+        </div>
+      </PageLayout>
+    )
   }
 
   return (
@@ -116,10 +150,7 @@ Sunday
         <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
+            <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
         </div>
@@ -133,46 +164,74 @@ Sunday
             <p className="text-gray-600 mb-4">Setup the basic contact details for your outlet</p>
             <p className="text-gray-600 mb-4">Email and contact number are displayed on order confirmation emails sent to the customer</p>
             
-            <form>
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Outlet Name</label>
-                <input 
+            <div className="space-y-6">
+              <div>
+                <Label htmlFor="outletName">Outlet Name</Label>
+                <Input
+                  id="outletName"
                   type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.name}
+                  value={detailsForm.name}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, name: e.target.value })}
+                  placeholder="Enter outlet name"
                 />
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">About Us</label>
+              <div>
+                <Label htmlFor="aboutUs">About Us</Label>
                 <Tiptap
                   content={aboutUs}
                   onChange={setAboutUs}
                 />
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Email Address</label>
-                <input 
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
                   type="email" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.email}
+                  value={detailsForm.email}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, email: e.target.value })}
+                  placeholder="Enter email address"
                 />
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Contact Number</label>
-                <input 
+              <div>
+                <Label htmlFor="contactNumber">Contact Number</Label>
+                <Input
+                  id="contactNumber"
+                  type="text"
+                  value={detailsForm.contactNumber}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, contactNumber: e.target.value })}
+                  placeholder="Enter contact number"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="telephone">Telephone (optional)</Label>
+                <Input
+                  id="telephone"
                   type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.contactNumber}
+                  value={detailsForm.telephone}
+                  onChange={(e) => setDetailsForm({ ...detailsForm, telephone: e.target.value })}
+                  placeholder="Enter telephone number"
                 />
               </div>
               
-              <button className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                Save all Changes
-              </button>
-            </form>
+              <Button 
+                onClick={handleSaveDetails}
+                disabled={saving}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Details'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -184,151 +243,122 @@ Sunday
             <p className="text-gray-600 mb-4">Postcode is required to calculate distances in relation to delivery charges.</p>
             <p className="text-gray-600 mb-4">Please ensure a valid postcode is supplied.</p>
             
-            <form>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Address Line 1</label>
-                <input 
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="street">Address Line 1</Label>
+                <Input
+                  id="street"
                   type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.address.street}
+                  value={locationForm.street}
+                  onChange={(e) => setLocationForm({ ...locationForm, street: e.target.value })}
+                  placeholder="Enter street address"
                 />
               </div>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Address Line 2</label>
-                <input 
+              <div>
+                <Label htmlFor="addressLine2">Address Line 2</Label>
+                <Input
+                  id="addressLine2"
                   type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
+                  value={locationForm.addressLine2}
+                  onChange={(e) => setLocationForm({ ...locationForm, addressLine2: e.target.value })}
+                  placeholder="Enter address line 2 (optional)"
                 />
               </div>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">City</label>
-                <input 
-                  type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.address.city}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">County</label>
-                  <input 
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
                     type="text" 
-                    className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                    defaultValue="Fife"
+                    value={locationForm.city}
+                    onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })}
+                    placeholder="Enter city"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Postcode</label>
-                  <input 
+                  <Label htmlFor="county">County</Label>
+                  <Input
+                    id="county"
                     type="text" 
-                    className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                    defaultValue={outletData.address.postcode}
+                    value={locationForm.county}
+                    onChange={(e) => setLocationForm({ ...locationForm, county: e.target.value })}
+                    placeholder="Enter county (optional)"
                   />
                 </div>
               </div>
               
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Country</label>
-                <input 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="state">State/Region</Label>
+                  <Input
+                    id="state"
                   type="text" 
-                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
-                  defaultValue={outletData.address.country}
+                    value={locationForm.state}
+                    onChange={(e) => setLocationForm({ ...locationForm, state: e.target.value })}
+                    placeholder="Enter state or region"
                 />
               </div>
               
-              <button className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                Save all Changes
-              </button>
-            </form>
+                <div>
+                  <Label htmlFor="postcode">Postcode</Label>
+                  <Input
+                    id="postcode"
+                    type="text"
+                    value={locationForm.postcode}
+                    onChange={(e) => setLocationForm({ ...locationForm, postcode: e.target.value })}
+                    placeholder="Enter postcode"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  type="text"
+                  value={locationForm.country}
+                  onChange={(e) => setLocationForm({ ...locationForm, country: e.target.value })}
+                  placeholder="Enter country"
+                />
+              </div>
+              
+              <Button 
+                onClick={handleSaveLocation}
+                disabled={saving}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Location'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         
-        {/* Ordering Options Section */}
-        <div className="mb-10">
-          <h2 className="text-xl font-medium mb-4">Ordering Options</h2>
+        {/* Opening Times Display */}
+        {outletData && (
+          <div className="mb-10">
+            <h2 className="text-xl font-medium mb-4">Opening Times</h2>
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <p className="text-gray-600 mb-4">Choose how the ordering times are shown.</p>
-            
-            <form>
-              <div className="mb-6">
-                <h3 className="font-medium mb-3">Collection Ordering</h3>
-                <div className="flex items-center mb-3">
-                  <label className="text-sm font-medium mr-4">Display Format</label>
-                  <div className="flex items-center">
-                    <input type="radio" name="collection-format" className="mr-2" defaultChecked />
-                    <span>TimeOnly</span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <label className="text-sm font-medium mr-4">Length of Timeslot</label>
-                  <div className="flex items-center">
-                    <input type="text" className="border border-gray-300 rounded-md px-3 py-1 w-12 mr-2" defaultValue="15" />
-                    <span>minutes</span>
-                  </div>
-                </div>
+              <p className="text-gray-600 mb-4">
+                Opening times are managed in the <strong>Ordering Times</strong> section.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <pre className="whitespace-pre-wrap text-sm">
+                  {outletService.formatOpeningTimes(outletData.openingTimes)}
+                </pre>
               </div>
-              
-              <div className="mb-6">
-                <h3 className="font-medium mb-3">Delivery Ordering</h3>
-                <div className="flex items-center mb-3">
-                  <label className="text-sm font-medium mr-4">Display Format</label>
-                  <div className="flex items-center">
-                    <input type="radio" name="delivery-format" className="mr-2" defaultChecked />
-                    <span>TimeOnly</span>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <label className="text-sm font-medium mr-4">Length of Timeslot</label>
-                  <div className="flex items-center">
-                    <input type="text" className="border border-gray-300 rounded-md px-3 py-1 w-12 mr-2" defaultValue="15" />
-                    <span>minutes</span>
-                  </div>
-                </div>
               </div>
-              
-              <button className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                Save all Changes
-              </button>
-            </form>
           </div>
-        </div>
-        
-        {/* Pre-Ordering Section */}
-        <div>
-          <h2 className="text-xl font-medium mb-4">Pre-Ordering</h2>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <p className="text-gray-600 mb-4">Choose if your customers can place pre-orders for collection or delivery.</p>
-            
-            <form>
-              <div className="flex items-center mb-4">
-                <label className="flex items-center cursor-pointer">
-                  <div className="relative inline-block w-10 h-5 transition duration-200 ease-in-out bg-gray-200 rounded-full">
-                    <input type="checkbox" className="absolute w-5 h-5 opacity-0 z-10 cursor-pointer" />
-                    <span className="absolute left-0 w-5 h-5 transition duration-100 ease-in-out transform bg-white border-2 border-gray-200 rounded-full"></span>
-                  </div>
-                  <span className="ml-3">Allow Pre-Ordering for Collection</span>
-                </label>
-              </div>
-              
-              <div className="flex items-center mb-6">
-                <label className="flex items-center cursor-pointer">
-                  <div className="relative inline-block w-10 h-5 transition duration-200 ease-in-out bg-gray-200 rounded-full">
-                    <input type="checkbox" className="absolute w-5 h-5 opacity-0 z-10 cursor-pointer" />
-                    <span className="absolute left-0 w-5 h-5 transition duration-100 ease-in-out transform bg-white border-2 border-gray-200 rounded-full"></span>
-                  </div>
-                  <span className="ml-3">Allow Pre-Ordering for Delivery</span>
-                </label>
-              </div>
-              
-              <button className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-md">
-                Save all Changes
-              </button>
-            </form>
-          </div>
-        </div>
+        )}
       </div>
     </PageLayout>
   )

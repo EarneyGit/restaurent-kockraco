@@ -171,7 +171,7 @@ export default function CustomersPage() {
             </button>
           </div>
         </div>
-
+        
         {/* Error Message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -216,24 +216,24 @@ export default function CustomersPage() {
               )}
             </div>
           ) : (
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-50 text-left text-sm text-gray-500">
-                  <th className="px-6 py-3">Firstname</th>
-                  <th className="px-6 py-3">Lastname</th>
-                  <th className="px-6 py-3">Email</th>
-                  <th className="px-6 py-3">Mobile</th>
-                  <th className="px-6 py-3">Address</th>
-                  <th className="px-6 py-3">Postcode</th>
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-50 text-left text-sm text-gray-500">
+                <th className="px-6 py-3">Firstname</th>
+                <th className="px-6 py-3">Lastname</th>
+                <th className="px-6 py-3">Email</th>
+                <th className="px-6 py-3">Mobile</th>
+                <th className="px-6 py-3">Address</th>
+                <th className="px-6 py-3">Postcode</th>
                   <th className="px-6 py-3">Orders</th>
                   <th className="px-6 py-3">Total Spent</th>
                   <th className="px-6 py-3">Type</th>
-                  <th className="px-6 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+                <th className="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
                 {customers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                <tr key={customer.id} className="hover:bg-gray-50">
                     <td className="px-6 py-3 text-sm">{customer.firstname || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm">{customer.lastname || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm text-gray-500">{customer.email || 'N/A'}</td>
@@ -253,18 +253,18 @@ export default function CustomersPage() {
                         {customer.customerType}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-sm">
+                  <td className="px-6 py-3 text-sm">
                       <button 
                         className="text-teal-500 hover:text-teal-700"
                         onClick={() => handleViewDetails(customer.id)}
                       >
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           )}
         </div>
         

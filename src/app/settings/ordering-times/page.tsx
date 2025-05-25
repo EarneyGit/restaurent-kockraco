@@ -1,136 +1,123 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import PageLayout from "@/components/layout/page-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-interface DaySettings {
-  isCollectionAllowed: boolean
-  isDeliveryAllowed: boolean
-  isTableOrderingAllowed: boolean
-  defaultTimes: {
-    start: string
-    end: string
-  }
-  collection: {
-    leadTime: number
-    displayedTime: string
-  }
-  delivery: {
-    useDifferentTimes: boolean
-    leadTime: number
-    displayedTime: string
-    customTimes: {
-      start: string
-      end: string
-    }
-  }
-  tableOrdering: {
-    useDifferentTimes: boolean
-    leadTime: number
-    displayedTime: string
-    customTimes: {
-      start: string
-      end: string
-    }
-  }
-}
-
-interface OrderingTimes {
-  [key: string]: DaySettings
-}
-
-const defaultDaySettings: DaySettings = {
-  isCollectionAllowed: false,
-  isDeliveryAllowed: false,
-  isTableOrderingAllowed: false,
-  defaultTimes: {
-    start: "11:45",
-    end: "21:50"
-  },
-  collection: {
-    leadTime: 20,
-    displayedTime: "12:10"
-  },
-  delivery: {
-    useDifferentTimes: false,
-    leadTime: 45,
-    displayedTime: "12:30",
-    customTimes: {
-      start: "11:45",
-      end: "21:50"
-    }
-  },
-  tableOrdering: {
-    useDifferentTimes: false,
-    leadTime: 0,
-    displayedTime: "",
-    customTimes: {
-      start: "11:45",
-      end: "21:50"
-    }
-  }
-}
+import { orderingTimesService, type OrderingTimes, type DaySettings } from "@/services/ordering-times.service"
+import { toast } from "sonner"
 
 export default function OrderingTimesPage() {
   const router = useRouter()
   const [expandedDay, setExpandedDay] = useState<string | null>("monday")
-  const [orderingTimes, setOrderingTimes] = useState<OrderingTimes>({
-    monday: { ...defaultDaySettings },
-    tuesday: { ...defaultDaySettings },
-    wednesday: { ...defaultDaySettings },
-    thursday: { ...defaultDaySettings },
-    friday: { ...defaultDaySettings },
-    saturday: { ...defaultDaySettings },
-    sunday: { ...defaultDaySettings }
-  })
+  const [orderingTimes, setOrderingTimes] = useState<OrderingTimes | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  // Load data on component mount
+  useEffect(() => {
+    loadOrderingTimes()
+  }, [])
+
+  const loadOrderingTimes = async () => {
+    try {
+      setLoading(true)
+      const response = await orderingTimesService.getOrderingTimes()
+      setOrderingTimes(response.data)
+    } catch (error) {
+      console.error('Error loading ordering times:', error)
+      toast.error('Failed to load ordering times')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleDayToggle = (day: string) => {
     setExpandedDay(expandedDay === day ? null : day)
   }
 
-  const updateDaySettings = (day: string, updates: Partial<DaySettings>) => {
-    setOrderingTimes(prev => {
-      const currentSettings = prev[day]
+  const updateDaySettings = async (day: string, updates: Partial<DaySettings>) => {
+    if (!orderingTimes) return
+
+    try {
+      setSaving(true)
       
-      // Handle delivery customTimes
-      if (updates.delivery?.customTimes) {
-        updates.delivery = {
+      // Get current day settings
+      const currentSettings = orderingTimes.weeklySchedule[day as keyof typeof orderingTimes.weeklySchedule]
+      
+      // Merge updates with current settings
+      const updatedSettings: DaySettings = {
+        ...currentSettings,
+        ...updates,
+        // Handle nested objects properly
+        defaultTimes: {
+          ...currentSettings.defaultTimes,
+          ...(updates.defaultTimes || {})
+        },
+        collection: {
+          ...currentSettings.collection,
+          ...(updates.collection || {})
+        },
+        delivery: {
           ...currentSettings.delivery,
-          ...updates.delivery,
+          ...(updates.delivery || {}),
           customTimes: {
             ...currentSettings.delivery.customTimes,
-            ...updates.delivery.customTimes
+            ...(updates.delivery?.customTimes || {})
           }
-        }
-      }
-      
-      // Handle table ordering customTimes
-      if (updates.tableOrdering?.customTimes) {
-        updates.tableOrdering = {
+        },
+        tableOrdering: {
           ...currentSettings.tableOrdering,
-          ...updates.tableOrdering,
+          ...(updates.tableOrdering || {}),
           customTimes: {
             ...currentSettings.tableOrdering.customTimes,
-            ...updates.tableOrdering.customTimes
+            ...(updates.tableOrdering?.customTimes || {})
           }
         }
       }
+
+      // Update via API
+      await orderingTimesService.updateDaySchedule(day, updatedSettings)
       
-      return {
-        ...prev,
-        [day]: {
-          ...currentSettings,
-          ...updates
+      // Update local state
+      setOrderingTimes(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          weeklySchedule: {
+            ...prev.weeklySchedule,
+            [day]: updatedSettings
+          }
         }
-      }
-    })
+      })
+
+      toast.success(`${orderingTimesService.getDayDisplayName(day)} settings updated`)
+    } catch (error) {
+      console.error('Error updating day settings:', error)
+      toast.error('Failed to update day settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveAllChanges = async () => {
+    if (!orderingTimes) return
+
+    try {
+      setSaving(true)
+      await orderingTimesService.updateWeeklySchedule(orderingTimes.weeklySchedule)
+      toast.success('All ordering times saved successfully')
+    } catch (error) {
+      console.error('Error saving all changes:', error)
+      toast.error('Failed to save all changes')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const navigateToClosedDates = () => {
@@ -141,6 +128,30 @@ export default function OrderingTimesPage() {
     router.push("/settings/ordering-times/restrictions")
   }
 
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          Loading ordering times...
+        </div>
+      </PageLayout>
+    )
+  }
+
+  if (!orderingTimes) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No ordering times found</h3>
+            <p className="text-gray-500">Failed to load ordering times data.</p>
+          </div>
+        </div>
+      </PageLayout>
+    )
+  }
+
   return (
     <PageLayout>
       {/* Header */}
@@ -149,10 +160,7 @@ export default function OrderingTimesPage() {
         <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-            </svg>
+            <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
         </div>
@@ -176,283 +184,305 @@ export default function OrderingTimesPage() {
                 className="text-emerald-600 border-emerald-600"
                 onClick={navigateToClosedDates}
               >
-            Closed Dates
+                Closed Dates
               </Button>
               <Button 
                 variant="outline" 
                 className="text-emerald-600 border-emerald-600"
                 onClick={navigateToRestrictions}
               >
-            Restrictions
+                Restrictions
               </Button>
             </div>
             
-            <Button className="bg-emerald-500 hover:bg-emerald-600">
-              Save Changes
+            <Button 
+              onClick={handleSaveAllChanges}
+              disabled={saving}
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
-                    </div>
+          </div>
           
           <div className="space-y-4">
-            {Object.entries(orderingTimes).map(([day, settings]) => (
+            {Object.entries(orderingTimes.weeklySchedule).map(([day, settings]) => (
               <div key={day} className="bg-white rounded-lg shadow-sm overflow-hidden">
                 <div 
                   className="flex justify-between items-center p-4 cursor-pointer"
                   onClick={() => handleDayToggle(day)}
                 >
-                  <h3 className="font-medium capitalize">{day}</h3>
-                  <div className="flex items-center gap-2">
-                    {settings.defaultTimes && (
-                      <span className="text-sm text-gray-500">
-                        Col: {settings.defaultTimes.start}-{settings.defaultTimes.end}
-                      </span>
-                    )}
-                    {expandedDay === day ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
+                  <div className="flex items-center gap-4">
+                    <h3 className="font-medium capitalize">{day}</h3>
+                    <div className="flex gap-2">
+                      {settings.isCollectionAllowed && (
+                        <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Collection</span>
+                      )}
+                      {settings.isDeliveryAllowed && (
+                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Delivery</span>
+                      )}
+                      {settings.isTableOrderingAllowed && (
+                        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">Table</span>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {orderingTimesService.formatTimeRange(settings.defaultTimes.start, settings.defaultTimes.end)}
+                    </span>
                   </div>
+                  {expandedDay === day ? (
+                    <ChevronUp className="h-5 w-5" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" />
+                  )}
                 </div>
-                
+
                 <div className={cn(
-                  "border-t transition-all",
+                  "border-t",
                   expandedDay === day ? "block" : "hidden"
                 )}>
-                  <div className="p-4 space-y-6">
-                    {/* Default Order Times */}
-                    <div className="space-y-4">
-                      <Label>Default Order Times</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="time"
-                          value={settings.defaultTimes.start}
-                          onChange={(e) => updateDaySettings(day, {
-                            defaultTimes: {
-                              ...settings.defaultTimes,
-                              start: e.target.value
-                            }
-                          })}
-                        />
-                        <span>to</span>
-                        <Input
-                          type="time"
-                          value={settings.defaultTimes.end}
-                          onChange={(e) => updateDaySettings(day, {
-                            defaultTimes: {
-                              ...settings.defaultTimes,
-                              end: e.target.value
-                            }
-                          })}
-                        />
-                </div>
-              </div>
-              
-                    {/* Collection Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label>Collection Ordering</Label>
+                  <div className="p-6 space-y-6">
+                    {/* Default Times */}
+                    <div>
+                      <h4 className="font-medium mb-3">Default Times</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`${day}-start`}>Start Time</Label>
+                          <Input
+                            id={`${day}-start`}
+                            type="time"
+                            value={settings.defaultTimes.start}
+                            onChange={(e) => updateDaySettings(day, {
+                              defaultTimes: { ...settings.defaultTimes, start: e.target.value }
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`${day}-end`}>End Time</Label>
+                          <Input
+                            id={`${day}-end`}
+                            type="time"
+                            value={settings.defaultTimes.end}
+                            onChange={(e) => updateDaySettings(day, {
+                              defaultTimes: { ...settings.defaultTimes, end: e.target.value }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Collection Settings */}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Collection</h4>
                         <Switch
                           checked={settings.isCollectionAllowed}
                           onCheckedChange={(checked) => updateDaySettings(day, {
                             isCollectionAllowed: checked
                           })}
                         />
-                </div>
-                
+                      </div>
                       {settings.isCollectionAllowed && (
-                        <div className="space-y-4 pl-4">
-                          <div className="grid grid-cols-2 gap-4">
-                  <div>
-                              <Label>Collection Lead Times</Label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  value={settings.collection.leadTime}
-                                  onChange={(e) => updateDaySettings(day, {
-                                    collection: {
-                                      ...settings.collection,
-                                      leadTime: parseInt(e.target.value) || 0
-                                    }
-                                  })}
-                                />
-                                <span>mins</span>
-                    </div>
-                  </div>
-                  <div>
-                              <Label>Displayed Times</Label>
-                              <Input
-                                type="time"
-                                value={settings.collection.displayedTime}
-                                onChange={(e) => updateDaySettings(day, {
-                                  collection: {
-                                    ...settings.collection,
-                                    displayedTime: e.target.value
-                                  }
-                                })}
-                              />
-                  </div>
-                </div>
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor={`${day}-collection-lead`}>Lead Time (minutes)</Label>
+                            <Input
+                              id={`${day}-collection-lead`}
+                              type="number"
+                              min="0"
+                              value={settings.collection.leadTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                collection: { ...settings.collection, leadTime: parseInt(e.target.value) || 0 }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`${day}-collection-display`}>Displayed Time</Label>
+                            <Input
+                              id={`${day}-collection-display`}
+                              type="time"
+                              value={settings.collection.displayedTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                collection: { ...settings.collection, displayedTime: e.target.value }
+                              })}
+                            />
+                          </div>
                         </div>
                       )}
-              </div>
-              
-                    {/* Delivery Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label>Delivery Ordering</Label>
+                    </div>
+
+                    {/* Delivery Settings */}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Delivery</h4>
                         <Switch
                           checked={settings.isDeliveryAllowed}
                           onCheckedChange={(checked) => updateDaySettings(day, {
                             isDeliveryAllowed: checked
                           })}
-                    />
-                  </div>
-
+                        />
+                      </div>
                       {settings.isDeliveryAllowed && (
-                        <div className="space-y-4 pl-4">
-                          <div className="flex items-center justify-between">
-                            <Label>Use Different Times to Above</Label>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
                             <Switch
                               checked={settings.delivery.useDifferentTimes}
                               onCheckedChange={(checked) => updateDaySettings(day, {
-                                delivery: {
-                                  ...settings.delivery,
-                                  useDifferentTimes: checked
-                                }
+                                delivery: { ...settings.delivery, useDifferentTimes: checked }
                               })}
                             />
-                </div>
-                
+                            <Label>Use different times for delivery</Label>
+                          </div>
+                          
                           {settings.delivery.useDifferentTimes && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="time"
-                                value={settings.delivery.customTimes?.start || settings.defaultTimes.start}
-                                onChange={(e) => updateDaySettings(day, {
-                                  delivery: {
-                                    ...settings.delivery,
-                                    customTimes: {
-                                      ...settings.delivery.customTimes,
-                                      start: e.target.value
-                                    }
-                                  }
-                                })}
-                              />
-                              <span>to</span>
-                              <Input
-                                type="time"
-                                value={settings.delivery.customTimes?.end || settings.defaultTimes.end}
-                                onChange={(e) => updateDaySettings(day, {
-                                  delivery: {
-                                    ...settings.delivery,
-                                    customTimes: {
-                                      ...settings.delivery.customTimes,
-                                      end: e.target.value
-                                    }
-                                  }
-                                })}
-                    />
-                  </div>
-                          )}
-                
-                          <div className="grid grid-cols-2 gap-4">
-                  <div>
-                              <Label>Delivery Lead Times</Label>
-                              <div className="flex items-center gap-2">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`${day}-delivery-start`}>Start Time</Label>
                                 <Input
-                                  type="number"
-                                  value={settings.delivery.leadTime}
+                                  id={`${day}-delivery-start`}
+                                  type="time"
+                                  value={settings.delivery.customTimes.start}
                                   onChange={(e) => updateDaySettings(day, {
                                     delivery: {
                                       ...settings.delivery,
-                                      leadTime: parseInt(e.target.value) || 0
+                                      customTimes: { ...settings.delivery.customTimes, start: e.target.value }
                                     }
                                   })}
                                 />
-                                <span>mins</span>
-                    </div>
-                  </div>
-                  <div>
-                              <Label>Displayed Times</Label>
-                              <Input
-                                type="time"
-                                value={settings.delivery.displayedTime}
-                                onChange={(e) => updateDaySettings(day, {
-                                  delivery: {
-                                    ...settings.delivery,
-                                    displayedTime: e.target.value
-                                  }
-                                })}
-                              />
-                  </div>
-                </div>
-              </div>
+                              </div>
+                              <div>
+                                <Label htmlFor={`${day}-delivery-end`}>End Time</Label>
+                                <Input
+                                  id={`${day}-delivery-end`}
+                                  type="time"
+                                  value={settings.delivery.customTimes.end}
+                                  onChange={(e) => updateDaySettings(day, {
+                                    delivery: {
+                                      ...settings.delivery,
+                                      customTimes: { ...settings.delivery.customTimes, end: e.target.value }
+                                    }
+                                  })}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <Label htmlFor={`${day}-delivery-lead`}>Lead Time (minutes)</Label>
+                            <Input
+                              id={`${day}-delivery-lead`}
+                              type="number"
+                              min="0"
+                              value={settings.delivery.leadTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                delivery: { ...settings.delivery, leadTime: parseInt(e.target.value) || 0 }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`${day}-delivery-display`}>Displayed Time</Label>
+                            <Input
+                              id={`${day}-delivery-display`}
+                              type="time"
+                              value={settings.delivery.displayedTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                delivery: { ...settings.delivery, displayedTime: e.target.value }
+                              })}
+                            />
+                          </div>
+                        </div>
                       )}
-          </div>
-          
-                    {/* Table Ordering Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label>Table Ordering</Label>
+                    </div>
+
+                    {/* Table Ordering Settings */}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Table Ordering</h4>
                         <Switch
                           checked={settings.isTableOrderingAllowed}
                           onCheckedChange={(checked) => updateDaySettings(day, {
                             isTableOrderingAllowed: checked
                           })}
                         />
-          </div>
-          
+                      </div>
                       {settings.isTableOrderingAllowed && (
-                        <div className="space-y-4 pl-4">
-                          <div className="flex items-center justify-between">
-                            <Label>Use Different Times to Above</Label>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
                             <Switch
                               checked={settings.tableOrdering.useDifferentTimes}
                               onCheckedChange={(checked) => updateDaySettings(day, {
-                                tableOrdering: {
-                                  ...settings.tableOrdering,
-                                  useDifferentTimes: checked
-                                }
+                                tableOrdering: { ...settings.tableOrdering, useDifferentTimes: checked }
                               })}
                             />
-          </div>
-          
+                            <Label>Use different times for table ordering</Label>
+                          </div>
+                          
                           {settings.tableOrdering.useDifferentTimes && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="time"
-                                value={settings.tableOrdering.customTimes?.start || settings.defaultTimes.start}
-                                onChange={(e) => updateDaySettings(day, {
-                                  tableOrdering: {
-                                    ...settings.tableOrdering,
-                                    customTimes: {
-                                      ...settings.tableOrdering.customTimes,
-                                      start: e.target.value
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`${day}-table-start`}>Start Time</Label>
+                                <Input
+                                  id={`${day}-table-start`}
+                                  type="time"
+                                  value={settings.tableOrdering.customTimes.start}
+                                  onChange={(e) => updateDaySettings(day, {
+                                    tableOrdering: {
+                                      ...settings.tableOrdering,
+                                      customTimes: { ...settings.tableOrdering.customTimes, start: e.target.value }
                                     }
-                                  }
-                                })}
-                              />
-                              <span>to</span>
-                              <Input
-                                type="time"
-                                value={settings.tableOrdering.customTimes?.end || settings.defaultTimes.end}
-                                onChange={(e) => updateDaySettings(day, {
-                                  tableOrdering: {
-                                    ...settings.tableOrdering,
-                                    customTimes: {
-                                      ...settings.tableOrdering.customTimes,
-                                      end: e.target.value
+                                  })}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`${day}-table-end`}>End Time</Label>
+                                <Input
+                                  id={`${day}-table-end`}
+                                  type="time"
+                                  value={settings.tableOrdering.customTimes.end}
+                                  onChange={(e) => updateDaySettings(day, {
+                                    tableOrdering: {
+                                      ...settings.tableOrdering,
+                                      customTimes: { ...settings.tableOrdering.customTimes, end: e.target.value }
                                     }
-                                  }
-                                })}
-                              />
-              </div>
+                                  })}
+                                />
+                              </div>
+                            </div>
                           )}
-            </div>
+                          
+                          <div>
+                            <Label htmlFor={`${day}-table-lead`}>Lead Time (minutes)</Label>
+                            <Input
+                              id={`${day}-table-lead`}
+                              type="number"
+                              min="0"
+                              value={settings.tableOrdering.leadTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                tableOrdering: { ...settings.tableOrdering, leadTime: parseInt(e.target.value) || 0 }
+                              })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`${day}-table-display`}>Displayed Time</Label>
+                            <Input
+                              id={`${day}-table-display`}
+                              type="time"
+                              value={settings.tableOrdering.displayedTime}
+                              onChange={(e) => updateDaySettings(day, {
+                                tableOrdering: { ...settings.tableOrdering, displayedTime: e.target.value }
+                              })}
+                            />
+                          </div>
+                        </div>
                       )}
-            </div>
-            </div>
-          </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

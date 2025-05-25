@@ -16,16 +16,11 @@ import { format } from "date-fns"
 import { CalendarIcon, ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Discount } from '@/services/discount.service'
 
-interface DiscountModalProps {
-  isOpen: boolean
-  onClose: () => void
-  discount?: Discount
-  onSave: (discount: Discount) => void
-}
-
-interface Discount {
-  id?: number
+// Form interface for the modal (uses Date objects for easier handling)
+interface DiscountFormData {
+  _id?: string
   name: string
   code: string
   allowMultipleCoupons: boolean
@@ -61,9 +56,17 @@ interface Discount {
     tableOrdering: boolean
   }
   firstOrderOnly: boolean
+  isActive: boolean
 }
 
-const defaultDiscount: Discount = {
+interface DiscountModalProps {
+  isOpen: boolean
+  onClose: () => void
+  discount?: Discount
+  onSave: (discount: Partial<Discount>) => Promise<void>
+}
+
+const defaultDiscount: DiscountFormData = {
   name: '',
   code: '',
   allowMultipleCoupons: false,
@@ -99,6 +102,7 @@ const defaultDiscount: Discount = {
     tableOrdering: true,
   },
   firstOrderOnly: false,
+  isActive: true,
 }
 
 export default function DiscountModal({
@@ -107,18 +111,29 @@ export default function DiscountModal({
   discount,
   onSave,
 }: DiscountModalProps) {
-  const [formData, setFormData] = useState<Discount>(defaultDiscount)
+  const [formData, setFormData] = useState<DiscountFormData>(defaultDiscount)
 
   useEffect(() => {
     if (discount) {
-      setFormData(discount)
+      // Convert API format to form format
+      setFormData({
+        ...discount,
+        startDate: discount.startDate ? new Date(discount.startDate) : null,
+        endDate: discount.endDate ? new Date(discount.endDate) : null,
+      })
     } else {
       setFormData(defaultDiscount)
     }
   }, [discount, isOpen])
 
-  const handleSave = () => {
-    onSave(formData)
+  const handleSave = async () => {
+    // Convert form format to API format
+    const apiData: Partial<Discount> = {
+      ...formData,
+      startDate: formData.startDate ? formData.startDate.toISOString() : null,
+      endDate: formData.endDate ? formData.endDate.toISOString() : null,
+    }
+    await onSave(apiData)
     onClose()
   }
 
@@ -224,7 +239,10 @@ export default function DiscountModal({
                 <Switch
                   id="dunfermline"
                   checked={formData.outlets.dunfermline}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, outlets: { ...prev.outlets, dunfermline: checked } }))}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    outlets: { ...prev.outlets, dunfermline: checked } 
+                  }))}
                 />
               </div>
 
@@ -233,7 +251,10 @@ export default function DiscountModal({
                 <Switch
                   id="edinburgh"
                   checked={formData.outlets.edinburgh}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, outlets: { ...prev.outlets, edinburgh: checked } }))}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    outlets: { ...prev.outlets, edinburgh: checked } 
+                  }))}
                 />
               </div>
 
@@ -242,7 +263,10 @@ export default function DiscountModal({
                 <Switch
                   id="glasgow"
                   checked={formData.outlets.glasgow}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, outlets: { ...prev.outlets, glasgow: checked } }))}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    outlets: { ...prev.outlets, glasgow: checked } 
+                  }))}
                 />
               </div>
             </div>
@@ -268,19 +292,15 @@ export default function DiscountModal({
                         <Button
                           variant="outline"
                           className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !formData.startDate && 'text-muted-foreground'
+                            "w-full justify-start text-left font-normal",
+                            !formData.startDate && "text-muted-foreground"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.startDate ? (
-                            format(formData.startDate, 'PPP')
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
+                          {formData.startDate ? format(formData.startDate, "PPP") : <span>Pick a date</span>}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={formData.startDate || undefined}

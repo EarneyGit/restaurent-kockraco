@@ -1,131 +1,46 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import DiscountModal from "@/components/marketing/discount-modal"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
-
-interface Discount {
-  id?: number
-  name: string
-  code: string
-  allowMultipleCoupons: boolean
-  discountType: 'percentage' | 'fixed'
-  discountValue: number
-  minSpend: number
-  maxSpend: number
-  outlets: {
-    dunfermline: boolean // "Admin user" outlet
-    edinburgh: boolean
-    glasgow: boolean
-  }
-  timeDependent: boolean
-  startDate: Date | null
-  endDate: Date | null
-  maxUses: {
-    total: number
-    perCustomer: number
-    perDay: number
-  }
-  daysAvailable: {
-    monday: boolean
-    tuesday: boolean
-    wednesday: boolean
-    thursday: boolean
-    friday: boolean
-    saturday: boolean
-    sunday: boolean
-  }
-  serviceTypes: {
-    collection: boolean
-    delivery: boolean
-    tableOrdering: boolean
-  }
-  firstOrderOnly: boolean
-}
+import { discountService, Discount, DiscountResponse } from '@/services/discount.service'
 
 export default function DiscountsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedDiscount, setSelectedDiscount] = useState<Discount | undefined>()
-  const [discounts, setDiscounts] = useState<Discount[]>([
-    {
-      id: 1,
-      name: 'First Order Discount',
-      code: '20off',
-      allowMultipleCoupons: false,
-      discountType: 'percentage',
-      discountValue: 20,
-      minSpend: 15,
-      maxSpend: 0,
-      outlets: {
-        dunfermline: true,
-        edinburgh: true,
-        glasgow: true,
-      },
-      timeDependent: true,
-      startDate: new Date('2024-08-07'),
-      endDate: new Date('2026-07-13'),
-      maxUses: {
-        total: 0,
-        perCustomer: 1,
-        perDay: 0,
-      },
-      daysAvailable: {
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: true,
-        sunday: true,
-      },
-      serviceTypes: {
-        collection: true,
-        delivery: true,
-        tableOrdering: true,
-      },
-      firstOrderOnly: true,
-    },
-    {
-      id: 2,
-      name: 'Loyalty Points',
-      code: '{dynamicallygenerated}',
-      allowMultipleCoupons: true,
-      discountType: 'fixed',
-      discountValue: 5,
-      minSpend: 0.01,
-      maxSpend: 0,
-      outlets: {
-        dunfermline: true,
-        edinburgh: true,
-        glasgow: true,
-      },
-      timeDependent: true,
-      startDate: new Date('2024-08-07'),
-      endDate: null,
-      maxUses: {
-        total: 0,
-        perCustomer: 0,
-        perDay: 0,
-      },
-      daysAvailable: {
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: true,
-        sunday: true,
-      },
-      serviceTypes: {
-        collection: true,
-        delivery: true,
-        tableOrdering: true,
-      },
-      firstOrderOnly: false,
-    },
-  ])
+  const [discounts, setDiscounts] = useState<Discount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalDiscounts, setTotalDiscounts] = useState(0)
+
+  // Fetch discounts from API
+  const fetchDiscounts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response: DiscountResponse = await discountService.getDiscounts(currentPage, 20)
+      
+      setDiscounts(response.data)
+      setTotalPages(response.pagination.totalPages)
+      setTotalDiscounts(response.pagination.totalDiscounts)
+    } catch (err: any) {
+      console.error('Error fetching discounts:', err)
+      setError(err.message || 'Failed to fetch discounts')
+      setDiscounts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch discounts when component mounts or page changes
+  useEffect(() => {
+    fetchDiscounts()
+  }, [currentPage])
 
   const handleAddDiscount = () => {
     setSelectedDiscount(undefined)
@@ -137,17 +52,31 @@ export default function DiscountsPage() {
     setIsModalOpen(true)
   }
 
-  const handleDeleteDiscount = (id: number) => {
+  const handleDeleteDiscount = async (id: string) => {
     if (confirm('Are you sure you want to delete this discount?')) {
-      setDiscounts(discounts.filter((discount) => discount.id !== id))
+      try {
+        await discountService.deleteDiscount(id)
+        fetchDiscounts() // Refresh the list
+      } catch (err: any) {
+        console.error('Error deleting discount:', err)
+        alert('Failed to delete discount: ' + err.message)
+      }
     }
   }
 
-  const handleSaveDiscount = (discount: Discount) => {
-    if (discount.id) {
-      setDiscounts(discounts.map((d) => (d.id === discount.id ? discount : d)))
-    } else {
-      setDiscounts([...discounts, { ...discount, id: Date.now() }])
+  const handleSaveDiscount = async (discount: Partial<Discount>) => {
+    try {
+      if (discount._id) {
+        // Update existing discount
+        await discountService.updateDiscount(discount._id, discount)
+      } else {
+        // Create new discount
+        await discountService.createDiscount(discount)
+      }
+      fetchDiscounts() // Refresh the list
+    } catch (err: any) {
+      console.error('Error saving discount:', err)
+      alert('Failed to save discount: ' + err.message)
     }
   }
 
@@ -174,74 +103,132 @@ export default function DiscountsPage() {
           <Button
             onClick={handleAddDiscount}
             className="bg-emerald-500 hover:bg-emerald-600"
+            disabled={loading}
           >
             Add Discount
           </Button>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+            <button 
+              onClick={fetchDiscounts}
+              className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         
         {/* Discounts Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="px-6 py-3">Name</th>
-                <th className="px-6 py-3">Code</th>
-                <th className="px-6 py-3">Value</th>
-                <th className="px-6 py-3">Start Date</th>
-                <th className="px-6 py-3">End Date</th>
-                <th className="px-6 py-3">Min Spend</th>
-                <th className="px-6 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {discounts.map((discount) => (
-                <tr key={discount.id} className="border-b">
-                  <td className="px-6 py-4">{discount.name}</td>
-                  <td className="px-6 py-4">{discount.code}</td>
-                  <td className="px-6 py-4">
-                    {discount.discountType === 'percentage'
-                      ? `${discount.discountValue}%`
-                      : `£${discount.discountValue.toFixed(2)}`}
-                  </td>
-                  <td className="px-6 py-4">
-                    {discount.startDate ? format(discount.startDate, 'dd/MM/yyyy') : '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    {discount.endDate ? format(discount.endDate, 'dd/MM/yyyy') : '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    £{discount.minSpend.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleEditDiscount(discount)}
-                        className="text-emerald-500 hover:text-emerald-700"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleDeleteDiscount(discount.id!)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </td>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <span className="ml-2 text-gray-600">Loading discounts...</span>
+            </div>
+          ) : discounts.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No discounts available</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="px-6 py-3">Name</th>
+                  <th className="px-6 py-3">Code</th>
+                  <th className="px-6 py-3">Value</th>
+                  <th className="px-6 py-3">Start Date</th>
+                  <th className="px-6 py-3">End Date</th>
+                  <th className="px-6 py-3">Min Spend</th>
+                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Actions</th>
                 </tr>
-              ))}
-              {discounts.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    No discounts available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {discounts.map((discount) => (
+                  <tr key={discount._id} className="border-b">
+                    <td className="px-6 py-4">{discount.name}</td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                        {discount.code}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs ${discountService.getDiscountTypeBadgeColor(discount.discountType)}`}>
+                        {discountService.formatDiscountValue(discount)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {discount.startDate ? discountService.formatDate(discount.startDate) : '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {discount.endDate ? discountService.formatDate(discount.endDate) : '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {discountService.formatCurrency(discount.minSpend)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs ${discountService.getDiscountStatusBadgeColor(discount.isActive)}`}>
+                        {discount.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleEditDiscount(discount)}
+                          className="text-emerald-500 hover:text-emerald-700"
+                          disabled={loading}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleDeleteDiscount(discount._id)}
+                          className="text-red-500 hover:text-red-700"
+                          disabled={loading}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-700">
+              Showing {discounts.length} of {totalDiscounts} discounts
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || loading}
+              >
+                Previous
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
 
         <DiscountModal
           isOpen={isModalOpen}
