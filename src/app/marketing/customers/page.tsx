@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
-
-interface Customer {
-  id: number
-  firstname: string
-  lastname: string
-  email: string
-  mobile: string
-  address: string
-  postcode: string
-}
+import { customerService, Customer, CustomerResponse } from '@/services/customer.service'
 
 interface SearchFilters {
   userId: string
@@ -34,64 +25,75 @@ export default function CustomersPage() {
     postcode: ''
   })
   
-  // Sample customer data
-  const [customers] = useState<Customer[]>([
-    { id: 1, firstname: 'Graham', lastname: 'Wallace', email: 'graham425@btinternet.com', mobile: '+447971538072', address: '18 Greycraigs, Cairneyhill', postcode: 'KY12 8XL' },
-    { id: 2, firstname: 'Natalie', lastname: 'McKenzie', email: 'nataliemckenzie84@hotmail.com', mobile: '+447921334821', address: '23 Whitemyre Court', postcode: 'KY12 9PF' },
-    { id: 3, firstname: 'Catherine', lastname: 'Reid', email: 'kayreid5@tiscali.co.uk', mobile: '+447882747524', address: '6 Grampian Road, Rosyth', postcode: 'KY11 2ES' },
-    { id: 4, firstname: 'Mike', lastname: 'Brechin', email: 'Mikebrechin@hotmail.com', mobile: '+447956795634', address: '22/6 Springwell Place', postcode: 'EH11 2HY' },
-    { id: 5, firstname: 'Catherine', lastname: 'Sheffield', email: 'catherinesheffield@hotmail.com', mobile: '+447915399183', address: 'Hazid Technologies, Pitmedden', postcode: 'KY11 8US' },
-    { id: 6, firstname: 'Craig', lastname: 'Fulton', email: 'craigfulton@live.co.uk', mobile: '+447376493007', address: '16 Greycraigs, Cairneyhill', postcode: 'KY12 8XL' },
-    { id: 7, firstname: 'Doug', lastname: 'Barr', email: 'dougbarr83@gmail.com', mobile: '+447740981098', address: '32 Sandpiper Gardens', postcode: 'KY11 8LE' },
-    { id: 8, firstname: 'Chris', lastname: 'Stewart', email: 'chris.stewart1591@gmail.com', mobile: '+447521082440', address: '287 Broomhead Drive', postcode: 'KY12 9AE' },
-    { id: 9, firstname: 'Kristoffer', lastname: 'Grant', email: 'kristoffergrant1875@gmail.com', mobile: '+447566743372', address: '15/6 Murdoch Terrace', postcode: 'EH11 1BD' },
-    { id: 10, firstname: 'Heather', lastname: 'Snowie', email: 'heather.snowie@gmail.com', mobile: '+447398021573', address: '22 Maygate', postcode: 'KY12 7NH' },
-    { id: 11, firstname: 'David', lastname: 'McGeachie', email: 'd_mcgeachie@hotmail.com', mobile: '+447743113076', address: '1 Redwing Wynd', postcode: 'KY11 8SP' },
-    { id: 12, firstname: 'Karen', lastname: 'Harwood', email: 'karen.harwood8@icloud.com', mobile: '+447494203439', address: '36 Craigston Drive', postcode: 'KY12 0XE' },
-    { id: 13, firstname: 'Maria', lastname: 'Coutts', email: 'elisa.fisher@hotmail.com', mobile: '+447896465186', address: '69 Wedderburn Crescent', postcode: 'KY11 4RY' },
-    { id: 14, firstname: 'Pamela', lastname: 'Kelly', email: 'pamelakelly81@hotmail.com', mobile: '+447782510131', address: '110 Law Road', postcode: 'KY11 4XA' },
-    { id: 15, firstname: 'Sam', lastname: 'Etherington', email: 'S.etherington1705@gmail.com', mobile: '+447848795665', address: '22 Osprey Crescent', postcode: 'KY11 8JQ' },
-    { id: 16, firstname: 'Katerina', lastname: 'Charalambous', email: 'katerina@amityhospitality.co.uk', mobile: '+447944702979', address: 'Voodoo Tattoo Club, 58 High Street', postcode: 'KY12 7JB' },
-    { id: 17, firstname: 'Elisa', lastname: 'Fisher', email: 'elisa.fisher@icloud.com', mobile: '+447896465186', address: '69 Wedderburn Crescent', postcode: 'KY11 4RY' },
-    { id: 18, firstname: 'Bengt', lastname: 'Hollaender', email: 'bengt.ove.hollaender@gmail.com', mobile: '+447570022996', address: '12 Woodlands Drive, Crossford', postcode: 'KY12 8QE' },
-    { id: 19, firstname: 'Dean', lastname: 'Hynd', email: 'deanhynd1@gmail.com', mobile: '+447807186055', address: '39 Keltyhill Crescent', postcode: 'KY4 0LE' },
-    { id: 20, firstname: 'Eilidh', lastname: 'Gover', email: 'eilidhgover@gmail.com', mobile: '+447484221864', address: '16 Canon Lynch Court', postcode: 'KY12 8AU' }
-  ])
-
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>(customers)
+  // State for API data
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalCustomers, setTotalCustomers] = useState(0)
 
-  useEffect(() => {
-    // Filter customers based on search criteria
-    let filtered = customers.filter(customer => {
-      return (
-        customer.id.toString().includes(filters.userId) &&
-        customer.firstname.toLowerCase().includes(filters.firstname.toLowerCase()) &&
-        customer.lastname.toLowerCase().includes(filters.lastname.toLowerCase()) &&
-        customer.email.toLowerCase().includes(filters.email.toLowerCase()) &&
-        customer.mobile.includes(filters.mobile) &&
-        customer.postcode.toLowerCase().includes(filters.postcode.toLowerCase())
+  // Fetch customers from API
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response: CustomerResponse = await customerService.getFilteredCustomers(
+        {
+          userId: filters.userId || undefined,
+          firstname: filters.firstname || undefined,
+          lastname: filters.lastname || undefined,
+          email: filters.email || undefined,
+          mobile: filters.mobile || undefined,
+          postcode: filters.postcode || undefined,
+        },
+        currentPage,
+        itemsPerPage,
+        'lastOrderDate',
+        'desc'
       )
-    })
-
-    setFilteredCustomers(filtered)
-    setTotalPages(Math.ceil(filtered.length / itemsPerPage))
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [filters, itemsPerPage, customers])
-
-  const handleSearch = () => {
-    // Trigger the useEffect by updating filters state
-    setFilters({ ...filters })
+      
+      setCustomers(response.data)
+      setTotalPages(response.pagination.totalPages)
+      setTotalCustomers(response.pagination.totalCustomers)
+    } catch (err: any) {
+      console.error('Error fetching customers:', err)
+      setError(err.message || 'Failed to fetch customers')
+      setCustomers([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
+  // Fetch customers when component mounts or dependencies change
+  useEffect(() => {
+    fetchCustomers()
+  }, [currentPage, itemsPerPage])
 
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1) // Reset to first page when searching
+    fetchCustomers()
+  }
+
+  // Handle page change
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage)
+    }
+  }
+
+  // Handle customer details view
+  const handleViewDetails = async (customerId: string) => {
+    try {
+      const response = await customerService.getCustomer(customerId)
+      // You can implement a modal or navigate to a details page here
+      console.log('Customer details:', response.data)
+      // For now, just log the details
+      alert(`Customer Details:\nName: ${customerService.formatCustomerName(response.data)}\nEmail: ${response.data.email}\nTotal Orders: ${response.data.totalOrders}\nTotal Spent: ${customerService.formatCurrency(response.data.totalSpent)}`)
+    } catch (err: any) {
+      console.error('Error fetching customer details:', err)
+      alert('Failed to fetch customer details')
     }
   }
 
@@ -161,116 +163,125 @@ export default function CustomersPage() {
               onChange={(e) => setFilters(prev => ({ ...prev, postcode: e.target.value }))}
             />
             <button 
-              className="bg-teal-500 hover:bg-teal-600 text-white px-4 rounded-r-md"
+              className="bg-teal-500 hover:bg-teal-600 text-white px-4 rounded-r-md disabled:opacity-50"
               onClick={handleSearch}
+              disabled={loading}
             >
-              Search
+              {loading ? 'Searching...' : 'Search'}
             </button>
           </div>
         </div>
-        
-        {/* Pagination Controls - Top */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
             <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
+              onClick={fetchCustomers}
+              className="mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
             >
-              &lt;&lt;
-            </button>
-            <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              &lt;
-            </button>
-            <select 
-              className="border rounded-md px-2 py-1 text-sm"
-              value={currentPage}
-              onChange={(e) => handlePageChange(parseInt(e.target.value))}
-            >
-              {Array.from({ length: totalPages }, (_, i) => (
-                <option key={i + 1} value={i + 1}>{i + 1}</option>
-              ))}
-            </select>
-            <span className="text-sm">of {totalPages}</span>
-            <select 
-              className="border rounded-md px-2 py-1 text-sm"
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-            >
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <span className="text-sm">of {filteredCustomers.length}</span>
-            <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              &gt;
-            </button>
-            <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-            >
-              &gt;&gt;
+              Retry
             </button>
           </div>
-        </div>
+        )}
         
         {/* Customers Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-4">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-500">
-                <th className="px-6 py-3">Firstname</th>
-                <th className="px-6 py-3">Lastname</th>
-                <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Mobile</th>
-                <th className="px-6 py-3">Address</th>
-                <th className="px-6 py-3">Postcode</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedCustomers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm">{customer.firstname}</td>
-                  <td className="px-6 py-3 text-sm">{customer.lastname}</td>
-                  <td className="px-6 py-3 text-sm text-gray-500">{customer.email}</td>
-                  <td className="px-6 py-3 text-sm">{customer.mobile}</td>
-                  <td className="px-6 py-3 text-sm">{customer.address}</td>
-                  <td className="px-6 py-3 text-sm">{customer.postcode}</td>
-                  <td className="px-6 py-3 text-sm">
-                    <button className="text-teal-500 hover:text-teal-700">
-                      Details
-                    </button>
-                  </td>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+              <span className="ml-2 text-gray-600">Loading customers...</span>
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No customers found</p>
+              {Object.values(filters).some(filter => filter !== '') && (
+                <button 
+                  onClick={() => {
+                    setFilters({
+                      userId: '',
+                      firstname: '',
+                      lastname: '',
+                      email: '',
+                      mobile: '',
+                      postcode: ''
+                    })
+                    setCurrentPage(1)
+                    fetchCustomers()
+                  }}
+                  className="mt-2 text-teal-500 hover:text-teal-700 underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-gray-50 text-left text-sm text-gray-500">
+                  <th className="px-6 py-3">Firstname</th>
+                  <th className="px-6 py-3">Lastname</th>
+                  <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3">Mobile</th>
+                  <th className="px-6 py-3">Address</th>
+                  <th className="px-6 py-3">Postcode</th>
+                  <th className="px-6 py-3">Orders</th>
+                  <th className="px-6 py-3">Total Spent</th>
+                  <th className="px-6 py-3">Type</th>
+                  <th className="px-6 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {customers.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3 text-sm">{customer.firstname || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.lastname || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm text-gray-500">{customer.email || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.mobile || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.address || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.postcode || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        {customer.totalOrders}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-sm font-medium">
+                      {customerService.formatCurrency(customer.totalSpent)}
+                    </td>
+                    <td className="px-6 py-3 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs ${customerService.getCustomerTypeBadgeColor(customer.customerType)}`}>
+                        {customer.customerType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-sm">
+                      <button 
+                        className="text-teal-500 hover:text-teal-700"
+                        onClick={() => handleViewDetails(customer.id)}
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
         
-        {/* Pagination Controls - Bottom */}
+        {/* Pagination Controls - Bottom Only */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <button 
               className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
               onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
             >
               &lt;&lt;
             </button>
             <button 
               className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
               onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
             >
               &lt;
             </button>
@@ -278,6 +289,7 @@ export default function CustomersPage() {
               className="border rounded-md px-2 py-1 text-sm"
               value={currentPage}
               onChange={(e) => handlePageChange(parseInt(e.target.value))}
+              disabled={loading}
             >
               {Array.from({ length: totalPages }, (_, i) => (
                 <option key={i + 1} value={i + 1}>{i + 1}</option>
@@ -288,23 +300,24 @@ export default function CustomersPage() {
               className="border rounded-md px-2 py-1 text-sm"
               value={itemsPerPage}
               onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+              disabled={loading}
             >
               <option value="20">20</option>
               <option value="50">50</option>
               <option value="100">100</option>
             </select>
-            <span className="text-sm">of {filteredCustomers.length}</span>
+            <span className="text-sm">of {totalCustomers}</span>
             <button 
               className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
             >
               &gt;
             </button>
             <button 
               className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
               onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
             >
               &gt;&gt;
             </button>

@@ -1,62 +1,62 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import PageLayout from "@/components/layout/page-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { ChevronDown, ChevronUp, Eye } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-
-interface MenuItem {
-  id: string
-  name: string
-  currentPrice: number
-  newPrice: number
-}
-
-interface Category {
-  name: string
-  items: MenuItem[]
-  isExpanded: boolean
-}
+import { priceChangesService, Category, MenuItem } from "@/services/price-changes.service"
+import { toast } from "sonner"
 
 export default function PriceChangesPage() {
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"))
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"))
   const [showHiddenCategories, setShowHiddenCategories] = useState(false)
   const [showHiddenItems, setShowHiddenItems] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      name: "Meal Deals",
-      isExpanded: true,
-      items: [
-        { id: "1", name: "Quarter Chicken Meal", currentPrice: 9.99, newPrice: 9.99 },
-        { id: "2", name: "Half Chicken Meal", currentPrice: 13.99, newPrice: 13.99 },
-        { id: "3", name: "Charcoal Chicken Pack", currentPrice: 24.99, newPrice: 24.99 },
-        { id: "4", name: "Chicken + Rice Meal", currentPrice: 9.99, newPrice: 9.99 }
-      ]
-    },
-    {
-      name: "Grilled Chicken",
-      isExpanded: false,
-      items: []
-    },
-    // Add more categories as needed
-  ])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const toggleCategory = (categoryName: string) => {
+  // Load categories and products on component mount and when filters change
+  useEffect(() => {
+    loadCategoriesWithProducts()
+  }, [showHiddenCategories, showHiddenItems])
+
+  const loadCategoriesWithProducts = async () => {
+    try {
+      setLoading(true)
+      const response = await priceChangesService.getCategoriesWithProducts(
+        showHiddenCategories,
+        showHiddenItems
+      )
+      
+      if (response.success) {
+        setCategories(response.data)
+      } else {
+        toast.error('Failed to load categories and products')
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
+      toast.error('Failed to load categories and products')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleCategory = (categoryId: string) => {
     setCategories(categories.map(category => 
-      category.name === categoryName
+      category.id === categoryId
         ? { ...category, isExpanded: !category.isExpanded }
         : category
     ))
   }
 
-  const updateItemPrice = (categoryName: string, itemId: string, newPrice: number) => {
+  const updateItemPrice = (categoryId: string, itemId: string, newPrice: number) => {
     setCategories(categories.map(category => 
-      category.name === categoryName
+      category.id === categoryId
         ? {
             ...category,
             items: category.items.map(item =>
@@ -69,15 +69,67 @@ export default function PriceChangesPage() {
     ))
   }
 
-  const handleSaveChanges = () => {
-    // Here you would save the changes to your backend
-    console.log("Saving price changes:", {
-      startDate,
-      endDate,
-      showHiddenCategories,
-      showHiddenItems,
-      categories
-    })
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true)
+
+      // Validate dates
+      if (!startDate || !endDate) {
+        toast.error('Please select both start and end dates')
+        return
+      }
+
+      if (new Date(startDate) >= new Date(endDate)) {
+        toast.error('End date must be after start date')
+        return
+      }
+
+      // Check if any prices have been changed
+      const hasChanges = categories.some(category =>
+        category.items.some(item => item.newPrice !== item.currentPrice)
+      )
+
+      if (!hasChanges) {
+        toast.error('No price changes detected. Please modify at least one product price.')
+        return
+      }
+
+      const response = await priceChangesService.applyPriceChanges({
+        startDate,
+        endDate,
+        showHiddenCategories,
+        showHiddenItems,
+        categories
+      })
+
+      if (response.success) {
+        toast.success(response.message || 'Price changes applied successfully!')
+        
+        // Reload the data to reflect changes
+        await loadCategoriesWithProducts()
+      } else {
+        toast.error(response.message || 'Failed to apply price changes')
+      }
+    } catch (error: any) {
+      console.error('Error applying price changes:', error)
+      const errorMessage = error.response?.data?.message || 'Failed to apply price changes'
+      toast.error(errorMessage)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading categories and products...</span>
+          </div>
+        </div>
+      </PageLayout>
+    )
   }
 
   return (
@@ -157,48 +209,77 @@ export default function PriceChangesPage() {
               <Button 
                 className="bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={handleSaveChanges}
+                disabled={saving}
               >
-                Add Price Changes
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Applying Changes...
+                  </>
+                ) : (
+                  'Add Price Changes'
+                )}
               </Button>
             </div>
           </div>
 
           <div className="space-y-4">
-            {categories.map((category) => (
-              <div key={category.name} className="bg-white rounded-lg shadow-sm">
-                <div 
-                  className="flex justify-between items-center p-4 cursor-pointer"
-                  onClick={() => toggleCategory(category.name)}
-                >
-                  <h3 className="font-medium">{category.name}</h3>
-                  <button className="text-gray-500 hover:text-gray-700">
-                    {category.isExpanded ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
+            {categories.length === 0 ? (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <p className="text-gray-500">No categories found. Please check your filters or add some categories first.</p>
+              </div>
+            ) : (
+              categories.map((category) => (
+                <div key={category.id} className="bg-white rounded-lg shadow-sm">
+                  <div 
+                    className="flex justify-between items-center p-4 cursor-pointer"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <h3 className="font-medium">{category.name}</h3>
+                    <button className="text-gray-500 hover:text-gray-700">
+                      {category.isExpanded ? (
+                        <ChevronUp className="h-5 w-5" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
 
-                <div className={cn(
-                  "border-t",
-                  category.isExpanded ? "block" : "hidden"
-                )}>
-                  {category.items.length > 0 ? (
-                    <div className="p-4">
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className="grid grid-cols-2 gap-8">
-                          <div className="text-sm font-medium text-gray-500">
-                            On start date, change to:
+                  <div className={cn(
+                    "border-t",
+                    category.isExpanded ? "block" : "hidden"
+                  )}>
+                    {category.items.length > 0 ? (
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="grid grid-cols-2 gap-8">
+                            <div className="text-sm font-medium text-gray-500">
+                              On start date, change to:
+                            </div>
+                            <div className="text-sm font-medium text-gray-500">
+                              On end date, revert to:
+                            </div>
                           </div>
-                          <div className="text-sm font-medium text-gray-500">
-                            On end date, revert to:
-                          </div>
-                        </div>
-                        {category.items.map((item) => (
-                          <div key={item.id} className="grid grid-cols-2 gap-8">
-                            <div className="flex items-center gap-4">
-                              <span className="flex-1">{item.name}</span>
+                          {category.items.map((item) => (
+                            <div key={item.id} className="grid grid-cols-2 gap-8">
+                              <div className="flex items-center gap-4">
+                                <span className="flex-1">{item.name}</span>
+                                <div className="flex items-center gap-1">
+                                  <span>£</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                    value={item.newPrice}
+                                    onChange={(e) => updateItemPrice(
+                                      category.id,
+                                      item.id,
+                                      parseFloat(e.target.value) || 0
+                                    )}
+                                  />
+                                </div>
+                              </div>
                               <div className="flex items-center gap-1">
                                 <span>£</span>
                                 <Input
@@ -206,38 +287,23 @@ export default function PriceChangesPage() {
                                   step="0.01"
                                   min="0"
                                   className="w-24"
-                                  value={item.newPrice}
-                                  onChange={(e) => updateItemPrice(
-                                    category.name,
-                                    item.id,
-                                    parseFloat(e.target.value) || 0
-                                  )}
+                                  value={item.currentPrice}
+                                  disabled
                                 />
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span>£</span>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="w-24"
-                                value={item.currentPrice}
-                                disabled
-                              />
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-gray-500">
-                      No items in this category.
-                    </div>
-                  )}
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No items in this category.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

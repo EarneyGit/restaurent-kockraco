@@ -40,9 +40,9 @@ export default function OneOffPushPage() {
     try {
       setCreating(true)
       const response = await pushNotificationService.createPushNotification({
-        text: message.text,
+      text: message.text,
         title: 'New Notification',
-        scheduledTime: message.scheduledTime,
+      scheduledTime: message.scheduledTime,
         targetAudience: 'all'
       })
 
@@ -99,7 +99,7 @@ export default function OneOffPushPage() {
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-medium">One-Off Push Messages</h1>
+          <h1 className="text-2xl font-medium">One-Off Push Messages</h1>
           </div>
           <Button 
             onClick={() => setIsModalOpen(true)}
@@ -109,7 +109,7 @@ export default function OneOffPushPage() {
             {creating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             )}
             Create New
           </Button>
