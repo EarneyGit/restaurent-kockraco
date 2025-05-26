@@ -26,7 +26,6 @@ interface Attribute {
   name: string
   type: 'single' | 'multiple'
   requiresSelection: boolean
-  allowAddWithoutChoices: boolean
   description?: string
   displayOrder: number
   isActive: boolean
@@ -71,6 +70,7 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
   const [allAttributes, setAllAttributes] = useState<Attribute[]>([])
   const [allProducts, setAllProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [productAllowAddWithoutChoices, setProductAllowAddWithoutChoices] = useState(false)
   
   // Modal states
   const [showCreateAttributeModal, setShowCreateAttributeModal] = useState(false)
@@ -93,7 +93,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
     name: '',
     type: 'single' as 'single' | 'multiple',
     requiresSelection: true,
-    allowAddWithoutChoices: false,
     description: '',
     displayOrder: 0
   })
@@ -124,7 +123,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
             name: item.attribute.name,
             type: item.attribute.type,
             requiresSelection: item.attribute.requiresSelection,
-            allowAddWithoutChoices: item.attribute.allowAddWithoutChoices,
             description: item.attribute.description,
             displayOrder: item.attribute.displayOrder,
             isActive: item.attribute.isActive
@@ -157,6 +155,58 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
     }
   }
 
+  // Fetch product's allowAddWithoutChoices setting
+  const fetchProductSettings = async () => {
+    if (!productId) return
+    
+    try {
+      const response = await api.get(`/products/${productId}`)
+      const data = response.data
+      
+      if (data.success) {
+        const allowValue = Boolean(data.data.allowAddWithoutChoices)
+        console.log('📥 Fetched allowAddWithoutChoices:', { raw: data.data.allowAddWithoutChoices, boolean: allowValue })
+        setProductAllowAddWithoutChoices(allowValue)
+      }
+    } catch (error) {
+      console.error('Error fetching product settings:', error)
+    }
+  }
+
+  // Update product's allowAddWithoutChoices setting
+  const updateProductAllowAddWithoutChoices = async (value: boolean) => {
+    if (!productId) return
+    
+    console.log('🔄 Toggle clicked:', { productId, currentState: productAllowAddWithoutChoices, newValue: value })
+    
+    // Optimistically update the state first
+    setProductAllowAddWithoutChoices(value)
+    
+    try {
+      const formData = new FormData()
+      formData.append('allowAddWithoutChoices', value.toString())
+      
+      const response = await api.put(`/products/${productId}`, formData)
+      const data = response.data
+      
+      console.log('✅ API Response:', { success: data.success, allowAddWithoutChoices: data.data?.allowAddWithoutChoices })
+      
+      if (data.success) {
+        toast.success(`Product setting updated: ${value ? 'Allow' : 'Require'} add without choices`)
+        
+        // Refresh the product settings to ensure consistency
+        await fetchProductSettings()
+      } else {
+        throw new Error(data.message || 'Failed to update product setting')
+      }
+    } catch (error) {
+      console.error('❌ Error updating product setting:', error)
+      toast.error('Failed to update product setting')
+      // Revert the state if the API call failed
+      setProductAllowAddWithoutChoices(!value)
+    }
+  }
+
   // Fetch all available attributes
   const fetchAllAttributes = async () => {
     try {
@@ -168,7 +218,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
           name: attr.name,
           type: attr.type,
           requiresSelection: attr.requiresSelection,
-          allowAddWithoutChoices: attr.allowAddWithoutChoices,
           description: attr.description,
           displayOrder: attr.displayOrder,
           isActive: attr.isActive
@@ -202,8 +251,10 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
     }
   }
 
+  // Fetch data on component mount
   useEffect(() => {
     fetchProductAttributes()
+    fetchProductSettings()
     fetchAllAttributes()
     fetchAllProducts()
   }, [productId])
@@ -220,7 +271,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
       formData.append('name', newAttribute.name)
       formData.append('type', newAttribute.type)
       formData.append('requiresSelection', newAttribute.requiresSelection.toString())
-      formData.append('allowAddWithoutChoices', newAttribute.allowAddWithoutChoices.toString())
       formData.append('description', newAttribute.description)
       formData.append('displayOrder', newAttribute.displayOrder.toString())
 
@@ -234,7 +284,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
           name: '',
           type: 'single',
           requiresSelection: true,
-          allowAddWithoutChoices: false,
           description: '',
           displayOrder: 0
         })
@@ -246,7 +295,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
           name: data.data.name,
           type: data.data.type,
           requiresSelection: data.data.requiresSelection,
-          allowAddWithoutChoices: data.data.allowAddWithoutChoices,
           description: data.data.description,
           displayOrder: data.data.displayOrder,
           isActive: data.data.isActive
@@ -433,7 +481,14 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
   // Update hidden status for option
   const handleUpdateHiddenStatus = async (optionId: string, field: 'hiddenForToday' | 'fullyHidden', value: boolean) => {
     try {
-      const updateData = { [field]: value }
+      // Implement mutual exclusion: if setting one to true, set the other to false
+      const updateData: any = { [field]: value }
+      if (value) {
+        // If setting this field to true, set the other field to false
+        const otherField = field === 'hiddenForToday' ? 'fullyHidden' : 'hiddenForToday'
+        updateData[otherField] = false
+      }
+      
       await api.patch(`/product-attribute-items/${optionId}/hidden-status`, updateData)
       
       // Update local state immediately for better UX
@@ -442,7 +497,7 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
           ...productAttribute,
           options: productAttribute.options.map(option => 
             option.id === optionId 
-              ? { ...option, [field]: value }
+              ? { ...option, ...updateData }
               : option
           )
         }))
@@ -556,7 +611,22 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
     <div className="space-y-6">
       {/* Header with action buttons */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Product Attributes</h3>
+        <div className="flex flex-col space-y-2">
+          <h3 className="text-lg font-medium">Product Attributes</h3>
+          <div className="flex items-center space-x-2">
+            <StableSwitch
+              id="productAllowAddWithoutChoices"
+              checked={productAllowAddWithoutChoices}
+              onCheckedChange={updateProductAllowAddWithoutChoices}
+            />
+            <Label htmlFor="productAllowAddWithoutChoices" className="text-sm font-medium">
+              Allow add without choices
+            </Label>
+            <span className="text-xs text-gray-500">
+              (Note: Can only be used if there are no mandatory attributes)
+            </span>
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -608,11 +678,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
                     {productAttribute.attribute.requiresSelection && (
                       <Badge variant="outline" className="text-red-600 border-red-600">
                         Required
-                      </Badge>
-                    )}
-                    {productAttribute.attribute.allowAddWithoutChoices && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-600">
-                        Allow add without choices
                       </Badge>
                     )}
                   </div>
@@ -719,16 +784,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
               />
               <Label htmlFor="requiresSelection">Requires a selection</Label>
             </div>
-
-            <div className="flex items-center space-x-2">
-              <StableSwitch
-                id="allowAddWithoutChoices"
-                checked={newAttribute.allowAddWithoutChoices}
-                onCheckedChange={(checked) => setNewAttribute(prev => ({ ...prev, allowAddWithoutChoices: checked }))}
-              />
-              <Label htmlFor="allowAddWithoutChoices">Allow add without choices</Label>
-              <span className="text-xs text-gray-500">(Note: Can only be used if there are no mandatory attributes)</span>
-            </div>
           </div>
 
           <DialogFooter>
@@ -772,11 +827,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
                       {attribute.requiresSelection && (
                         <Badge variant="outline" className="text-xs text-red-600 border-red-600">
                           Required
-                        </Badge>
-                      )}
-                      {attribute.allowAddWithoutChoices && (
-                        <Badge variant="outline" className="text-xs text-blue-600 border-blue-600">
-                          Allow without choices
                         </Badge>
                       )}
                     </div>
@@ -931,11 +981,6 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
                 {selectedAttributeForOptions.requiresSelection && (
                   <Badge variant="outline" className="text-red-600 border-red-600">
                     Required
-                  </Badge>
-                )}
-                {selectedAttributeForOptions.allowAddWithoutChoices && (
-                  <Badge variant="outline" className="text-blue-600 border-blue-600">
-                    Allow add without choices
                   </Badge>
                 )}
               </div>

@@ -113,6 +113,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: item.collectionOnly || false,
         deleted: item.deleted || false,
         hidePrice: item.hidePrice || false,
+        allowAddWithoutChoices: item.allowAddWithoutChoices || false,
       }
     } else {
       // If no item, we're in add new mode
@@ -149,6 +150,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: false,
         deleted: false,
         hidePrice: false,
+        allowAddWithoutChoices: false,
       }
     }
   })
@@ -277,6 +279,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: Boolean(item.collectionOnly),
         deleted: Boolean(item.deleted),
         hidePrice: Boolean(item.hidePrice),
+        allowAddWithoutChoices: item.allowAddWithoutChoices || false,
       })
     }
   }, [item, categoryId])
@@ -331,6 +334,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString())
       formData.append('deleted', Boolean(currentItem.deleted).toString())
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
+      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString())
 
       // Mark this as a group item
       formData.append('isGroupItem', 'true')
@@ -340,7 +344,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         freeDelivery: Boolean(currentItem.freeDelivery),
         collectionOnly: Boolean(currentItem.collectionOnly),
         deleted: Boolean(currentItem.deleted),
-        hidePrice: Boolean(currentItem.hidePrice)
+        hidePrice: Boolean(currentItem.hidePrice),
+        allowAddWithoutChoices: Boolean(currentItem.allowAddWithoutChoices)
       });
 
       // Add availability, allergens, and priceChanges as JSON strings
@@ -439,6 +444,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: Boolean(data.data.collectionOnly),
         deleted: Boolean(data.data.deleted),
         hidePrice: Boolean(data.data.hidePrice),
+        allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
       }
       
       toast.success(`Group item ${productId ? 'updated' : 'created'} successfully`);
@@ -766,6 +772,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString());
       formData.append('deleted', Boolean(currentItem.deleted).toString());
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
+      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString());
 
       // Mark this as a group item
       formData.append('isGroupItem', 'true');
@@ -783,6 +790,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: Boolean(currentItem.collectionOnly),
         deleted: Boolean(currentItem.deleted),
         hidePrice: Boolean(currentItem.hidePrice),
+        allowAddWithoutChoices: Boolean(currentItem.allowAddWithoutChoices),
         itemSettings: currentItem.itemSettings
       });
 
@@ -853,6 +861,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         collectionOnly: Boolean(data.data.collectionOnly),
         deleted: Boolean(data.data.deleted),
         hidePrice: Boolean(data.data.hidePrice),
+        allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
       };
       
       // Save the duplicated item
@@ -1435,6 +1444,18 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                   />
                   <Label htmlFor="hidePrice">Hide Price</Label>
                 </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="allowAddWithoutChoices"
+                    checked={Boolean(currentItem.allowAddWithoutChoices)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, allowAddWithoutChoices: checked }))}
+                  />
+                  <Label htmlFor="allowAddWithoutChoices">Allow add without choices</Label>
+                </div>
+                <p className="text-xs text-gray-500 ml-6">
+                  When enabled, customers can order this product without selecting any attributes
+                </p>
               </div>
             </div>
           </TabsContent>

@@ -42,6 +42,7 @@ export interface MenuItem {
   collectionOnly?: boolean
   deleted?: boolean
   hidePrice?: boolean
+  allowAddWithoutChoices?: boolean
 }
 
 export interface DayAvailability {
