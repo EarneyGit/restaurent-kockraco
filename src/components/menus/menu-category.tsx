@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { EditItemModal } from './edit-item-modal'
+import { EditGroupItemModal } from './edit-group-item-modal'
 import { Category, MenuItem } from '@/types/menu'
 import { EditCategoryModal } from './edit-category-modal'
 import { toast } from 'react-hot-toast'
@@ -42,6 +43,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const [includeDiscounts, setIncludeDiscounts] = useState(category.includeDiscounts || false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState(false)
   const [products, setProducts] = useState<MenuItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -349,6 +351,10 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
   const handleAddItem = () => {
     setIsAddModalOpen(true)
+  }
+
+  const handleAddGroupItem = () => {
+    setIsAddGroupModalOpen(true)
   }
 
   const handleSaveNewItem = (newItem: MenuItem) => {
@@ -688,7 +694,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>
-              <Button variant="outline" size="sm" className="text-emerald-500">
+              <Button variant="outline" size="sm" className="text-emerald-500" onClick={handleAddGroupItem}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Group Item
               </Button>
@@ -707,6 +713,14 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               categoryId={category.id}
               open={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
+              onSave={handleSaveNewItem}
+            />
+
+            <EditGroupItemModal
+              item={null}
+              categoryId={category.id}
+              open={isAddGroupModalOpen}
+              onClose={() => setIsAddGroupModalOpen(false)}
               onSave={handleSaveNewItem}
             />
 

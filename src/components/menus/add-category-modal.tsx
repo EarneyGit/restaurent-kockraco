@@ -94,9 +94,9 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
       
       // Add printers as individual values
       if (formData.printers && formData.printers.length > 0) {
-        formData.printers.forEach(printer => {
-          formDataToSend.append('printers', printer)
-        })
+      formData.printers.forEach(printer => {
+        formDataToSend.append('printers', printer)
+      })
       }
 
       // Add image if exists
@@ -114,7 +114,7 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
             formDataObject[key] = [formDataObject[key], value];
           }
         } else {
-          formDataObject[key] = value;
+        formDataObject[key] = value;
         }
       });
       console.log('Form data being sent:', formDataObject);
@@ -303,17 +303,17 @@ export function AddCategoryModal({ open, onClose, onAdd, onSuccess }: AddCategor
                 <div key={day} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="w-20">{day}</Label>
-                    <select
+                  <select
                       value={formData.availability[day]?.type || 'All Day'}
-                      onChange={(e) => updateAvailability(day, e.target.value as AvailabilityOption)}
-                      className="w-[180px] h-10 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    >
-                      {AVAILABILITY_OPTIONS.map(option => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                    onChange={(e) => updateAvailability(day, e.target.value as AvailabilityOption)}
+                    className="w-[180px] h-10 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    {AVAILABILITY_OPTIONS.map(option => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                   </div>
                   
                   {formData.availability[day]?.type === 'Specific Times' && (

@@ -225,7 +225,7 @@ export function EditCategoryModal({
         console.log('Category updated successfully, calling onSave...', updatedCategory)
         onSave(updatedCategory)
         toast.success('Category updated successfully')
-        onClose()
+    onClose()
       } else {
         console.error('API returned success: false', response.data)
         toast.error(response.data.message || 'Failed to update category')
@@ -328,11 +328,11 @@ export function EditCategoryModal({
               <div>
                 <Label htmlFor="hidden">Hidden</Label>
                 <div className="flex items-center mt-1">
-                  <Switch
-                    id="hidden"
-                    checked={formData.hidden}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hidden: checked }))}
-                  />
+                <Switch
+                  id="hidden"
+                  checked={formData.hidden}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hidden: checked }))}
+                />
                 </div>
               </div>
 
@@ -357,18 +357,18 @@ export function EditCategoryModal({
                   <div key={day} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="w-20">{day}</Label>
-                      <select
+                  <select
                         value={dayAvailability?.type || 'All Day'}
                         onChange={(e) => updateAvailability(day, e.target.value as AvailabilityOption)}
                         className="w-[180px] h-10 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      >
+                  >
                         {AVAILABILITY_OPTIONS.map(option => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
-                      </select>
-                    </div>
+                  </select>
+                </div>
                     
                     {dayAvailability?.type === 'Specific Times' && (
                       <div className="flex items-center justify-end space-x-2 ml-20">

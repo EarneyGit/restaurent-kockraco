@@ -38,18 +38,18 @@ export default function MenuSetupPage() {
             console.log('Transforming category:', category.name, category)
             
             return {
-              id: category._id || category.id,
-              name: category.name,
-              description: category.description || '',
+            id: category._id || category.id,
+            name: category.name,
+            description: category.description || '',
               displayOrder: category.displayOrder ?? 0,
-              hidden: category.hidden || false,
-              includeAttributes: category.includeAttributes || false,
-              includeDiscounts: category.includeDiscounts || false,
+            hidden: category.hidden || false,
+            includeAttributes: category.includeAttributes || false,
+            includeDiscounts: category.includeDiscounts || false,
               imageUrl: category.imageUrl || '',
               availability: category.availability || {},
               printers: category.printers || ['Kitchen (P2)'],
               branch: category.branch,
-              items: []
+            items: []
             }
           });
           

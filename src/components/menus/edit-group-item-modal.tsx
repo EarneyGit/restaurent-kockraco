@@ -21,12 +21,13 @@ import { StableSwitch } from '@/components/ui/stable-switch'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { toast } from 'react-hot-toast'
+import { MenuItemsTab } from './menu-items-tab'
 import { AttributesTab } from './attributes-tab'
 import React from 'react'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
 
-interface EditItemModalProps {
+interface EditGroupItemModalProps {
   item: MenuItem | null
   categoryId: string
   open: boolean
@@ -70,7 +71,7 @@ const DEFAULT_PRICE_CHANGE: PriceChange = {
   active: true
 }
 
-export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditItemModalProps) {
+export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: EditGroupItemModalProps) {
   const [currentItem, setCurrentItem] = useState<MenuItem>(() => {
     if (item) {
       // If item exists, we're in edit mode
@@ -152,11 +153,75 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }
   })
   
+  const [menuItems, setMenuItems] = useState<{id: string, name: string, price: number, categoryId: string}[]>([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(false);
   const [currentTab, setCurrentTab] = useState('details');
+
+  // Effect to fetch menu items for the Items tab
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      if (!open) return; // Only fetch when modal is open
+      
+      setLoadingMenuItems(true);
+      try {
+        const response = await api.get('/products');
+        console.log("response", response);
+        const data = response.data;
+        if (data.success) {
+          // Transform products to the format needed by MenuItemsTab
+          const items = data.data.map((product: any) => ({
+            id: product._id || product.id,
+            name: product.name,
+            price: product.price || 0,
+            categoryId: product.category?._id || product.category?.id || product.category
+          }));
+          
+          // Ensure current item is available for selection if we're in edit mode
+          // Filter out the current item only if we're creating a new item or it has no id
+          const currentItemId = item?.id;
+          const filteredItems = currentItemId ? 
+            // When editing, include all items except the current one to avoid circular references
+            items.filter(menuItem => menuItem.id !== currentItemId) : 
+            items;
+            
+          console.log("Menu items fetched:", filteredItems);
+          console.log("Current selectedItems:", currentItem.selectedItems);
+          
+          setMenuItems(filteredItems);
+        } else {
+          throw new Error(data.message || 'Failed to fetch products');
+        }
+      } catch (error) {
+        console.error('Error fetching menu items:', error);
+        toast.error('Failed to load menu items');
+        // Fallback to sample data if API fails
+        setMenuItems([
+          { id: '999', name: 'Original Chicken Tex Mex or Veggie Legend Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
+          { id: '998', name: 'Special Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
+          { id: '997', name: 'Any Drink', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
+          { id: '996', name: 'Chicken and Rice', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
+          { id: '995', name: 'Chocolate Cake', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
+          { id: '994', name: 'Ice Cream', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
+        ]);
+      } finally {
+        setLoadingMenuItems(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, [open, item?.id]);
 
   // Effect to update currentItem when item prop changes
   useEffect(() => {
     if (item) {
+      // Process selectedItems from the API response format
+      let processedSelectedItems = item.selectedItems || [];
+      
+      // Handle when selectedItems are objects instead of strings
+      if (processedSelectedItems.length > 0 && typeof processedSelectedItems[0] === 'object') {
+        processedSelectedItems = processedSelectedItems.map((item: any) => item._id || item.id);
+      }
+      
       // Ensure itemSettings is properly processed from the API response
       const itemSettings = {
         showSelectedOnly: Boolean(item.itemSettings?.showSelectedOnly),
@@ -203,7 +268,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           mayContain: []
         },
         priceChanges: item.priceChanges || [],
-        selectedItems: item.selectedItems || [],
+        selectedItems: processedSelectedItems,
         itemSettings: itemSettings,
         // Explicitly convert all top-level settings to their proper types
         tillProviderProductId: item.tillProviderProductId || '',
@@ -267,8 +332,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('deleted', Boolean(currentItem.deleted).toString())
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
 
-      // Mark this as a regular item (not a group item)
-      formData.append('isGroupItem', 'false')
+      // Mark this as a group item
+      formData.append('isGroupItem', 'true')
 
       // Log top-level settings being sent to the server
       console.log("Sending top-level settings to server:", {
@@ -283,10 +348,10 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('allergens', JSON.stringify(currentItem.allergens))
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
       
-      // For regular items, we don't need selectedItems and itemSettings
-      // These are only for group items
-      formData.append('selectedItems', JSON.stringify([]))
-      formData.append('itemSettings', JSON.stringify({
+      // Add selectedItems and ensure itemSettings is correctly formatted
+      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []))
+      console.log("Saving itemSettings:", currentItem.itemSettings);
+      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {
         showSelectedOnly: false,
         showSelectedCategories: false,
         limitSingleChoice: false,
@@ -331,7 +396,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       const data = response.data
       
       if (!data.success) {
-        throw new Error(data.message || 'Failed to save item')
+        throw new Error(data.message || 'Failed to save group item')
       }
 
       // Transform the response data to match MenuItem type
@@ -376,12 +441,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         hidePrice: Boolean(data.data.hidePrice),
       }
       
-      toast.success(`Item ${productId ? 'updated' : 'created'} successfully`);
+      toast.success(`Group item ${productId ? 'updated' : 'created'} successfully`);
       onSave(transformedItem)
       onClose()
     } catch (error) {
-      console.error('Error saving item:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to save item')
+      console.error('Error saving group item:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save group item')
     }
   }
 
@@ -538,6 +603,59 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     }));
   }, []);
 
+  // Memoize the onSettingsChange callback to prevent infinite rerenders
+  const handleItemSettingsChange = useCallback((newSettings) => {
+    console.log("Setting new item settings:", newSettings);
+    // Convert all settings values to boolean to ensure consistency
+    const processedSettings = {
+      showSelectedOnly: Boolean(newSettings.showSelectedOnly),
+      showSelectedCategories: Boolean(newSettings.showSelectedCategories),
+      limitSingleChoice: Boolean(newSettings.limitSingleChoice),
+      addAttributeCharges: Boolean(newSettings.addAttributeCharges),
+      useProductPrices: Boolean(newSettings.useProductPrices),
+      showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown)
+    };
+    
+    console.log("Processed settings before state update:", processedSettings);
+    
+    setCurrentItem(prev => ({
+      ...prev,
+      itemSettings: processedSettings
+    }));
+  }, []);
+  
+  // Memoize the onItemSelect callback to prevent infinite rerenders
+  const handleItemSelect = useCallback((itemId) => {
+    console.log("Item selection triggered for:", itemId);
+    setCurrentItem(prev => {
+      // Ensure selectedItems is an array
+      const currentSelectedItems = prev.selectedItems || [];
+      
+      // Check if the item is currently selected
+      const isCurrentlySelected = currentSelectedItems.includes(itemId);
+      
+      console.log("Item is currently selected:", isCurrentlySelected);
+      console.log("Current selected items:", currentSelectedItems);
+      
+      let newSelectedItems;
+      
+      if (isCurrentlySelected) {
+        // If deselecting an item, just remove it from selected items
+        newSelectedItems = currentSelectedItems.filter(id => id !== itemId);
+      } else {
+        // If selecting an item, add it to selected items
+        newSelectedItems = [...currentSelectedItems, itemId];
+      }
+      
+      console.log("New selected items:", newSelectedItems);
+      
+      return {
+        ...prev,
+        selectedItems: newSelectedItems
+      };
+    });
+  }, []);
+  
   // Memoize Switch handlers to prevent infinite loops
   const handleAvailabilityToggleCallback = useCallback((day: typeof DAYS_OF_WEEK[number]) => {
     setCurrentItem(prev => ({
@@ -584,6 +702,39 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     callbacksRef.current = callbacks;
   }, [callbacks]);
 
+  // Memoize the items and settings to prevent unnecessary rerenders
+  const memoizedMenuItems = useMemo(() => menuItems, [JSON.stringify(menuItems.map(item => item.id))]);
+  const memoizedSelectedItems = useMemo(() => currentItem.selectedItems || [], [JSON.stringify(currentItem.selectedItems)]);
+  
+  // Force boolean conversion to ensure switch components get proper values
+  const memoizedItemSettings = useMemo(() => {
+    const settings = {
+      showSelectedOnly: Boolean(currentItem.itemSettings?.showSelectedOnly),
+      showSelectedCategories: Boolean(currentItem.itemSettings?.showSelectedCategories),
+      limitSingleChoice: Boolean(currentItem.itemSettings?.limitSingleChoice),
+      addAttributeCharges: Boolean(currentItem.itemSettings?.addAttributeCharges),
+      useProductPrices: Boolean(currentItem.itemSettings?.useProductPrices),
+      showChoiceAsDropdown: Boolean(currentItem.itemSettings?.showChoiceAsDropdown),
+    };
+    
+    console.log("Current item settings state:", currentItem.itemSettings);
+    console.log("Memoized settings:", settings);
+    
+    return settings;
+  }, [
+    currentItem.itemSettings?.showSelectedOnly,
+    currentItem.itemSettings?.showSelectedCategories,
+    currentItem.itemSettings?.limitSingleChoice,
+    currentItem.itemSettings?.addAttributeCharges,
+    currentItem.itemSettings?.useProductPrices,
+    currentItem.itemSettings?.showChoiceAsDropdown
+  ]);
+
+  // Log the memoized settings when they change
+  useEffect(() => {
+    console.log("Memoized item settings updated:", memoizedItemSettings);
+  }, [memoizedItemSettings]);
+
   // Function to duplicate the current product
   const handleDuplicate = async () => {
     if (!item?.id) {
@@ -616,29 +767,23 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('deleted', Boolean(currentItem.deleted).toString());
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
 
-      // Mark this as a regular item (not a group item)
-      formData.append('isGroupItem', 'false');
+      // Mark this as a group item
+      formData.append('isGroupItem', 'true');
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability));
       formData.append('allergens', JSON.stringify(currentItem.allergens));
       formData.append('priceChanges', JSON.stringify(currentItem.priceChanges));
-      formData.append('selectedItems', JSON.stringify([]));
-      formData.append('itemSettings', JSON.stringify({
-        showSelectedOnly: false,
-        showSelectedCategories: false,
-        limitSingleChoice: false,
-        addAttributeCharges: false,
-        useProductPrices: false,
-        showChoiceAsDropdown: false,
-      }));
+      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []));
+      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {}));
       
       // Log what we're sending to the server
-      console.log("Duplicating item with settings:", {
+      console.log("Duplicating group item with settings:", {
         freeDelivery: Boolean(currentItem.freeDelivery),
         collectionOnly: Boolean(currentItem.collectionOnly),
         deleted: Boolean(currentItem.deleted),
-        hidePrice: Boolean(currentItem.hidePrice)
+        hidePrice: Boolean(currentItem.hidePrice),
+        itemSettings: currentItem.itemSettings
       });
 
       // Handle existing images - we'll reference them as URLs
@@ -663,10 +808,10 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       const data = response.data;
       
       if (!data.success) {
-        throw new Error(data.message || 'Failed to duplicate item');
+        throw new Error(data.message || 'Failed to duplicate group item');
       }
 
-      toast.success('Item duplicated successfully');
+      toast.success('Group item duplicated successfully');
       
       // Transform the response data to match MenuItem type
       const duplicatedItem: MenuItem = {
@@ -714,8 +859,8 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       onSave(duplicatedItem);
       onClose();
     } catch (error) {
-      console.error('Error duplicating item:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to duplicate item');
+      console.error('Error duplicating group item:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to duplicate group item');
     }
   };
 
@@ -723,14 +868,15 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{item ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+          <DialogTitle>{item ? 'Edit Group Item' : 'Add New Group Item'}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="details" onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="price-changes">Price Changes</TabsTrigger>
+            <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="attributes">Attributes</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
             <TabsTrigger value="allergens">Allergens</TabsTrigger>
@@ -816,7 +962,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                   <div key={index} className="relative">
                     <Image
                       src={getImageUrl(image)}
-                      alt={`Menu item image ${index + 1}`}
+                      alt={`Group item image ${index + 1}`}
                       width={200}
                       height={150}
                       className="w-full h-24 object-cover rounded"
@@ -1073,6 +1219,22 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
             )}
           </TabsContent>
 
+          <TabsContent value="items">
+            {loadingMenuItems ? (
+              <div className="flex items-center justify-center p-8">
+                <p>Loading menu items...</p>
+              </div>
+            ) : (
+            <MenuItemsTab
+                items={memoizedMenuItems}
+                selectedItems={memoizedSelectedItems}
+                onItemSelect={handleItemSelect}
+                settings={memoizedItemSettings}
+                onSettingsChange={handleItemSettingsChange}
+            />
+            )}
+          </TabsContent>
+
           <TabsContent value="attributes">
             {currentItem.id ? (
               <AttributesTab 
@@ -1080,12 +1242,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 productName={currentItem.name}
                 categoryId={categoryId}
                 onAttributesChange={(attributes) => {
-                  console.log('Product attributes updated:', attributes)
+                  console.log('Group item attributes updated:', attributes)
                 }}
               />
             ) : (
               <div className="text-center py-8 text-gray-500">
-                Please save the item first before adding attributes.
+                Please save the group item first before adding attributes.
               </div>
             )}
           </TabsContent>
@@ -1279,13 +1441,13 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
         </Tabs>
 
         <div className="flex justify-between gap-2 mt-4">
-          {item && currentTab !== "attributes" && (
+          {item && currentTab !== "items" && currentTab !== "attributes" && (
             <Button variant="outline" onClick={handleDuplicate} className="flex items-center">
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
             </Button>
           )}
-          <div className={`flex justify-end gap-2 ${currentTab !== "attributes" || !item ? "" : "w-full"} ml-auto`}>
+          <div className={`flex justify-end gap-2 ${(currentTab !== "items" && currentTab !== "attributes") || !item ? "" : "w-full"} ml-auto`}>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>Save Changes</Button>
           </div>
