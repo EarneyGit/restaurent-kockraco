@@ -29,6 +29,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAuthorized: boolean
   isLoading: boolean
+  updateBranchId: (branchId: string) => void
 }
 
 const ALLOWED_ROLES = ['admin', 'manager', 'staff']
@@ -44,6 +45,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check if user has authorized role
   const isAuthorized = user ? ALLOWED_ROLES.includes(user.roleDetails?.slug || user.role) : false
+
+  const updateBranchId = (branchId: string) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        branchId,
+        branch: {
+          ...user.branch,
+          id: branchId
+        }
+      }
+      setUser(updatedUser)
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    }
+  }
 
   useEffect(() => {
     // Check for stored auth data on mount
@@ -121,7 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     isAuthenticated: !!token,
     isAuthorized,
-    isLoading
+    isLoading,
+    updateBranchId
   }
 
   return (

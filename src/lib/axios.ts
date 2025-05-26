@@ -48,12 +48,20 @@ const api = {
   },
   post: async (url: string, data = {}, config: ConfigType = {}) => {
     try {
+      // Initialize headers based on data type
+      const headers = {
+        ...getAuthHeader(),
+        ...(config.headers || {}),
+      };
+
+      // Only add Content-Type for non-FormData
+      if (!(data instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+
       return await axios.post(`${BASE_URL}${url}`, data, {
         ...config,
-        headers: {
-          ...getAuthHeader(),
-          ...(config.headers || {}),
-        },
+        headers,
       });
     } catch (error) {
       return handleAuthError(error);

@@ -267,14 +267,18 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
     }
 
     try {
-      const formData = new FormData()
-      formData.append('name', newAttribute.name)
-      formData.append('type', newAttribute.type)
-      formData.append('requiresSelection', newAttribute.requiresSelection.toString())
-      formData.append('description', newAttribute.description)
-      formData.append('displayOrder', newAttribute.displayOrder.toString())
+      // Send data as JSON instead of FormData
+      const attributeData = {
+        name: newAttribute.name,
+        type: newAttribute.type,
+        requiresSelection: newAttribute.requiresSelection,
+        description: newAttribute.description || '',
+        displayOrder: newAttribute.displayOrder
+      }
 
-      const response = await api.post('/attributes', formData)
+      console.log('🔄 Sending data:', attributeData)
+      const response = await api.post('/attributes', attributeData)
+      console.log('🔄 Response:', response.data)
       const data = response.data
 
       if (data.success) {

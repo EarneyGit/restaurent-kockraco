@@ -12,7 +12,7 @@ import api from '@/lib/axios'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, updateBranchId } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -35,6 +35,7 @@ export default function LoginPage() {
       if (data.success) {
         try {
           login(data.token, data.user)
+          updateBranchId('68330325eff1bd5bc97750bf')
           toast.success('Logged in successfully')
           router.push('/')
         } catch (error: any) {
