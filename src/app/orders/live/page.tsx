@@ -63,6 +63,7 @@ interface Order {
   deliveryMethod: string;
   branchId: BranchInfo;
   estimatedDeliveryTime: string;
+  estimatedTimeToComplete?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -79,6 +80,8 @@ export default function LiveOrdersPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderCount, setOrderCount] = useState(0);
+  const [showDelayPopup, setShowDelayPopup] = useState(false);
+  const [delayingOrderId, setDelayingOrderId] = useState<string | null>(null);
   
   // Order type filters
   const [showCollection, setShowCollection] = useState(true);
@@ -207,6 +210,43 @@ export default function LiveOrdersPage() {
 
   const handlePrintOrder = () => {
     toast.success("Print order functionality - Coming soon!");
+  };
+
+  const handleDelayOrder = async (additionalMinutes: number) => {
+    if (delayingOrderId) {
+      try {
+        // Find the order to get current estimated time
+        const orderToDelay = orders.find(order => order._id === delayingOrderId);
+        if (orderToDelay) {
+          const newEstimatedTime = (orderToDelay.estimatedTimeToComplete || 45) + additionalMinutes;
+          
+          const response = await api.put(`/orders/${delayingOrderId}`, { 
+            estimatedTimeToComplete: newEstimatedTime 
+          });
+          
+          if (response.data.success) {
+            toast.success(`Order delayed by ${additionalMinutes} minutes`);
+            // Refresh orders list
+            fetchOrders();
+            // Update selected order if it's the same one
+            if (selectedOrder && selectedOrder._id === delayingOrderId) {
+              fetchOrderDetails(delayingOrderId);
+            }
+          } else {
+            toast.error("Failed to delay order");
+          }
+        }
+      } catch (err) {
+        toast.error("Error delaying order");
+      }
+    }
+    setShowDelayPopup(false);
+    setDelayingOrderId(null);
+  };
+
+  const openDelayPopup = (orderId: string) => {
+    setDelayingOrderId(orderId);
+    setShowDelayPopup(true);
   };
 
   console.log("orders", orders);
@@ -446,8 +486,9 @@ export default function LiveOrdersPage() {
                     <div className="font-bold text-lg text-gray-900">
                       £{(order.totalAmount || 0).toFixed(2)}
                     </div>
-                    <div className="text-sm text-pink-500 mt-1">
-                      {order.createdAt ? formatDate(order.createdAt) : "N/A"}
+                    <div className="text-sm text-emerald-500 mt-1 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {order.estimatedTimeToComplete || 45} mins
                     </div>
                   </div>
                 </div>
@@ -514,14 +555,27 @@ export default function LiveOrdersPage() {
           ) : selectedOrder ? (
             <div className="p-6 max-w-4xl mx-auto">
               {/* Order Number */}
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
-                <h1 className="text-2xl font-bold text-emerald-600 mb-2">
+              <div className="bg-white flex justify-between rounded-lg shadow-sm p-6 mb-4">
+                <div className="flex flex-col">
+                <h1 className="text-2xl  font-bold text-emerald-600 mb-2">
                   Order No: {selectedOrder.orderNumber}
                 </h1>
+                
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
                   <span>{formatDetailedDate(selectedOrder.createdAt)}</span>
                 </div>
+                </div>
+                 <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDelayPopup(selectedOrder._id);
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                    >
+                      <Clock className="h-4 w-4" />
+                      Delay
+                    </button>
               </div>
 
            <div className="flex bg-white items-start justify-between">
@@ -546,6 +600,7 @@ export default function LiveOrdersPage() {
                   Payment: {selectedOrder.paymentMethod} ({selectedOrder.paymentStatus})
                 </div>
               </div>
+              
               {activeTab === "in-progress" && (
                 <div className="flex gap-3 p-6 mb-4 justify-center">
                   <Button
@@ -655,6 +710,45 @@ export default function LiveOrdersPage() {
           )}
         </div>
       </div>
+
+      {/* Delay Order Popup */}
+      {showDelayPopup && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Delay this order</h3>
+            <p className="text-gray-600 mb-4">
+              How much additional time do you want to add to the estimated time?
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              We'll notify your customer about the delay by email and SMS.
+            </p>
+            
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {[5, 10, 15, 20, 25, 30, 35, 40, 50].map((minutes) => (
+                <Button
+                  key={minutes}
+                  onClick={() => handleDelayOrder(minutes)}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  {minutes} mins
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDelayPopup(false);
+                  setDelayingOrderId(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
