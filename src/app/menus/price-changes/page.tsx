@@ -5,11 +5,159 @@ import PageLayout from "@/components/layout/page-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { ChevronDown, ChevronUp, Eye, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, Loader2, Clock, Edit, Trash2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { priceChangesService, Category, MenuItem } from "@/services/price-changes.service"
 import { toast } from "sonner"
+
+interface PriceChange {
+  id: string
+  itemName: string
+  startDate: string
+  startPrice: number
+  endDate: string
+  endPrice: number
+  status: 'current' | 'future' | 'expired'
+}
+
+interface EditModalProps {
+  isOpen: boolean
+  priceChange: PriceChange | null
+  onClose: () => void
+  onSave: (updatedPriceChange: PriceChange) => void
+}
+
+function EditPriceChangeModal({ isOpen, priceChange, onClose, onSave }: EditModalProps) {
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [startPrice, setStartPrice] = useState("")
+  const [endPrice, setEndPrice] = useState("")
+
+  useEffect(() => {
+    if (priceChange && isOpen) {
+      // Convert display date format (29/05/2025) to input format (2025-05-29)
+      const convertToInputDate = (displayDate: string) => {
+        const [day, month, year] = displayDate.split('/')
+        return `${year}-${month}-${day}`
+      }
+      
+      setStartDate(convertToInputDate(priceChange.startDate))
+      setEndDate(convertToInputDate(priceChange.endDate))
+      setStartPrice(priceChange.startPrice.toString())
+      setEndPrice(priceChange.endPrice.toString())
+    }
+  }, [priceChange, isOpen])
+
+  const handleSave = () => {
+    if (!priceChange) return
+
+    // Convert input date format back to display format
+    const convertToDisplayDate = (inputDate: string) => {
+      const [year, month, day] = inputDate.split('-')
+      return `${day}/${month}/${year}`
+    }
+
+    const updatedPriceChange: PriceChange = {
+      ...priceChange,
+      startDate: convertToDisplayDate(startDate),
+      endDate: convertToDisplayDate(endDate),
+      startPrice: parseFloat(startPrice),
+      endPrice: parseFloat(endPrice)
+    }
+
+    onSave(updatedPriceChange)
+    onClose()
+  }
+
+  if (!isOpen || !priceChange) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <h2 className="text-xl font-medium mb-6">Edit Price Change: {priceChange.itemName}</h2>
+          
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Date
+              </label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Price
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600">£</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={startPrice}
+                  onChange={(e) => setStartPrice(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Date
+              </label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Price
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600">£</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={endPrice}
+                  onChange={(e) => setEndPrice(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="px-6"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-6"
+            >
+              Save Price Change
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function PriceChangesPage() {
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"))
@@ -19,6 +167,33 @@ export default function PriceChangesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [currentChanges, setCurrentChanges] = useState<PriceChange[]>([])
+  const [futureChanges, setFutureChanges] = useState<PriceChange[]>([
+    {
+      id: '1',
+      itemName: 'sample chicken',
+      startDate: '29/05/2025',
+      startPrice: 10.00,
+      endDate: '31/05/2025',
+      endPrice: 4.00,
+      status: 'future'
+    }
+  ])
+  const [historicalChanges, setHistoricalChanges] = useState<PriceChange[]>([
+    {
+      id: '2',
+      itemName: 'sample chicken (Expired)',
+      startDate: '25/05/2025',
+      startPrice: 4.00,
+      endDate: '26/05/2025',
+      endPrice: 5.00,
+      status: 'expired'
+    }
+  ])
+
+  // Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingPriceChange, setEditingPriceChange] = useState<PriceChange | null>(null)
 
   // Load categories and products on component mount and when filters change
   useEffect(() => {
@@ -119,6 +294,40 @@ export default function PriceChangesPage() {
     }
   }
 
+  const handleEdit = (id: string) => {
+    const priceChange = futureChanges.find(change => change.id === id) ||
+                       currentChanges.find(change => change.id === id)
+    
+    if (priceChange) {
+      setEditingPriceChange(priceChange)
+      setIsEditModalOpen(true)
+    }
+  }
+
+  const handleSaveEdit = (updatedPriceChange: PriceChange) => {
+    if (updatedPriceChange.status === 'future') {
+      setFutureChanges(futureChanges.map(change =>
+        change.id === updatedPriceChange.id ? updatedPriceChange : change
+      ))
+    } else if (updatedPriceChange.status === 'current') {
+      setCurrentChanges(currentChanges.map(change =>
+        change.id === updatedPriceChange.id ? updatedPriceChange : change
+      ))
+    }
+  }
+
+  const handleDelete = (id: string) => {
+    if (confirm('Are you sure you want to delete this price change?')) {
+      setFutureChanges(futureChanges.filter(change => change.id !== id))
+      setCurrentChanges(currentChanges.filter(change => change.id !== id))
+    }
+  }
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingPriceChange(null)
+  }
+
   if (loading) {
     return (
       <PageLayout>
@@ -135,178 +344,161 @@ export default function PriceChangesPage() {
   return (
     <PageLayout>
       {/* Header */}
-      <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
+      <header className="flex justify-between items-center px-8 py-4 border-b bg-white">
         <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <h1 className="text-xl font-semibold flex-1 text-center">Dunfermline</h1>
         <div className="flex justify-end flex-1">
-          <button className="flex items-center text-gray-700 font-medium">
-            <Eye className="h-5 w-5 mr-1" />
+          <button className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+            <Eye className="h-4 w-4 mr-2" />
             View Your Store
           </button>
         </div>
       </header>
       
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="mb-6">
-          <h1 className="text-2xl font-medium mb-4">Add Price Changes</h1>
-          
-          <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-            <p className="text-gray-600 mb-4">
-              Setup a sale or temporary price change here.
-            </p>
-            <p className="text-gray-600 mb-6">
-              Choose the dates for the change and change any prices that you want included.
-            </p>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          {/* Page Title and Add Button */}
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-medium text-gray-900">Temporary Price Changes</h1>
+            <Button 
+              className="bg-white border border-emerald-500 text-emerald-600 hover:bg-emerald-50 px-6 py-2"
+              onClick={() => window.location.href = '/menus/price-changes/add'}
+            >
+              Add Price Changes
+            </Button>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date:
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+          {/* Current Price Changes Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Price Changes</h2>
+            {currentChanges.length === 0 ? (
+              <div className="bg-white rounded-lg p-6 border">
+                <p className="text-gray-500">There are no current price changes</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date:
-                </label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+            ) : (
+              <div className="bg-white rounded-lg border overflow-hidden">
+                <div className="grid grid-cols-6 gap-4 p-4 bg-gray-50 border-b font-medium text-gray-700 text-sm">
+                  <div>Item</div>
+                  <div>Start Date</div>
+                  <div>Start Price</div>
+                  <div>End Date</div>
+                  <div>End Price</div>
+                  <div></div>
+                </div>
+                {currentChanges.map((change) => (
+                  <div key={change.id} className="grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 items-center">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 text-amber-500 mr-2" />
+                      {change.itemName}
+                    </div>
+                    <div className="text-gray-600">{change.startDate}</div>
+                    <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
+                    <div className="text-gray-600">{change.endDate}</div>
+                    <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-1"
+                        onClick={() => handleEdit(change.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1"
+                        onClick={() => handleDelete(change.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={showHiddenCategories}
-                  onCheckedChange={setShowHiddenCategories}
-                />
-                <label className="text-sm text-gray-700">
-                  Show Hidden Categories
-                </label>
+          {/* Future Price Changes Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Future Price Changes</h2>
+            <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="grid grid-cols-6 gap-4 p-4 bg-gray-50 border-b font-medium text-gray-700 text-sm">
+                <div>Item</div>
+                <div>Start Date</div>
+                <div>Start Price</div>
+                <div>End Date</div>
+                <div>End Price</div>
+                <div></div>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={showHiddenItems}
-                  onCheckedChange={setShowHiddenItems}
-                />
-                <label className="text-sm text-gray-700">
-                  Show Hidden Items
-                </label>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.history.back()}>
-                Cancel
-              </Button>
-              <Button 
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                onClick={handleSaveChanges}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Applying Changes...
-                  </>
-                ) : (
-                  'Add Price Changes'
-                )}
-              </Button>
+              {futureChanges.map((change) => (
+                <div key={change.id} className="grid grid-cols-6 gap-4 p-4 border-b last:border-b-0 items-center">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 text-blue-500 mr-2" />
+                    {change.itemName}
+                  </div>
+                  <div className="text-gray-600">{change.startDate}</div>
+                  <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
+                  <div className="text-gray-600">{change.endDate}</div>
+                  <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-1"
+                      onClick={() => handleEdit(change.id)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1"
+                      onClick={() => handleDelete(change.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="space-y-4">
-            {categories.length === 0 ? (
-              <div className="bg-white rounded-lg p-8 text-center">
-                <p className="text-gray-500">No categories found. Please check your filters or add some categories first.</p>
+          {/* Historical Price Changes Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Historical Price Changes</h2>
+            <div className="bg-white rounded-lg border overflow-hidden">
+              <div className="grid grid-cols-5 gap-4 p-4 bg-gray-50 border-b font-medium text-gray-700 text-sm">
+                <div>Item</div>
+                <div>Start Date</div>
+                <div>Start Price</div>
+                <div>End Date</div>
+                <div>End Price</div>
               </div>
-            ) : (
-              categories.map((category) => (
-                <div key={category.id} className="bg-white rounded-lg shadow-sm">
-                  <div 
-                    className="flex justify-between items-center p-4 cursor-pointer"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <h3 className="font-medium">{category.name}</h3>
-                    <button className="text-gray-500 hover:text-gray-700">
-                      {category.isExpanded ? (
-                        <ChevronUp className="h-5 w-5" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5" />
-                      )}
-                    </button>
+              {historicalChanges.map((change) => (
+                <div key={change.id} className="grid grid-cols-5 gap-4 p-4 border-b last:border-b-0 items-center">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                    {change.itemName}
                   </div>
-
-                  <div className={cn(
-                    "border-t",
-                    category.isExpanded ? "block" : "hidden"
-                  )}>
-                    {category.items.length > 0 ? (
-                      <div className="p-4">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="grid grid-cols-2 gap-8">
-                            <div className="text-sm font-medium text-gray-500">
-                              On start date, change to:
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                              On end date, revert to:
-                            </div>
-                          </div>
-                          {category.items.map((item) => (
-                            <div key={item.id} className="grid grid-cols-2 gap-8">
-                              <div className="flex items-center gap-4">
-                                <span className="flex-1">{item.name}</span>
-                                <div className="flex items-center gap-1">
-                                  <span>£</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className="w-24"
-                                    value={item.newPrice}
-                                    onChange={(e) => updateItemPrice(
-                                      category.id,
-                                      item.id,
-                                      parseFloat(e.target.value) || 0
-                                    )}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span>£</span>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  className="w-24"
-                                  value={item.currentPrice}
-                                  disabled
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">
-                        No items in this category.
-                      </div>
-                    )}
-                  </div>
+                  <div className="text-gray-600">{change.startDate}</div>
+                  <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
+                  <div className="text-gray-600">{change.endDate}</div>
+                  <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <EditPriceChangeModal
+        isOpen={isEditModalOpen}
+        priceChange={editingPriceChange}
+        onClose={closeEditModal}
+        onSave={handleSaveEdit}
+      />
     </PageLayout>
   )
 } 
