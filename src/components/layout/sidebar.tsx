@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from '@/contexts/auth-context'
 import { 
   LayoutDashboard, 
   ShoppingCart,
@@ -19,18 +20,21 @@ import {
   FileText,
   CircleDollarSign,
   Utensils,
-  Clock
+  Clock,
+  BuildingIcon
 } from "lucide-react"
 
 function Sidebar() {
   const pathname = usePathname()
+  const { user } = useAuth()
   
   const [expandedMenus, setExpandedMenus] = useState({
     orders: false,
     menus: false,
     marketing: false,
     settings: false,
-    help: false
+    help: false,
+    branches: false
   });
 
   type MenuKey = keyof typeof expandedMenus;
@@ -49,6 +53,9 @@ function Sidebar() {
       [menu]: !expandedMenus[menu]
     });
   };
+
+  // Check if user is superadmin
+  const isSuperAdmin = user?.role === 'superadmin' || user?.roleDetails?.slug === 'superadmin'
 
   return (
     <div className="flex flex-col h-full bg-[#121831] text-white">
@@ -144,6 +151,51 @@ function Sidebar() {
             <BarChart className="mr-3 h-5 w-5" />
             Reports
             </Link>
+
+          {/* Branch Management - Only for SuperAdmin */}
+          {isSuperAdmin && (
+            <div>
+              <button
+                onClick={() => toggleMenu('branches')}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                  pathname.startsWith('/branches') ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                }`}
+              >
+                <BuildingIcon className="mr-3 h-5 w-5" />
+                Branch Management
+                <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.branches ? 'transform rotate-180' : ''}`} />
+              </button>
+
+              {expandedMenus.branches && (
+                <div className="pl-10 space-y-1 mt-1">
+                  <Link
+                    href="/branches"
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                      pathname === "/branches" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                    }`}
+                  >
+                    All Branches
+                  </Link>
+                  <Link
+                    href="/branches/settings"
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                      pathname === "/branches/settings" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                    }`}
+                  >
+                    Branch Settings
+                  </Link>
+                  <Link
+                    href="/branches/analytics"
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                      pathname === "/branches/analytics" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                    }`}
+                  >
+                    Branch Analytics
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Marketing */}
           <div>

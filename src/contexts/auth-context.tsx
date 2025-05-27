@@ -32,7 +32,7 @@ interface AuthContextType {
   updateBranchId: (branchId: string) => void
 }
 
-const ALLOWED_ROLES = ['admin', 'manager', 'staff']
+const ALLOWED_ROLES = ['admin', 'manager', 'staff', 'superadmin']
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
