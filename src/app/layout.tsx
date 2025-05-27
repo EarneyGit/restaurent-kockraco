@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from '@/contexts/auth-context'
+import { SocketProvider } from '@/contexts/socket-context'
 import { Toaster } from 'sonner'
 import ClientLayout from '../components/layout/client-layout'
 
@@ -27,8 +28,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
-          <ClientLayout>{children}</ClientLayout>
-          <Toaster position="top-right" richColors />
+          <SocketProvider>
+            <ClientLayout>{children}</ClientLayout>
+            <Toaster position="top-right" richColors />
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

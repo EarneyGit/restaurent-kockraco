@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X, LogOut, ChevronLeft, Mail, Phone, Clock, User } from "lucide-react";
 import { BaseUrl } from "@/lib/config";
 import { useAuth } from "@/contexts/auth-context";
+import { useSocket } from "@/contexts/socket-context";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 
@@ -70,6 +71,7 @@ interface Order {
 
 export default function LiveOrdersPage() {
   const { logout } = useAuth();
+  const { onOrderEvent, offOrderEvent, isConnected } = useSocket();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "new" | "in-progress" | "complete"
@@ -249,14 +251,27 @@ export default function LiveOrdersPage() {
     setShowDelayPopup(true);
   };
 
-  console.log("orders", orders);
-  useEffect(() => {
+  // Socket event handler
+  const handleOrderEvent = useCallback((message: any) => {
+    console.log('Order event received:', message);
+    // Simply refresh orders when any order event is received
     fetchOrders();
-    // Set up polling every 30 seconds
-    const interval = setInterval(fetchOrders, 30000);
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [activeTab]); // Added activeTab as dependency to refetch when tab changes
+  console.log("orders", orders);
+  
+  useEffect(() => {
+    // Initial fetch
+    fetchOrders();
+
+    // Set up socket listeners
+    onOrderEvent(handleOrderEvent);
+
+    // Cleanup socket listeners
+    return () => {
+      offOrderEvent(handleOrderEvent);
+    };
+  }, [activeTab]); // Simplified dependencies
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -398,6 +413,16 @@ export default function LiveOrdersPage() {
               <Menu className="h-6 w-6" />
             </Button>
             <span className="font-medium text-lg">Live Orders</span>
+            {/* Socket connection status */}
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                isConnected ? "bg-green-500" : "bg-red-500"
+              )}></div>
+              <span className="text-xs text-gray-500">
+                {isConnected ? "Live" : "Offline"}
+              </span>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Button
