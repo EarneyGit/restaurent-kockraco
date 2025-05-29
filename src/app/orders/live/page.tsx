@@ -412,58 +412,58 @@ export default function LiveOrdersPage() {
           </div>
         </header>
 
-        {/* Order Tabs */}
-        <div className="border-b bg-white">
-          <div className="flex">
-            <button
-              className={cn(
+      {/* Order Tabs */}
+      <div className="border-b bg-white">
+        <div className="flex">
+          <button
+            className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-                activeTab === "new"
+              activeTab === "new"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              )}
-              onClick={() => setActiveTab("new")}
-            >
-              New
-            </button>
-            <button
-              className={cn(
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+            onClick={() => setActiveTab("new")}
+          >
+            New
+          </button>
+          <button
+            className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-                activeTab === "in-progress"
+              activeTab === "in-progress"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              )}
-              onClick={() => setActiveTab("in-progress")}
-            >
-              In Progress
-            </button>
-            <button
-              className={cn(
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+            onClick={() => setActiveTab("in-progress")}
+          >
+            In Progress
+          </button>
+          <button
+            className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-                activeTab === "complete"
+              activeTab === "complete"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              )}
-              onClick={() => setActiveTab("complete")}
-            >
-              Complete
-            </button>
-          </div>
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+            onClick={() => setActiveTab("complete")}
+          >
+            Complete
+          </button>
         </div>
+      </div>
 
         {/* Orders List */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+        {loading ? (
             <div className="p-4 text-center text-gray-500">Loading orders...</div>
-          ) : error ? (
+        ) : error ? (
             <div className="p-4 text-center text-red-500">{error}</div>
-          ) : filteredOrders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              {activeTab === "new" && "No new orders"}
-              {activeTab === "in-progress" && "No orders in progress"}
-              {activeTab === "complete" && "No completed orders"}
-            </div>
-          ) : (
+            {activeTab === "new" && "No new orders"}
+            {activeTab === "in-progress" && "No orders in progress"}
+            {activeTab === "complete" && "No completed orders"}
+          </div>
+        ) : (
             filteredOrders.map((order) => (
               <div
                 key={order._id}
@@ -706,8 +706,8 @@ export default function LiveOrdersPage() {
             <div className="p-6 text-center text-gray-500">
               <div className="text-lg mb-2">Select an order to view details</div>
               <div className="text-sm">Choose an order from the list to see detailed information</div>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
 

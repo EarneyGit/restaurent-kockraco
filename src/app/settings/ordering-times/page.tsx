@@ -32,6 +32,11 @@ const defaultDaySettings: DaySettings = {
     start: "11:45",
     end: "21:50"
   },
+  breakTime: {
+    enabled: false,
+    start: "15:00",
+    end: "16:00"
+  },
   collection: {
     leadTime: 20,
     displayedTime: "12:10"
@@ -147,6 +152,11 @@ export default function OrderingTimesPage() {
           start: currentSettings.defaultTimes?.start || "11:45",
           end: currentSettings.defaultTimes?.end || "21:50"
         },
+        breakTime: {
+          enabled: currentSettings.breakTime?.enabled || false,
+          start: currentSettings.breakTime?.start || "15:00",
+          end: currentSettings.breakTime?.end || "16:00"
+        },
         collection: {
           leadTime: currentSettings.collection?.leadTime || 20,
           displayedTime: currentSettings.collection?.displayedTime || "12:10"
@@ -179,6 +189,10 @@ export default function OrderingTimesPage() {
         defaultTimes: {
           ...updatedSettings.defaultTimes,
           ...(updates.defaultTimes || {})
+        },
+        breakTime: {
+          ...updatedSettings.breakTime,
+          ...(updates.breakTime || {})
         },
         collection: {
           ...updatedSettings.collection,
@@ -365,7 +379,7 @@ export default function OrderingTimesPage() {
                           {/* Default Order Times */}
                           <div>
                             <h4 className="font-medium mb-3">Default Order Times</h4>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                               <div>
                                 <Label htmlFor={`${day}-start`}>Start Time</Label>
                                 <div className="flex gap-2">
@@ -390,11 +404,51 @@ export default function OrderingTimesPage() {
                                   />
                                 </div>
                               </div>
-                              <div className="flex items-center">
-                                <Button variant="outline" className="text-gray-600">
-                                  Remove Break
-                                </Button>
-                                <Info className="h-4 w-4 text-gray-400 ml-2" />
+                              <div>
+                                <Label>Break Time</Label>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex gap-2 items-center">
+                                    <Input
+                                      type="time"
+                                      value={settings.breakTime?.start || "15:00"}
+                                      onChange={(e) => updateDaySettings(day, {
+                                        breakTime: {
+                                          enabled: true,
+                                          start: e.target.value,
+                                          end: settings.breakTime?.end || "16:00"
+                                        }
+                                      })}
+                                      className="w-32"
+                                    />
+                                    <span className="text-gray-500">to</span>
+                                    <Input
+                                      type="time"
+                                      value={settings.breakTime?.end || "16:00"}
+                                      onChange={(e) => updateDaySettings(day, {
+                                        breakTime: {
+                                          enabled: true,
+                                          start: settings.breakTime?.start || "15:00",
+                                          end: e.target.value
+                                        }
+                                      })}
+                                      className="w-32"
+                                    />
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    className="text-gray-600"
+                                    onClick={() => updateDaySettings(day, {
+                                      breakTime: {
+                                        enabled: false,
+                                        start: "15:00",
+                                        end: "16:00"
+                                      }
+                                    })}
+                                  >
+                                    Remove Break
+                                  </Button>
+                                  <Info className="h-4 w-4 text-gray-400" />
+                                </div>
                               </div>
                             </div>
                           </div>
