@@ -10,6 +10,11 @@ export interface DaySettings {
     start: string;
     end: string;
   };
+  breakTime: {
+    enabled: boolean;
+    start: string;
+    end: string;
+  };
   collection: {
     leadTime: number;
     displayedTime: string;
@@ -318,6 +323,11 @@ class OrderingTimesService {
       defaultTimes: {
         start: "11:45",
         end: "21:50"
+      },
+      breakTime: {
+        enabled: false,
+        start: "15:00",
+        end: "16:00"
       },
       collection: {
         leadTime: 20,
