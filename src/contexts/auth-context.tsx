@@ -16,7 +16,7 @@ interface User {
   branchId?: string
   branch?: {
     id: string
-    name: string
+    name: string | undefined
     address: any
   }
 }
@@ -52,8 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...user,
         branchId,
         branch: {
-          ...user.branch,
-          id: branchId
+          id: branchId,
+          name: user.branch?.name,
+          address: user.branch?.address
         }
       }
       setUser(updatedUser)
