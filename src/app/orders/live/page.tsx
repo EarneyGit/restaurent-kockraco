@@ -144,10 +144,10 @@ export default function LiveOrdersPage() {
     }
   };
 
-  const fetchOrderDetails = async (orderId: string) => {
+  const fetchOrderDetails = async (orderId: string, branchId: string) => {
     try {
       setDetailsLoading(true);
-      const response = await api.get(`/orders/${orderId}`);
+      const response = await api.get(`/orders/${orderId}?branchId=${branchId}`);
       const data = response.data;
       if (data.success) {
         setSelectedOrder({
@@ -183,7 +183,7 @@ export default function LiveOrdersPage() {
   };
 
   const handleOrderClick = (order: Order) => {
-    fetchOrderDetails(order._id);
+    fetchOrderDetails(order._id, order.branchId._id);
   };
 
   const handleAcceptOrder = () => {
@@ -232,7 +232,7 @@ export default function LiveOrdersPage() {
             fetchOrders();
             // Update selected order if it's the same one
             if (selectedOrder && selectedOrder._id === delayingOrderId) {
-              fetchOrderDetails(delayingOrderId);
+              fetchOrderDetails(delayingOrderId, selectedOrder.branchId._id);
             }
           } else {
             toast.error("Failed to delay order");
