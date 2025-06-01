@@ -8,50 +8,58 @@ import { Switch } from "@/components/ui/switch"
 import { ChevronDown, ChevronUp, Eye, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-
-interface MenuItem {
-  id: string
-  name: string
-  currentPrice: number
-  newPrice: number
-}
-
-interface Category {
-  id: string
-  name: string
-  items: MenuItem[]
-  isExpanded: boolean
-}
+import { priceChangesService, Category, MenuItem } from "@/services/price-changes.service"
+import { toast } from "sonner"
 
 export default function AddPriceChangesPage() {
-  const [startDate, setStartDate] = useState("2025-05-28")
-  const [endDate, setEndDate] = useState("2025-05-29")
+  const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"))
+  const [endDate, setEndDate] = useState(format(new Date(Date.now() + 24 * 60 * 60 * 1000), "yyyy-MM-dd"))
   const [showHiddenCategories, setShowHiddenCategories] = useState(false)
   const [showHiddenItems, setShowHiddenItems] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: '1',
-      name: 'Meal Deals',
-      isExpanded: true,
-      items: [
-        { id: '1', name: 'Quarter Chicken Meal', currentPrice: 9.99, newPrice: 9.99 },
-        { id: '2', name: 'Half Chicken Meal', currentPrice: 13.99, newPrice: 13.99 },
-        { id: '3', name: 'Charcoal Chicken Pack', currentPrice: 24.99, newPrice: 24.99 },
-        { id: '4', name: 'Chicken + Rice Meal', currentPrice: 9.99, newPrice: 9.99 }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Grilled Chicken',
-      isExpanded: false,
-      items: [
-        { id: '5', name: 'Grilled Chicken Breast', currentPrice: 12.99, newPrice: 12.99 },
-        { id: '6', name: 'Grilled Chicken Thigh', currentPrice: 8.99, newPrice: 8.99 }
-      ]
-    }
-  ])
-  const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load categories and products on component mount and when filters change
+  useEffect(() => {
+    loadCategoriesWithProducts()
+  }, [showHiddenCategories, showHiddenItems])
+
+  const loadCategoriesWithProducts = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await priceChangesService.getCategoriesWithProducts(
+        showHiddenCategories,
+        showHiddenItems
+      )
+      
+      if (response.success) {
+        // Update categories to include tempPrice for the UI
+        const categoriesWithTempPrices = response.data.map(category => ({
+          ...category,
+          items: category.items.map(item => ({
+            ...item,
+            tempPrice: item.effectivePrice || item.currentPrice, // Use effective price as starting point
+          }))
+        }))
+        setCategories(categoriesWithTempPrices)
+      } else {
+        const errorMsg = 'Failed to load categories and products'
+        setError(errorMsg)
+        toast.error(errorMsg)
+      }
+    } catch (error: any) {
+      console.error('Error loading categories:', error)
+      const errorMsg = `API Error: ${error.response?.data?.message || error.message || 'Unknown error'}`
+      setError(errorMsg)
+      toast.error('Failed to load categories and products')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const toggleCategory = (categoryId: string) => {
     setCategories(categories.map(category => 
@@ -68,7 +76,7 @@ export default function AddPriceChangesPage() {
             ...category,
             items: category.items.map(item =>
               item.id === itemId
-                ? { ...item, newPrice }
+                ? { ...item, tempPrice: newPrice }
                 : item
             )
           }
@@ -82,36 +90,45 @@ export default function AddPriceChangesPage() {
 
       // Validate dates
       if (!startDate || !endDate) {
-        alert('Please select both start and end dates')
+        toast.error('Please select both start and end dates')
         return
       }
 
       if (new Date(startDate) >= new Date(endDate)) {
-        alert('End date must be after start date')
+        toast.error('End date must be after start date')
         return
       }
 
       // Check if any prices have been changed
       const hasChanges = categories.some(category =>
-        category.items.some(item => item.newPrice !== item.currentPrice)
+        category.items.some(item => item.tempPrice !== item.currentPrice)
       )
 
       if (!hasChanges) {
-        alert('No price changes detected. Please modify at least one product price.')
+        toast.error('No price changes detected. Please modify at least one product price.')
         return
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      alert('Price changes applied successfully!')
-      
-      // Redirect back to main page
-      window.location.href = '/menus/price-changes'
-      
+      const response = await priceChangesService.applyPriceChanges({
+        startDate,
+        endDate,
+        categories
+      })
+
+      if (response.success) {
+        toast.success(response.message || 'Price changes applied successfully!')
+        
+        // Redirect back to main page after a short delay
+        setTimeout(() => {
+          window.location.href = '/menus/price-changes'
+        }, 1000)
+      } else {
+        toast.error(response.message || 'Failed to apply price changes')
+      }
     } catch (error: any) {
       console.error('Error applying price changes:', error)
-      alert('Failed to apply price changes')
+      const errorMessage = error.response?.data?.message || 'Failed to apply price changes'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -119,6 +136,19 @@ export default function AddPriceChangesPage() {
 
   const handleCancel = () => {
     window.location.href = '/menus/price-changes'
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading categories and products...</span>
+          </div>
+        </div>
+      </PageLayout>
+    )
   }
 
   return (
@@ -137,6 +167,22 @@ export default function AddPriceChangesPage() {
       
       <div className="p-8 bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto">
+          {/* Error Display */}
+          {error && (
+            <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-red-800 mb-2">⚠️ Connection Error</h3>
+              <p className="text-sm text-red-700">{error}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={loadCategoriesWithProducts}
+                className="mt-3 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                Retry Connection
+              </Button>
+            </div>
+          )}
+
           <div className="mb-8">
             <h1 className="text-3xl font-medium text-gray-900 mb-4">Add Price Changes</h1>
             
@@ -159,6 +205,7 @@ export default function AddPriceChangesPage() {
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-40"
+                    disabled={saving}
                   />
                 </div>
                 
@@ -171,6 +218,7 @@ export default function AddPriceChangesPage() {
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-40"
+                    disabled={saving}
                   />
                 </div>
 
@@ -178,6 +226,7 @@ export default function AddPriceChangesPage() {
                   <Switch
                     checked={showHiddenCategories}
                     onCheckedChange={setShowHiddenCategories}
+                    disabled={loading || saving}
                   />
                   <label className="text-sm text-gray-700 whitespace-nowrap">
                     Show Hidden Categories
@@ -188,6 +237,7 @@ export default function AddPriceChangesPage() {
                   <Switch
                     checked={showHiddenItems}
                     onCheckedChange={setShowHiddenItems}
+                    disabled={loading || saving}
                   />
                   <label className="text-sm text-gray-700 whitespace-nowrap">
                     Show Hidden Items
@@ -200,13 +250,14 @@ export default function AddPriceChangesPage() {
                   variant="outline" 
                   onClick={handleCancel}
                   className="px-6"
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
                 <Button 
                   className="bg-emerald-500 hover:bg-emerald-600 text-white px-6"
                   onClick={handleSaveChanges}
-                  disabled={saving}
+                  disabled={saving || categories.length === 0}
                 >
                   {saving ? (
                     <>
@@ -221,88 +272,124 @@ export default function AddPriceChangesPage() {
             </div>
 
             {/* Categories and Items */}
-            <div className="space-y-4">
-              {categories.map((category) => (
-                <div key={category.id} className="bg-white rounded-lg shadow-sm border">
-                  <div 
-                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <h3 className="font-medium text-lg">{category.name}</h3>
-                    <button className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
-                      <span className="text-sm">
-                        {category.isExpanded ? 'Collapse' : 'Expand'}
-                      </span>
-                      {category.isExpanded ? (
-                        <ChevronUp className="h-5 w-5" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
+            {categories.length === 0 ? (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <p className="text-gray-500 mb-4">No categories or products found.</p>
+                <p className="text-sm text-gray-400 mb-4">
+                  Try adjusting the "Show Hidden" settings or check your connection.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={loadCategoriesWithProducts}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Reload Categories'
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {categories.map((category) => (
+                  <div key={category.id} className="bg-white rounded-lg shadow-sm border">
+                    <div 
+                      className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
+                      onClick={() => toggleCategory(category.id)}
+                    >
+                      <h3 className="font-medium text-lg">
+                        {category.name}
+                        <span className="ml-2 text-sm text-gray-500">
+                          ({category.items?.length || 0} items)
+                        </span>
+                      </h3>
+                      <button className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                        <span className="text-sm">
+                          {category.isExpanded ? 'Collapse' : 'Expand'}
+                        </span>
+                        {category.isExpanded ? (
+                          <ChevronUp className="h-5 w-5" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
 
-                  <div className={cn(
-                    "border-t",
-                    category.isExpanded ? "block" : "hidden"
-                  )}>
-                    {category.items.length > 0 ? (
-                      <div className="p-6">
-                        <div className="grid grid-cols-2 gap-8 mb-6">
-                          <div className="text-sm font-medium text-gray-500">
-                            On start date, change to:
-                          </div>
-                          <div className="text-sm font-medium text-gray-500">
-                            On end date, revert to:
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {category.items.map((item) => (
-                            <div key={item.id} className="grid grid-cols-2 gap-8">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium">{item.name}</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-600">£</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className="w-20 text-center"
-                                    value={item.newPrice}
-                                    onChange={(e) => updateItemPrice(
-                                      category.id,
-                                      item.id,
-                                      parseFloat(e.target.value) || 0
-                                    )}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-end">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-gray-600">£</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    className="w-20 text-center bg-gray-50"
-                                    value={item.currentPrice}
-                                    disabled
-                                  />
-                                </div>
-                              </div>
+                    <div className={cn(
+                      "border-t",
+                      category.isExpanded ? "block" : "hidden"
+                    )}>
+                      {category.items && category.items.length > 0 ? (
+                        <div className="p-6">
+                          <div className="grid grid-cols-2 gap-8 mb-6">
+                            <div className="text-sm font-medium text-gray-500">
+                              On start date, change to:
                             </div>
-                          ))}
+                            <div className="text-sm font-medium text-gray-500">
+                              On end date, revert to:
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            {category.items.map((item) => (
+                              <div key={item.id} className="grid grid-cols-2 gap-8">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="font-medium">{item.name}</span>
+                                    {item.hasActiveChange && (
+                                      <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
+                                        Active Change
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-600">£</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      className="w-20 text-center"
+                                      value={item.tempPrice}
+                                      onChange={(e) => updateItemPrice(
+                                        category.id,
+                                        item.id,
+                                        parseFloat(e.target.value) || 0
+                                      )}
+                                      disabled={saving}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-600">£</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      className="w-20 text-center bg-gray-50"
+                                      value={item.revertPrice || item.currentPrice}
+                                      disabled
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="p-6 text-center text-gray-500">
-                        No items in this category.
-                      </div>
-                    )}
+                      ) : (
+                        <div className="p-6 text-center text-gray-500">
+                          No items in this category.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
