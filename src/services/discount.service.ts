@@ -14,6 +14,9 @@ export interface Discount {
   minSpend: number;
   maxSpend: number;
   outlets: {
+    [key: string]: boolean;
+  };
+  legacyOutlets?: {
     dunfermline: boolean;
     edinburgh: boolean;
     glasgow: boolean;
