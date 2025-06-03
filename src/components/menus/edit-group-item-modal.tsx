@@ -881,12 +881,11 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         </DialogHeader>
 
         <Tabs defaultValue="details" onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="price-changes">Price Changes</TabsTrigger>
             <TabsTrigger value="items">Items</TabsTrigger>
-            <TabsTrigger value="attributes">Attributes</TabsTrigger>
             <TabsTrigger value="availability">Availability</TabsTrigger>
             <TabsTrigger value="allergens">Allergens</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -1244,23 +1243,6 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
             )}
           </TabsContent>
 
-          <TabsContent value="attributes">
-            {currentItem.id ? (
-              <AttributesTab 
-                productId={currentItem.id}
-                productName={currentItem.name}
-                categoryId={categoryId}
-                onAttributesChange={(attributes) => {
-                  console.log('Group item attributes updated:', attributes)
-                }}
-              />
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Please save the group item first before adding attributes.
-              </div>
-            )}
-          </TabsContent>
-
           <TabsContent value="availability" className="space-y-6">
             {DAYS_OF_WEEK.map(day => {
               const dayAvailability = currentItem.availability?.[day]
@@ -1446,13 +1428,13 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         </Tabs>
 
         <div className="flex justify-between gap-2 mt-4">
-          {item && currentTab !== "items" && currentTab !== "attributes" && (
+          {item && currentTab !== "items" && (
             <Button variant="outline" onClick={handleDuplicate} className="flex items-center">
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
             </Button>
           )}
-          <div className={`flex justify-end gap-2 ${(currentTab !== "items" && currentTab !== "attributes") || !item ? "" : "w-full"} ml-auto`}>
+          <div className={`flex justify-end gap-2 ${currentTab !== "items" || !item ? "" : "w-full"} ml-auto`}>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>Save Changes</Button>
           </div>
