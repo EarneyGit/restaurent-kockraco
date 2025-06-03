@@ -1305,24 +1305,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                             onChange={(e) => updateTimeSlot(day, index, 'end', e.target.value)}
                             className="w-32"
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTimeSlot(day, index)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addTimeSlot(day)}
-                        className="mt-2"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Time Slot
-                      </Button>
                     </div>
                   )}
                 </div>
