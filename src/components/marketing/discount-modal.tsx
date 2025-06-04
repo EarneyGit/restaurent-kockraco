@@ -17,6 +17,7 @@ import { CalendarIcon, ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Discount } from '@/services/discount.service'
+import branchService, { Branch } from '@/services/branch.service'
 
 // Form interface for the modal (uses Date objects for easier handling)
 interface DiscountFormData {
@@ -29,9 +30,7 @@ interface DiscountFormData {
   minSpend: number
   maxSpend: number
   outlets: {
-    dunfermline: boolean
-    edinburgh: boolean
-    glasgow: boolean
+    [key: string]: boolean;
   }
   timeDependent: boolean
   startDate: Date | null
@@ -74,11 +73,7 @@ const defaultDiscount: DiscountFormData = {
   discountValue: 0,
   minSpend: 0,
   maxSpend: 0,
-  outlets: {
-    dunfermline: true,
-    edinburgh: true,
-    glasgow: true,
-  },
+  outlets: {},
   timeDependent: false,
   startDate: null,
   endDate: null,
@@ -112,29 +107,108 @@ export default function DiscountModal({
   onSave,
 }: DiscountModalProps) {
   const [formData, setFormData] = useState<DiscountFormData>(defaultDiscount)
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [loading, setLoading] = useState(false)
+  
+  // Fetch branches on mount
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        setLoading(true)
+        const response = await branchService.getBranches()
+        if (response.success && response.data.length > 0) {
+          setBranches(response.data)
+          
+          // Initialize outlets with branch data
+          const initialOutlets: { [key: string]: boolean } = {}
+          response.data.forEach(branch => {
+            initialOutlets[branch._id] = true
+          })
+          
+          setFormData(prev => ({
+            ...prev,
+            outlets: initialOutlets
+          }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch branches:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchBranches()
+  }, [])
 
   useEffect(() => {
     if (discount) {
       // Convert API format to form format
-      setFormData({
+      const updatedDiscount = {
         ...discount,
         startDate: discount.startDate ? new Date(discount.startDate) : null,
         endDate: discount.endDate ? new Date(discount.endDate) : null,
-      })
-    } else {
-      setFormData(defaultDiscount)
+      }
+      
+      // Initialize outlets object if it doesn't exist or convert from legacy format
+      let outletMap: { [key: string]: boolean } = {};
+      
+      if (discount.outlets && Object.keys(discount.outlets).length > 0) {
+        // Use the existing outlets data from the discount
+        outletMap = { ...discount.outlets };
+      } else if (branches.length > 0) {
+        // If no outlets data but we have branches, initialize with default values
+        branches.forEach(branch => {
+          // Try to get value from legacy outlets based on branch name
+          let isEnabled = true;
+          
+          if (discount.legacyOutlets) {
+            const branchName = branch.name.toLowerCase();
+            if (branchName.includes('dunfermline') && discount.legacyOutlets.dunfermline !== undefined) {
+              isEnabled = discount.legacyOutlets.dunfermline;
+            } else if (branchName.includes('edinburgh') && discount.legacyOutlets.edinburgh !== undefined) {
+              isEnabled = discount.legacyOutlets.edinburgh;
+            } else if (branchName.includes('glasgow') && discount.legacyOutlets.glasgow !== undefined) {
+              isEnabled = discount.legacyOutlets.glasgow;
+            }
+          }
+          
+          outletMap[branch._id] = isEnabled;
+        });
+      }
+      
+      updatedDiscount.outlets = outletMap;
+      setFormData(updatedDiscount);
+    } else if (branches.length > 0) {
+      // For new discounts, initialize with all branches enabled
+      const initialOutlets: { [key: string]: boolean } = {};
+      branches.forEach(branch => {
+        initialOutlets[branch._id] = true;
+      });
+      
+      setFormData(prev => ({
+        ...defaultDiscount,
+        outlets: initialOutlets
+      }));
     }
-  }, [discount, isOpen])
+  }, [discount, isOpen, branches]);
+
+  // Function to get branch name by ID
+  const getBranchNameById = (branchId: string): string => {
+    const branch = branches.find(b => b._id === branchId);
+    return branch ? branch.name.toLowerCase() : '';
+  }
 
   const handleSave = async () => {
-    // Convert form format to API format
-    const apiData: Partial<Discount> = {
+    // Send the form data directly with the dynamic branch outlets
+    const apiData = {
       ...formData,
       startDate: formData.startDate ? formData.startDate.toISOString() : null,
       endDate: formData.endDate ? formData.endDate.toISOString() : null,
-    }
-    await onSave(apiData)
-    onClose()
+    };
+    
+    // Call onSave with the formatted data
+    await onSave(apiData as any);
+    onClose();
   }
 
   return (
@@ -234,41 +308,25 @@ export default function DiscountModal({
 
           <TabsContent value="outlets" className="space-y-4">
             <div className="grid gap-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="dunfermline">Admin user</Label>
-                <Switch
-                  id="dunfermline"
-                  checked={formData.outlets.dunfermline}
-                  onCheckedChange={(checked) => setFormData(prev => ({ 
-                    ...prev, 
-                    outlets: { ...prev.outlets, dunfermline: checked } 
-                  }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="edinburgh">Edinburgh</Label>
-                <Switch
-                  id="edinburgh"
-                  checked={formData.outlets.edinburgh}
-                  onCheckedChange={(checked) => setFormData(prev => ({ 
-                    ...prev, 
-                    outlets: { ...prev.outlets, edinburgh: checked } 
-                  }))}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="glasgow">Glasgow</Label>
-                <Switch
-                  id="glasgow"
-                  checked={formData.outlets.glasgow}
-                  onCheckedChange={(checked) => setFormData(prev => ({ 
-                    ...prev, 
-                    outlets: { ...prev.outlets, glasgow: checked } 
-                  }))}
-                />
-              </div>
+              {loading ? (
+                <div className="text-center py-4">Loading branches...</div>
+              ) : branches.length > 0 ? (
+                branches.map(branch => (
+                  <div key={branch._id} className="flex items-center justify-between">
+                    <Label htmlFor={branch._id}>{branch.name}</Label>
+                    <Switch
+                      id={branch._id}
+                      checked={formData.outlets[branch._id] ?? true}
+                      onCheckedChange={(checked) => setFormData(prev => ({ 
+                        ...prev, 
+                        outlets: { ...prev.outlets, [branch._id]: checked } 
+                      }))}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">No branches available</div>
+              )}
             </div>
           </TabsContent>
 

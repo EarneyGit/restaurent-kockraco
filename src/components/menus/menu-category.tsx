@@ -39,6 +39,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+  const [editingGroupItem, setEditingGroupItem] = useState<MenuItem | null>(null)
   const [includeAttributes, setIncludeAttributes] = useState(category.includeAttributes || false)
   const [includeDiscounts, setIncludeDiscounts] = useState(category.includeDiscounts || false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -320,9 +321,26 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
           collectionOnly: Boolean(data.data.collectionOnly),
           deleted: Boolean(data.data.deleted),
           hidePrice: Boolean(data.data.hidePrice),
+          allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
         }
         console.log("Transformed item for edit modal:", transformedItem);
-        setEditingItem(transformedItem)
+        
+        // Determine if this is a group item by checking for selectedItems
+        // A group item would have selectedItems array with values and itemSettings configured
+        const isGroupItem = Array.isArray(processedSelectedItems) && 
+                           processedSelectedItems.length > 0;
+        
+        console.log("Is this a group item?", isGroupItem);
+        
+        if (isGroupItem) {
+          // Open group item modal
+          setEditingGroupItem(transformedItem);
+          setEditingItem(null);
+        } else {
+          // Open regular item modal
+          setEditingItem(transformedItem);
+          setEditingGroupItem(null);
+        }
       } else {
         throw new Error(data.message || 'Failed to fetch product details')
       }
@@ -343,6 +361,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
         setProducts(newProducts)
       }
       setEditingItem(null)
+      setEditingGroupItem(null)
     } catch (error) {
       console.error('Error updating product:', error)
       toast.error('Failed to update product')
@@ -714,6 +733,14 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
               open={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
               onSave={handleSaveNewItem}
+            />
+
+            <EditGroupItemModal
+              item={editingGroupItem}
+              categoryId={category.id}
+              open={!!editingGroupItem}
+              onClose={() => setEditingGroupItem(null)}
+              onSave={handleSaveItem}
             />
 
             <EditGroupItemModal
