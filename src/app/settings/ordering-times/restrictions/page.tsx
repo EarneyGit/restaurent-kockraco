@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select"
 import { orderingTimesService, type OrderingRestrictions, type RestrictionDaySettings } from "@/services/ordering-times.service"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -21,10 +28,40 @@ const DAYS_OF_WEEK = [
   { key: "saturday", label: "Saturday" }
 ]
 
+const RESTRICTION_TYPES = [
+  { value: "None", label: "None" },
+  { value: "Combined Total", label: "Combined Total" },
+  { value: "Split Total", label: "Split Total" }
+]
+
 export default function RestrictionsPage() {
   const [restrictions, setRestrictions] = useState<OrderingRestrictions | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [restrictionType, setRestrictionType] = useState<'None' | 'Combined Total' | 'Split Total'>('None')
+
+  // Helper function to get default restrictions
+  const getDefaultRestrictions = (): OrderingRestrictions => {
+    const defaultDay = orderingTimesService.getDefaultRestrictionSettings();
+    
+    // Create a default days object
+    const defaultDays = {
+      sunday: { ...defaultDay },
+      monday: { ...defaultDay },
+      tuesday: { ...defaultDay },
+      wednesday: { ...defaultDay },
+      thursday: { ...defaultDay },
+      friday: { ...defaultDay },
+      saturday: { ...defaultDay }
+    };
+    
+    return {
+      type: 'None',
+      combined: { ...defaultDays },
+      collection: { ...defaultDays },
+      delivery: { ...defaultDays }
+    };
+  }
 
   // Load restrictions on component mount
   useEffect(() => {
@@ -33,47 +70,104 @@ export default function RestrictionsPage() {
 
   const loadRestrictions = async () => {
     try {
-      setLoading(true)
-      const response = await orderingTimesService.getRestrictions()
-      setRestrictions(response.data)
+      setLoading(true);
+      const response = await orderingTimesService.getRestrictions();
+      
+      // Check if we have valid restrictions data
+      if (response.data && Object.keys(response.data).length > 0) {
+        // Make sure all days are present, fill in any missing days with defaults
+        const defaultSettings = getDefaultRestrictions();
+        const completeRestrictions = { ...defaultSettings };
+        
+        // Copy over any existing settings
+        if (response.data.type) {
+          completeRestrictions.type = response.data.type;
+          setRestrictionType(response.data.type);
+        }
+        
+        // Copy combined settings
+        if (response.data.combined) {
+          completeRestrictions.combined = {
+            ...defaultSettings.combined,
+            ...response.data.combined
+          };
+        }
+        
+        // Copy collection settings
+        if (response.data.collection) {
+          completeRestrictions.collection = {
+            ...defaultSettings.collection,
+            ...response.data.collection
+          };
+        }
+        
+        // Copy delivery settings
+        if (response.data.delivery) {
+          completeRestrictions.delivery = {
+            ...defaultSettings.delivery,
+            ...response.data.delivery
+          };
+        }
+        
+        setRestrictions(completeRestrictions);
+      } else {
+        // Set default restrictions if data is missing or empty
+        const defaultRestrictions = getDefaultRestrictions();
+        setRestrictions(defaultRestrictions);
+        setRestrictionType(defaultRestrictions.type);
+      }
     } catch (error) {
-      console.error('Error loading restrictions:', error)
-      toast.error('Failed to load restrictions')
+      console.error('Error loading restrictions:', error);
+      toast.error('Failed to load restrictions');
       // Set default restrictions if loading fails
-      setRestrictions(getDefaultRestrictions())
+      const defaultRestrictions = getDefaultRestrictions();
+      setRestrictions(defaultRestrictions);
+      setRestrictionType(defaultRestrictions.type);
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const getDefaultRestrictions = (): OrderingRestrictions => {
-    const defaultDay = orderingTimesService.getDefaultRestrictionSettings()
-    return {
-      monday: { ...defaultDay },
-      tuesday: { ...defaultDay },
-      wednesday: { ...defaultDay },
-      thursday: { ...defaultDay },
-      friday: { ...defaultDay },
-      saturday: { ...defaultDay },
-      sunday: { ...defaultDay }
+      setLoading(false);
     }
   }
 
   const updateDayRestriction = (
-    dayKey: keyof OrderingRestrictions,
+    dayKey: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday',
     field: keyof RestrictionDaySettings,
-    value: string | boolean | number
+    value: string | boolean | number,
+    section: 'combined' | 'collection' | 'delivery' = 'combined'
   ) => {
-    if (!restrictions) return
+    if (!restrictions) return;
+    
+    setRestrictions(prev => {
+      if (!prev) return prev;
+      
+      // Create a deep copy of the restrictions
+      const updated = { ...prev };
+      
+      // Update the specific field for the specific day in the specific section
+      updated[section] = {
+        ...updated[section],
+        [dayKey]: {
+          ...updated[section][dayKey],
+          [field]: field === 'enabled' ? value : Number(value)
+        }
+      };
+      
+      return updated;
+    });
+  };
 
-    setRestrictions(prev => ({
-      ...prev!,
-      [dayKey]: {
-        ...prev![dayKey],
-        [field]: field === 'enabled' ? value : Number(value)
-      }
-    }))
-  }
+  const handleRestrictionTypeChange = (value: 'None' | 'Combined Total' | 'Split Total') => {
+    setRestrictionType(value);
+    
+    if (restrictions) {
+      setRestrictions(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          type: value
+        };
+      });
+    }
+  };
 
   const handleSave = async () => {
     if (!restrictions) {
@@ -124,63 +218,211 @@ export default function RestrictionsPage() {
           <h1 className="text-2xl font-medium mb-4">Order Restrictions</h1>
           
           <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-            <p className="text-gray-600 mb-4">
-              Configure order restrictions for each day of the week. When enabled, customers will be limited 
-              to the specified order total within the defined time window.
-            </p>
-            
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="text-left px-4 py-3 font-medium">Day</th>
-                    <th className="text-left px-4 py-3 font-medium">Enabled</th>
-                    <th className="text-left px-4 py-3 font-medium">Order Total (£)</th>
-                    <th className="text-left px-4 py-3 font-medium">Window Size (min)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <tr key={day.key} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium">{day.label}</td>
-                      <td className="px-4 py-3">
-                        <Switch
-                          checked={restrictions[day.key as keyof OrderingRestrictions].enabled}
-                          onCheckedChange={(checked) => 
-                            updateDayRestriction(day.key as keyof OrderingRestrictions, "enabled", checked)
-                          }
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={restrictions[day.key as keyof OrderingRestrictions].orderTotal}
-                          onChange={(e) => 
-                            updateDayRestriction(day.key as keyof OrderingRestrictions, "orderTotal", e.target.value)
-                          }
-                          className="w-32"
-                          disabled={!restrictions[day.key as keyof OrderingRestrictions].enabled}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={restrictions[day.key as keyof OrderingRestrictions].windowSize}
-                          onChange={(e) => 
-                            updateDayRestriction(day.key as keyof OrderingRestrictions, "windowSize", e.target.value)
-                          }
-                          className="w-32"
-                          disabled={!restrictions[day.key as keyof OrderingRestrictions].enabled}
-                        />
-                      </td>
-                    </tr>
+            <div className="mb-4">
+              <Label htmlFor="restriction-behavior" className="text-base font-medium mb-2 block">
+                Restriction Behaviour
+              </Label>
+              <Select
+                value={restrictionType}
+                onValueChange={(value) => handleRestrictionTypeChange(value as 'None' | 'Combined Total' | 'Split Total')}
+              >
+                <SelectTrigger className="w-[300px]">
+                  <SelectValue placeholder="Select restriction behavior" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESTRICTION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
                   ))}
-                </tbody>
-              </table>
+                </SelectContent>
+              </Select>
             </div>
+            
+            {restrictionType !== 'None' && (
+              <p className="text-gray-600 mb-4">
+                Configure order restrictions for each day of the week. When enabled, customers will be limited 
+                to the specified order total within the defined time window.
+              </p>
+            )}
+            
+            {/* Combined Total Restrictions */}
+            {restrictionType === 'Combined Total' && (
+              <div className="mt-6">
+                <h2 className="text-lg font-medium mb-3">Combined</h2>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b">
+                        <th className="text-left px-4 py-3 font-medium">Day</th>
+                        <th className="text-left px-4 py-3 font-medium">Enabled</th>
+                        <th className="text-left px-4 py-3 font-medium">Order Total (£)</th>
+                        <th className="text-left px-4 py-3 font-medium">Window Size (min)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <tr key={day.key} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium">{day.label}</td>
+                          <td className="px-4 py-3">
+                            <Switch
+                              checked={restrictions.combined[day.key as keyof typeof restrictions.combined]?.enabled || false}
+                              onCheckedChange={(checked) => 
+                                updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "enabled", checked, 'combined')
+                              }
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={restrictions.combined[day.key as keyof typeof restrictions.combined]?.orderTotal || 0}
+                              onChange={(e) => 
+                                updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "orderTotal", e.target.value, 'combined')
+                              }
+                              className="w-32"
+                              disabled={!restrictions.combined[day.key as keyof typeof restrictions.combined]?.enabled}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={restrictions.combined[day.key as keyof typeof restrictions.combined]?.windowSize || 5}
+                              onChange={(e) => 
+                                updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "windowSize", e.target.value, 'combined')
+                              }
+                              className="w-32"
+                              disabled={!restrictions.combined[day.key as keyof typeof restrictions.combined]?.enabled}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            {/* Split Total Restrictions */}
+            {restrictionType === 'Split Total' && (
+              <>
+                {/* Collection Restrictions */}
+                <div className="mt-6">
+                  <h2 className="text-lg font-medium mb-3">Collection</h2>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left px-4 py-3 font-medium">Day</th>
+                          <th className="text-left px-4 py-3 font-medium">Enabled</th>
+                          <th className="text-left px-4 py-3 font-medium">Order Total (£)</th>
+                          <th className="text-left px-4 py-3 font-medium">Window Size (min)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <tr key={day.key} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-medium">{day.label}</td>
+                            <td className="px-4 py-3">
+                              <Switch
+                                checked={restrictions.collection[day.key as keyof typeof restrictions.collection]?.enabled || false}
+                                onCheckedChange={(checked) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "enabled", checked, 'collection')
+                                }
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={restrictions.collection[day.key as keyof typeof restrictions.collection]?.orderTotal || 0}
+                                onChange={(e) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "orderTotal", e.target.value, 'collection')
+                                }
+                                className="w-32"
+                                disabled={!restrictions.collection[day.key as keyof typeof restrictions.collection]?.enabled}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={restrictions.collection[day.key as keyof typeof restrictions.collection]?.windowSize || 5}
+                                onChange={(e) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "windowSize", e.target.value, 'collection')
+                                }
+                                className="w-32"
+                                disabled={!restrictions.collection[day.key as keyof typeof restrictions.collection]?.enabled}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* Delivery Restrictions */}
+                <div className="mt-6">
+                  <h2 className="text-lg font-medium mb-3">Delivery</h2>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left px-4 py-3 font-medium">Day</th>
+                          <th className="text-left px-4 py-3 font-medium">Enabled</th>
+                          <th className="text-left px-4 py-3 font-medium">Order Total (£)</th>
+                          <th className="text-left px-4 py-3 font-medium">Window Size (min)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <tr key={day.key} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-medium">{day.label}</td>
+                            <td className="px-4 py-3">
+                              <Switch
+                                checked={restrictions.delivery[day.key as keyof typeof restrictions.delivery]?.enabled || false}
+                                onCheckedChange={(checked) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "enabled", checked, 'delivery')
+                                }
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={restrictions.delivery[day.key as keyof typeof restrictions.delivery]?.orderTotal || 0}
+                                onChange={(e) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "orderTotal", e.target.value, 'delivery')
+                                }
+                                className="w-32"
+                                disabled={!restrictions.delivery[day.key as keyof typeof restrictions.delivery]?.enabled}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={restrictions.delivery[day.key as keyof typeof restrictions.delivery]?.windowSize || 5}
+                                onChange={(e) => 
+                                  updateDayRestriction(day.key as 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', "windowSize", e.target.value, 'delivery')
+                                }
+                                className="w-32"
+                                disabled={!restrictions.delivery[day.key as keyof typeof restrictions.delivery]?.enabled}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex justify-start">

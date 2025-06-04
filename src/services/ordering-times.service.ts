@@ -64,13 +64,34 @@ export interface RestrictionDaySettings {
 }
 
 export interface OrderingRestrictions {
-  monday: RestrictionDaySettings;
-  tuesday: RestrictionDaySettings;
-  wednesday: RestrictionDaySettings;
-  thursday: RestrictionDaySettings;
-  friday: RestrictionDaySettings;
-  saturday: RestrictionDaySettings;
-  sunday: RestrictionDaySettings;
+  type: 'None' | 'Combined Total' | 'Split Total';
+  combined: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
+  collection: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
+  delivery: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
 }
 
 export interface OrderingTimes {
