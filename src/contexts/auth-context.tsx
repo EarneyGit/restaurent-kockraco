@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { authService } from '@/services/auth.service'
 
 interface User {
   id: string
@@ -30,6 +31,7 @@ interface AuthContextType {
   isAuthorized: boolean
   isLoading: boolean
   updateBranchId: (branchId: string) => void
+  verifyToken: () => Promise<void>
 }
 
 const ALLOWED_ROLES = ['admin', 'manager', 'staff', 'superadmin']
@@ -62,6 +64,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Verify token with backend
+  const verifyToken = async () => {
+    if (!token) return
+    
+    try {
+      await authService.verifyToken()
+      // Token is valid, do nothing
+    } catch (error) {
+      // Token is invalid or expired, logout
+      logout()
+    }
+  }
+
   useEffect(() => {
     // Check for stored auth data on mount
     const storedToken = localStorage.getItem('token')
@@ -91,6 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(false)
   }, [])
+
+  // Verify token on initial load and when token changes
+  useEffect(() => {
+    if (token && !isLoading) {
+      verifyToken()
+    }
+  }, [token, isLoading])
 
   useEffect(() => {
     // Protect routes only after loading is complete
@@ -139,7 +161,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!token,
     isAuthorized,
     isLoading,
-    updateBranchId
+    updateBranchId,
+    verifyToken
   }
 
   return (
