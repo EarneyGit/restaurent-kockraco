@@ -269,8 +269,24 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString())
       formData.append('deleted', Boolean(currentItem.deleted).toString())
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString())
-
+      
+      // Fetch the current allowAddWithoutChoices value from the product instead of using currentItem
+      let allowAddWithoutChoicesValue = currentItem.allowAddWithoutChoices;
+      
+      // If this is an existing product, get the current value from the server
+      if (currentItem.id) {
+        try {
+          const productResponse = await api.get(`/products/${currentItem.id}`)
+          if (productResponse.data.success) {
+            allowAddWithoutChoicesValue = Boolean(productResponse.data.data.allowAddWithoutChoices)
+          }
+        } catch (error) {
+          console.error('Error fetching current product settings:', error)
+        }
+      }
+      
+      formData.append('allowAddWithoutChoices', Boolean(allowAddWithoutChoicesValue).toString())
+      
       // Mark this as a regular item (not a group item)
       formData.append('isGroupItem', 'false')
 
@@ -621,8 +637,21 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString());
       formData.append('deleted', Boolean(currentItem.deleted).toString());
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString());
-
+      
+      // Fetch the current allowAddWithoutChoices value from the product
+      let allowAddWithoutChoicesValue = currentItem.allowAddWithoutChoices;
+      
+      try {
+        const productResponse = await api.get(`/products/${item.id}`)
+        if (productResponse.data.success) {
+          allowAddWithoutChoicesValue = Boolean(productResponse.data.data.allowAddWithoutChoices)
+        }
+      } catch (error) {
+        console.error('Error fetching current product settings:', error)
+      }
+      
+      formData.append('allowAddWithoutChoices', Boolean(allowAddWithoutChoicesValue).toString());
+      
       // Mark this as a regular item (not a group item)
       formData.append('isGroupItem', 'false');
 
@@ -1266,18 +1295,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                   />
                   <Label htmlFor="hidePrice">Hide Price</Label>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="allowAddWithoutChoices"
-                    checked={Boolean(currentItem.allowAddWithoutChoices)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, allowAddWithoutChoices: checked }))}
-                  />
-                  <Label htmlFor="allowAddWithoutChoices">Allow add without choices</Label>
-                </div>
-                <p className="text-xs text-gray-500 ml-6">
-                  When enabled, customers can order this product without selecting any attributes
-                </p>
               </div>
             </div>
           </TabsContent>
