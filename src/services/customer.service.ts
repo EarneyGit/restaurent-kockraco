@@ -5,8 +5,8 @@ export interface CustomerSimple {
   postcode: string;
   address: string;
   id: string;
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   mobile: string;
   totalOrders: number;
@@ -17,8 +17,8 @@ export interface CustomerSimple {
 
 export interface Customer {
   id: string;
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   mobile: string;
   address: string;
@@ -69,12 +69,12 @@ export interface CustomerFilters {
   page?: number;
   limit?: number;
   userId?: string;
-  firstname?: string;
-  lastname?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   mobile?: string;
   postcode?: string;
-  sortBy?: 'name' | 'email' | 'totalOrders' | 'totalSpent' | 'lastOrderDate';
+  sortBy?: 'firstName' | 'email' | 'totalOrders' | 'totalSpent' | 'lastOrderDate';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -178,7 +178,7 @@ class CustomerService {
       }
       // Otherwise, search by first name
       else {
-        filters.firstname = searchText;
+        filters.firstName = searchText;
       }
 
       return await this.getCustomers(filters);
@@ -194,8 +194,8 @@ class CustomerService {
   async getFilteredCustomers(
     filters: {
       userId?: string;
-      firstname?: string;
-      lastname?: string;
+      firstName?: string;
+      lastName?: string;
       email?: string;
       mobile?: string;
       postcode?: string;
@@ -225,8 +225,8 @@ class CustomerService {
    * Format customer name for display
    */
   formatCustomerName(customer: Customer): string {
-    const firstName = customer.firstname || '';
-    const lastName = customer.lastname || '';
+      const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
     return `${firstName} ${lastName}`.trim() || 'Guest Customer';
   }
 
@@ -289,7 +289,6 @@ class CustomerService {
   async updateCustomer(customerId: string, updateData: {
     firstName?: string;
     lastName?: string;
-    name?: string;
     email?: string;
     mobileNumber?: string;
     phone?: string;

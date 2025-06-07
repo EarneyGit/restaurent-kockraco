@@ -6,8 +6,8 @@ import { customerService, CustomerSimple, CustomerResponse } from '@/services/cu
 
 interface SearchFilters {
   userId: string
-  firstname: string
-  lastname: string
+  firstName: string
+  lastName: string
   email: string
   mobile: string
   postcode: string
@@ -18,8 +18,8 @@ export default function CustomersPage() {
   const [itemsPerPage, setItemsPerPage] = useState(20)
   const [filters, setFilters] = useState<SearchFilters>({
     userId: '',
-    firstname: '',
-    lastname: '',
+    firstName: '',
+    lastName: '',
     email: '',
     mobile: '',
     postcode: ''
@@ -41,8 +41,8 @@ export default function CustomersPage() {
       const response: CustomerResponse = await customerService.getFilteredCustomers(
         {
           userId: filters.userId || undefined,
-          firstname: filters.firstname || undefined,
-          lastname: filters.lastname || undefined,
+          firstName: filters.firstName || undefined,
+          lastName: filters.lastName || undefined,
           email: filters.email || undefined,
           mobile: filters.mobile || undefined,
           postcode: filters.postcode || undefined,
@@ -130,15 +130,15 @@ export default function CustomersPage() {
             type="text" 
             placeholder="First name" 
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            value={filters.firstname}
-            onChange={(e) => setFilters(prev => ({ ...prev, firstname: e.target.value }))}
+            value={filters.firstName}
+            onChange={(e) => setFilters(prev => ({ ...prev, firstName: e.target.value }))}
           />
           <input 
             type="text" 
             placeholder="Last name" 
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            value={filters.lastname}
-            onChange={(e) => setFilters(prev => ({ ...prev, lastname: e.target.value }))}
+            value={filters.lastName}
+            onChange={(e) => setFilters(prev => ({ ...prev, lastName: e.target.value }))}
           />
           <input 
             type="text" 
@@ -200,8 +200,8 @@ export default function CustomersPage() {
                   onClick={() => {
                     setFilters({
                       userId: '',
-                      firstname: '',
-                      lastname: '',
+                      firstName: '',
+                      lastName: '',
                       email: '',
                       mobile: '',
                       postcode: ''
@@ -234,8 +234,8 @@ export default function CustomersPage() {
             <tbody className="divide-y divide-gray-200">
                 {customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm">{customer.firstname || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.lastname || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.firstName || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.lastName || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm text-gray-500">{customer.email || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm">{customer.mobile || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm">{customer.address || 'N/A'}</td>

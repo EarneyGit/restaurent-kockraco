@@ -82,7 +82,7 @@ function CustomerDetailsModal({ isOpen, customerId, onClose }: CustomerDetailsMo
                     </div>
                     <div>
                       <span className="text-sm text-gray-500">Full Name:</span>
-                      <p className="font-medium">{customer.firstname} {customer.lastname}</p>
+                      <p className="font-medium">{customer.firstName} {customer.lastName}</p>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500">Email:</span>
@@ -210,8 +210,8 @@ export default function Customers() {
   })
   const [searchForm, setSearchForm] = useState({
     userId: '',
-    firstname: '',
-    lastname: '',
+    firstName: '',
+    lastName: '',
     email: '',
     mobile: '',
     postcode: ''
@@ -257,8 +257,8 @@ export default function Customers() {
   const handleClearSearch = () => {
     setSearchForm({
       userId: '',
-      firstname: '',
-      lastname: '',
+      firstName: '',
+      lastName: '',
       email: '',
       mobile: '',
       postcode: ''
@@ -314,13 +314,13 @@ export default function Customers() {
           />
           <Input 
             placeholder="First name"
-            value={searchForm.firstname}
-            onChange={(e) => setSearchForm({ ...searchForm, firstname: e.target.value })}
+            value={searchForm.firstName}
+            onChange={(e) => setSearchForm({ ...searchForm, firstName: e.target.value })}
           />
           <Input 
             placeholder="Last name"
-            value={searchForm.lastname}
-            onChange={(e) => setSearchForm({ ...searchForm, lastname: e.target.value })}
+            value={searchForm.lastName}
+            onChange={(e) => setSearchForm({ ...searchForm, lastName: e.target.value })}
           />
           <Input 
             placeholder="Email"
@@ -394,7 +394,7 @@ export default function Customers() {
                     />
                   </td>
                       <td className="p-3 text-sm">{customer.id.slice(-6)}</td>
-                      <td className="p-3">{customer.firstname} {customer.lastname}</td>
+                      <td className="p-3">{customer.firstName} {customer.lastName}</td>
                   <td className="p-3">{customer.email}</td>
                       <td className="p-3">{customer.mobile}</td>
                       <td className="p-3">{customer.totalOrders}</td>
