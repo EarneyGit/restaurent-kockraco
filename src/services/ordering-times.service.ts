@@ -94,12 +94,22 @@ export interface OrderingRestrictions {
   };
 }
 
+export interface OrderingRestrictionsWeeklyType {
+  monday?: RestrictionDaySettings;
+  tuesday?: RestrictionDaySettings;
+  wednesday?: RestrictionDaySettings;
+  thursday?: RestrictionDaySettings;
+  friday?: RestrictionDaySettings;
+  saturday?: RestrictionDaySettings;
+  sunday?: RestrictionDaySettings;
+}
+
 export interface OrderingTimes {
   _id: string;
   branchId: string;
   weeklySchedule: WeeklySchedule;
   closedDates: ClosedDate[];
-  restrictions: OrderingRestrictions;
+  restrictions: OrderingRestrictionsWeeklyType;
   createdAt: string;
   updatedAt: string;
 }

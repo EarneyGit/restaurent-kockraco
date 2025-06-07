@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
-import { customerService, Customer, CustomerResponse } from '@/services/customer.service'
+import { customerService, CustomerSimple, CustomerResponse } from '@/services/customer.service'
 
 interface SearchFilters {
   userId: string
@@ -26,7 +26,7 @@ export default function CustomersPage() {
   })
   
   // State for API data
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customers, setCustomers] = useState<CustomerSimple[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(1)
@@ -86,7 +86,7 @@ export default function CustomersPage() {
   // Handle customer details view
   const handleViewDetails = async (customerId: string) => {
     try {
-      const response = await customerService.getCustomer(customerId)
+      const response = await customerService.getCustomerDetails(customerId)
       // You can implement a modal or navigate to a details page here
       console.log('Customer details:', response.data)
       // For now, just log the details

@@ -1,6 +1,20 @@
 import axios from '@/lib/axios';
 
 // Customer interfaces
+export interface CustomerSimple {
+  postcode: string;
+  address: string;
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  mobile: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate: string;
+  customerType: 'Regular' | 'New';
+}
+
 export interface Customer {
   id: string;
   firstname: string;
@@ -15,6 +29,8 @@ export interface Customer {
   lastOrderDate: string;
   firstOrderDate: string;
   customerType: 'Regular' | 'New';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CustomerDetails extends Customer {
@@ -64,7 +80,7 @@ export interface CustomerFilters {
 
 export interface CustomerResponse {
   success: boolean;
-  data: Customer[];
+  data: CustomerSimple[];
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -73,19 +89,16 @@ export interface CustomerResponse {
     hasNextPage: boolean;
     hasPrevPage: boolean;
   };
-  branchId: string;
 }
 
 export interface CustomerDetailsResponse {
   success: boolean;
   data: CustomerDetails;
-  branchId: string;
 }
 
 export interface CustomerStatsResponse {
   success: boolean;
   data: CustomerStats;
-  branchId: string;
 }
 
 class CustomerService {
@@ -96,16 +109,8 @@ class CustomerService {
    */
   async getCustomers(filters: CustomerFilters = {}): Promise<CustomerResponse> {
     try {
-      const params = new URLSearchParams();
-      
-      // Add filters to params
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
-
-      const response = await axios.get(`${this.baseUrl}?${params.toString()}`);
+      // Use POST method for customer list
+      const response = await axios.post(`${this.baseUrl}/list`, filters);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching customers:', error);
@@ -114,14 +119,24 @@ class CustomerService {
   }
 
   /**
-   * Get customer details by ID
+   * Get customer details by ID (for modal view)
    */
-  async getCustomer(customerId: string): Promise<CustomerDetailsResponse> {
+  async getCustomerDetails(customerId: string): Promise<CustomerDetailsResponse> {
     try {
+      console.log('Calling API for customer ID:', customerId);
+      console.log('API URL:', `${this.baseUrl}/${customerId}`);
+      
       const response = await axios.get(`${this.baseUrl}/${customerId}`);
+      console.log('API Response:', response);
+      console.log('Response Data:', response.data);
+      
       return response.data;
     } catch (error: any) {
       console.error('Error fetching customer details:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.response?.data?.message);
+      
       throw new Error(error.response?.data?.message || 'Failed to fetch customer details');
     }
   }
@@ -201,8 +216,8 @@ class CustomerService {
 
       return await this.getCustomers(customerFilters);
     } catch (error: any) {
-      console.error('Error fetching filtered customers:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch filtered customers');
+      console.error('Error filtering customers:', error);
+      throw new Error(error.response?.data?.message || 'Failed to filter customers');
     }
   }
 
@@ -265,6 +280,53 @@ class CustomerService {
         return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  /**
+   * Update customer information
+   */
+  async updateCustomer(customerId: string, updateData: {
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email?: string;
+    mobileNumber?: string;
+    phone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    postalCode?: string;
+    address?: string;
+    emailNotifications?: boolean;
+    smsNotifications?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const response = await axios.put(`${this.baseUrl}/${customerId}`, updateData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating customer:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update customer');
+    }
+  }
+
+  /**
+   * Test API connection
+   */
+  async testApiConnection(): Promise<void> {
+    try {
+      console.log('Testing API connection...');
+      const response = await fetch(`${this.baseUrl}/api/customers/683c4271fe9160e097c05181`);
+      console.log('Direct fetch response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Direct fetch response data:', data);
+    } catch (error) {
+      console.error('Direct fetch error:', error);
     }
   }
 }
