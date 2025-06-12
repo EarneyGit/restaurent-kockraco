@@ -1377,29 +1377,38 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="hidePrice"
-                    checked={Boolean(currentItem.hidePrice)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
-                  />
-                  <Label htmlFor="hidePrice">Hide Price</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="hideItem"
-                    checked={Boolean(currentItem.hideItem)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hideItem: checked }))}
-                  />
-                  <Label htmlFor="hideItem">Hide Item</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
                     id="freeDelivery"
                     checked={Boolean(currentItem.freeDelivery)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
                   />
                   <Label htmlFor="freeDelivery">Free Delivery</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="collectionOnly"
+                    checked={Boolean(currentItem.collectionOnly)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
+                  />
+                  <Label htmlFor="collectionOnly">Collection Only</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="deleted"
+                    checked={Boolean(currentItem.deleted)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
+                  />
+                  <Label htmlFor="deleted">Deleted</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="hidePrice"
+                    checked={Boolean(currentItem.hidePrice)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
+                  />
+                  <Label htmlFor="hidePrice">Hide Price</Label>
                 </div>
               </div>
             </div>

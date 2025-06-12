@@ -332,13 +332,12 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           deleted: Boolean(data.data.deleted),
           hidePrice: Boolean(data.data.hidePrice),
           allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
+          isGroupItem: Boolean(data.data.isGroupItem),
         }
         console.log("Transformed item for edit modal:", transformedItem);
         
-        // Determine if this is a group item by checking for selectedItems
-        // A group item would have selectedItems array with values and itemSettings configured
-        const isGroupItem = Array.isArray(processedSelectedItems) && 
-                           processedSelectedItems.length > 0;
+        // Determine if this is a group item by checking the isGroupItem field from backend
+        const isGroupItem = Boolean(data.data.isGroupItem);
         
         console.log("Is this a group item?", isGroupItem);
         
