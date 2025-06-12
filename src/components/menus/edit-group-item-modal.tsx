@@ -1377,33 +1377,6 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="freeDelivery"
-                    checked={Boolean(currentItem.freeDelivery)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
-                  />
-                  <Label htmlFor="freeDelivery">Free Delivery</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="collectionOnly"
-                    checked={Boolean(currentItem.collectionOnly)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
-                  />
-                  <Label htmlFor="collectionOnly">Collection Only</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="deleted"
-                    checked={Boolean(currentItem.deleted)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
-                  />
-                  <Label htmlFor="deleted">Deleted</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
                     id="hidePrice"
                     checked={Boolean(currentItem.hidePrice)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
@@ -1413,15 +1386,21 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="allowAddWithoutChoices"
-                    checked={Boolean(currentItem.allowAddWithoutChoices)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, allowAddWithoutChoices: checked }))}
+                    id="hideItem"
+                    checked={Boolean(currentItem.hideItem)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hideItem: checked }))}
                   />
-                  <Label htmlFor="allowAddWithoutChoices">Allow add without choices</Label>
+                  <Label htmlFor="hideItem">Hide Item</Label>
                 </div>
-                <p className="text-xs text-gray-500 ml-6">
-                  When enabled, customers can order this product without selecting any attributes
-                </p>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="freeDelivery"
+                    checked={Boolean(currentItem.freeDelivery)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
+                  />
+                  <Label htmlFor="freeDelivery">Free Delivery</Label>
+                </div>
               </div>
             </div>
           </TabsContent>

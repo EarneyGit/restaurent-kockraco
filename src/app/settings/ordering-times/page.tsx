@@ -38,8 +38,13 @@ const defaultDaySettings: DaySettings = {
     end: "16:00"
   },
   collection: {
+    useDifferentTimes: false,
     leadTime: 20,
-    displayedTime: "12:10"
+    displayedTime: "12:10",
+    customTimes: {
+      start: "11:45",
+      end: "21:50"
+    }
   },
   delivery: {
     useDifferentTimes: false,
@@ -158,8 +163,13 @@ export default function OrderingTimesPage() {
           end: currentSettings.breakTime?.end || "16:00"
         },
         collection: {
+          useDifferentTimes: currentSettings.collection?.useDifferentTimes || false,
           leadTime: currentSettings.collection?.leadTime || 20,
-          displayedTime: currentSettings.collection?.displayedTime || "12:10"
+          displayedTime: currentSettings.collection?.displayedTime || "12:10",
+          customTimes: {
+            start: currentSettings.collection?.customTimes?.start || "11:45",
+            end: currentSettings.collection?.customTimes?.end || "21:50"
+          }
         },
         delivery: {
           useDifferentTimes: currentSettings.delivery?.useDifferentTimes || false,
@@ -465,34 +475,83 @@ export default function OrderingTimesPage() {
                               />
                             </div>
                             {settings.isCollectionAllowed && (
-                              <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                  <Label>Collection Lead Times</Label>
-                                  <div className="flex items-center gap-2 mt-1">
+                              <>
+                                <div className="flex items-center space-x-2 mb-4">
+                                  <Switch
+                                    checked={settings.collection.useDifferentTimes}
+                                    onCheckedChange={(checked) => updateDaySettings(day, {
+                                      collection: { ...settings.collection, useDifferentTimes: checked }
+                                    })}
+                                  />
+                                  <Label>Use Different Times to Above</Label>
+                                </div>
+                                {settings.collection.useDifferentTimes && (
+                                  <div className="mb-4 p-3 bg-gray-50 rounded">
+                                    <Label className="text-sm font-medium mb-2 block">Collection Times</Label>
+                                    <div className="flex gap-2 items-center">
+                                      <Input
+                                        type="time"
+                                        value={settings.collection.customTimes?.start || "11:45"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          collection: {
+                                            ...settings.collection,
+                                            customTimes: {
+                                              ...settings.collection.customTimes,
+                                              start: e.target.value,
+                                              end: settings.collection.customTimes?.end || "21:50"
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                      <span className="text-gray-500">to</span>
+                                      <Input
+                                        type="time"
+                                        value={settings.collection.customTimes?.end || "21:50"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          collection: {
+                                            ...settings.collection,
+                                            customTimes: {
+                                              ...settings.collection.customTimes,
+                                              start: settings.collection.customTimes?.start || "11:45",
+                                              end: e.target.value
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-6">
+                                  <div>
+                                    <Label>Collection Lead Times</Label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={settings.collection.leadTime}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          collection: { ...settings.collection, leadTime: parseInt(e.target.value) || 0 }
+                                        })}
+                                        className="w-20"
+                                      />
+                                      <span className="text-gray-500">mins</span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label>Displayed Times</Label>
                                     <Input
-                                      type="number"
-                                      min="0"
-                                      value={settings.collection.leadTime}
+                                      type="time"
+                                      value={settings.collection.displayedTime}
                                       onChange={(e) => updateDaySettings(day, {
-                                        collection: { ...settings.collection, leadTime: parseInt(e.target.value) || 0 }
+                                        collection: { ...settings.collection, displayedTime: e.target.value }
                                       })}
-                                      className="w-20"
+                                      className="mt-1"
                                     />
-                                    <span className="text-gray-500">mins</span>
                                   </div>
                                 </div>
-                                <div>
-                                  <Label>Displayed Times</Label>
-                                  <Input
-                                    type="time"
-                                    value={settings.collection.displayedTime}
-                                    onChange={(e) => updateDaySettings(day, {
-                                      collection: { ...settings.collection, displayedTime: e.target.value }
-                                    })}
-                                    className="mt-1"
-                                  />
-                                </div>
-                              </div>
+                              </>
                             )}
                           </div>
 
@@ -518,6 +577,44 @@ export default function OrderingTimesPage() {
                                   />
                                   <Label>Use Different Times to Above</Label>
                                 </div>
+                                {settings.delivery.useDifferentTimes && (
+                                  <div className="mb-4 p-3 bg-gray-50 rounded">
+                                    <Label className="text-sm font-medium mb-2 block">Delivery Times</Label>
+                                    <div className="flex gap-2 items-center">
+                                      <Input
+                                        type="time"
+                                        value={settings.delivery.customTimes?.start || "11:45"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          delivery: {
+                                            ...settings.delivery,
+                                            customTimes: {
+                                              ...settings.delivery.customTimes,
+                                              start: e.target.value,
+                                              end: settings.delivery.customTimes?.end || "21:50"
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                      <span className="text-gray-500">to</span>
+                                      <Input
+                                        type="time"
+                                        value={settings.delivery.customTimes?.end || "21:50"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          delivery: {
+                                            ...settings.delivery,
+                                            customTimes: {
+                                              ...settings.delivery.customTimes,
+                                              start: settings.delivery.customTimes?.start || "11:45",
+                                              end: e.target.value
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-6">
                                   <div>
                                     <Label>Delivery Lead Times</Label>
@@ -552,7 +649,7 @@ export default function OrderingTimesPage() {
 
                           {/* Table Ordering */}
                           <div className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-4">
                               <h4 className="font-medium">Table Ordering</h4>
                               <Switch
                                 checked={settings.isTableOrderingAllowed}
@@ -561,6 +658,85 @@ export default function OrderingTimesPage() {
                                 })}
                               />
                             </div>
+                            {settings.isTableOrderingAllowed && (
+                              <>
+                                <div className="flex items-center space-x-2 mb-4">
+                                  <Switch
+                                    checked={settings.tableOrdering.useDifferentTimes}
+                                    onCheckedChange={(checked) => updateDaySettings(day, {
+                                      tableOrdering: { ...settings.tableOrdering, useDifferentTimes: checked }
+                                    })}
+                                  />
+                                  <Label>Use Different Times to Above</Label>
+                                </div>
+                                {settings.tableOrdering.useDifferentTimes && (
+                                  <div className="mb-4 p-3 bg-gray-50 rounded">
+                                    <Label className="text-sm font-medium mb-2 block">Table Ordering Times</Label>
+                                    <div className="flex gap-2 items-center">
+                                      <Input
+                                        type="time"
+                                        value={settings.tableOrdering.customTimes?.start || "11:45"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          tableOrdering: {
+                                            ...settings.tableOrdering,
+                                            customTimes: {
+                                              ...settings.tableOrdering.customTimes,
+                                              start: e.target.value,
+                                              end: settings.tableOrdering.customTimes?.end || "21:50"
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                      <span className="text-gray-500">to</span>
+                                      <Input
+                                        type="time"
+                                        value={settings.tableOrdering.customTimes?.end || "21:50"}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          tableOrdering: {
+                                            ...settings.tableOrdering,
+                                            customTimes: {
+                                              ...settings.tableOrdering.customTimes,
+                                              start: settings.tableOrdering.customTimes?.start || "11:45",
+                                              end: e.target.value
+                                            }
+                                          }
+                                        })}
+                                        className="w-32"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-6">
+                                  <div>
+                                    <Label>Table Ordering Lead Times</Label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={settings.tableOrdering.leadTime}
+                                        onChange={(e) => updateDaySettings(day, {
+                                          tableOrdering: { ...settings.tableOrdering, leadTime: parseInt(e.target.value) || 0 }
+                                        })}
+                                        className="w-20"
+                                      />
+                                      <span className="text-gray-500">mins</span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label>Displayed Times</Label>
+                                    <Input
+                                      type="time"
+                                      value={settings.tableOrdering.displayedTime}
+                                      onChange={(e) => updateDaySettings(day, {
+                                        tableOrdering: { ...settings.tableOrdering, displayedTime: e.target.value }
+                                      })}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

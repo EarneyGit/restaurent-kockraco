@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, RefreshCw, Plus, Eye } from 'lucide-react'
@@ -21,53 +21,60 @@ export default function MenuSetupPage() {
   const [isAttributeTypesModalOpen, setIsAttributeTypesModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Fetch categories and their products
-  useEffect(() => {
-    const fetchCategories = async () => {
-      setIsLoading(true);
-      try {
-        console.log('Fetching categories from API...')
-        const response = await api.get('/categories');
-        const { data } = response;
-        
-        console.log('Raw API response:', data)
-        
-        if (data.success) {
-          const transformedCategories = data.data.map((category: any) => {
-            console.log('Transforming category:', category.name, category)
-            
-            return {
-            id: category._id || category.id,
-            name: category.name,
-            description: category.description || '',
-              displayOrder: category.displayOrder ?? 0,
-            hidden: category.hidden || false,
-            includeAttributes: category.includeAttributes || false,
-            includeDiscounts: category.includeDiscounts || false,
-              imageUrl: category.imageUrl || '',
-              availability: category.availability || {},
-              printers: category.printers || ['Kitchen (P2)'],
-              branch: category.branch,
-            items: []
-            }
-          });
+  // Memoized fetch function to avoid recreating on every render
+  const fetchCategories = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      console.log('Fetching categories from API...')
+      const response = await api.get('/categories');
+      const { data } = response;
+      
+      console.log('Raw API response:', data)
+      
+      if (data.success) {
+        const transformedCategories = data.data.map((category: any) => {
+          console.log('Transforming category:', category.name, category)
           
-          console.log('Transformed categories:', transformedCategories)
-          setCategories(transformedCategories);
-        } else {
-          throw new Error(data.message || 'Failed to fetch categories');
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        toast.error('Failed to fetch categories');
-      } finally {
-        setIsLoading(false);
+          return {
+          id: category._id || category.id,
+          name: category.name,
+          description: category.description || '',
+            displayOrder: category.displayOrder ?? 0,
+          hidden: category.hidden || false,
+          includeAttributes: category.includeAttributes || false,
+          includeDiscounts: category.includeDiscounts || false,
+            imageUrl: category.imageUrl || '',
+            availability: category.availability || {},
+            printers: category.printers || ['Kitchen (P2)'],
+            branch: category.branch,
+          items: []
+          }
+        });
+        
+        console.log('Transformed categories:', transformedCategories)
+        setCategories(transformedCategories);
+      } else {
+        throw new Error(data.message || 'Failed to fetch categories');
       }
-    };
-    
-    fetchCategories();
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  // Function to trigger refresh
+  const triggerRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  // Fetch categories when component mounts or when refresh is triggered
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories, refreshTrigger]);
 
   const handleAddCategory = async (newCategory: Omit<Category, 'id'>) => {
     try {
@@ -82,6 +89,9 @@ export default function MenuSetupPage() {
         
         setCategories(prev => [...prev, savedCategory]);
         toast.success('Category added successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || 'Failed to add category');
       }
@@ -101,6 +111,9 @@ export default function MenuSetupPage() {
       if (data.success) {
         setCategories(prev => prev.filter(cat => cat.id !== categoryId));
         toast.success('Category deleted successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || 'Failed to delete category');
       }
@@ -122,6 +135,9 @@ export default function MenuSetupPage() {
           )
         );
         toast.success('Category updated successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || 'Failed to update category');
       }
@@ -185,6 +201,7 @@ export default function MenuSetupPage() {
                 onDelete={handleDeleteCategory}
                 onUpdate={handleUpdateCategory}
                 allCategories={categories}
+                onRefresh={triggerRefresh}
               />
             ))}
           </div>
