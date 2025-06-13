@@ -1,6 +1,5 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,79 +77,6 @@ export default function MenuSetupPage() {
   }, [fetchCategories, refreshTrigger]);
 
   const handleAddCategory = async (newCategory: Omit<Category, 'id'>) => {
-=======
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, RefreshCw, Plus, Eye } from "lucide-react";
-import { AddCategoryModal } from "@/components/menus/add-category-modal";
-import { MenuCategory } from "@/components/menus/menu-category";
-import { Category } from "@/types/menu";
-import { AttributeTypesModal } from "@/components/menus/attribute-types-modal";
-import PageLayout from "@/components/layout/page-layout";
-import { toast } from "react-hot-toast";
-import axios from "axios";
-import api from "@/lib/axios";
-import { BaseUrl } from "@/lib/config";
-import CommonHeader from "@/components/layout/common-header";
-
-export default function MenuSetupPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isAttributeTypesModalOpen, setIsAttributeTypesModalOpen] =
-    useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch categories and their products
-  const fetchCategories = async () => {
-    setIsLoading(true);
-    try {
-      console.log("Fetching categories from API...");
-      const response = await api.get("/categories");
-      const { data } = response;
-
-      console.log("Raw API response:", data);
-
-      if (data.success) {
-        const transformedCategories = data.data.map((category: any) => {
-          console.log("Transforming category:", category.name, category);
-
-          return {
-            id: category._id || category.id,
-            name: category.name,
-            description: category.description || "",
-            displayOrder: category.displayOrder ?? 0,
-            hidden: category.hidden || false,
-            includeAttributes: category.includeAttributes || false,
-            includeDiscounts: category.includeDiscounts || false,
-            imageUrl: category.imageUrl || "",
-            availability: category.availability || {},
-            printers: category.printers || ["Kitchen (P2)"],
-            branch: category.branch,
-            items: [],
-          };
-        });
-
-        console.log("Transformed categories:", transformedCategories);
-        setCategories(transformedCategories);
-      } else {
-        throw new Error(data.message || "Failed to fetch categories");
-      }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Failed to fetch categories");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const handleAddCategory = async (newCategory: Omit<Category, "id">) => {
->>>>>>> 31acd51a296ffc710272fa9cbb1392f5b9d69093
     try {
       const response = await api.post("/categories", newCategory);
       const { data } = response;
@@ -160,19 +86,12 @@ export default function MenuSetupPage() {
           ...newCategory,
           id: data.data._id || data.data.id,
         };
-<<<<<<< HEAD
         
         setCategories(prev => [...prev, savedCategory]);
         toast.success('Category added successfully');
         
         // Trigger refresh to get updated data
         triggerRefresh();
-=======
-
-        setCategories((prev) => [...prev, savedCategory]);
-        toast.success("Category added successfully");
-        fetchCategories();
->>>>>>> 31acd51a296ffc710272fa9cbb1392f5b9d69093
       } else {
         throw new Error(data.message || "Failed to add category");
       }
@@ -218,14 +137,10 @@ export default function MenuSetupPage() {
             cat.id === updatedCategory.id ? updatedCategory : cat
           )
         );
-<<<<<<< HEAD
         toast.success('Category updated successfully');
         
         // Trigger refresh to get updated data
         triggerRefresh();
-=======
-        toast.success("Category updated successfully");
->>>>>>> 31acd51a296ffc710272fa9cbb1392f5b9d69093
       } else {
         throw new Error(data.message || "Failed to update category");
       }
