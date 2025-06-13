@@ -151,6 +151,41 @@ export interface UpdatePriceChangeRequest {
   active?: boolean;
 }
 
+export interface CreateIndividualPriceChangeRequest {
+  productId: string;
+  name: string;
+  type: 'increase' | 'decrease' | 'fixed';
+  value: number;
+  startDate: string;
+  endDate: string;
+  daysOfWeek?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  active?: boolean;
+}
+
+export interface ProductPriceChange {
+  id: string;
+  name: string;
+  type: string;
+  value: number;
+  startDate: string;
+  endDate: string;
+  daysOfWeek: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  active: boolean;
+  originalPrice: number;
+  tempPrice: number;
+  revertPrice: number;
+  status: 'current' | 'future' | 'historical';
+}
+
+export interface ProductPriceChangesResponse {
+  success: boolean;
+  data: ProductPriceChange[];
+}
+
 export interface ApiResponse {
   success: boolean;
   message: string;
@@ -281,6 +316,28 @@ class PriceChangesService {
   // Legacy method - keeping for backward compatibility
   async removePriceChange(id: string): Promise<ApiResponse> {
     return this.deletePriceChange(id);
+  }
+
+  // Create individual price change for a product (for product modals)
+  async createIndividualPriceChange(data: CreateIndividualPriceChangeRequest): Promise<ApiResponse> {
+    try {
+      const response = await api.post(`${this.baseUrl}/individual`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating individual price change:', error);
+      throw error;
+    }
+  }
+
+  // Get price changes for a specific product
+  async getProductPriceChanges(productId: string): Promise<ProductPriceChangesResponse> {
+    try {
+      const response = await api.get(`${this.baseUrl}/product/${productId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching product price changes:', error);
+      throw error;
+    }
   }
 }
 

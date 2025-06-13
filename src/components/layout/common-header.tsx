@@ -11,9 +11,8 @@ interface CommonHeaderProps {
 
 const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }: CommonHeaderProps) {
   const { logout, user } = useAuth()
-  
   // Use actual user data if available
-  const displayName = user?.name || title || 'Admin user'
+  const displayName = user?.firstName + " " + user?.lastName || title || 'Adminn user'
 
   const handleLogout = useCallback(() => {
     logout()

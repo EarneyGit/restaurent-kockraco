@@ -6,7 +6,8 @@ import { authService } from '@/services/auth.service'
 
 interface User {
   id: string
-  name: string
+  firstName: string
+  lastName: string
   email: string
   role: string
   roleDetails?: {
