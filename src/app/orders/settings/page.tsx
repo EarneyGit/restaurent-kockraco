@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeft, X } from "lucide-react"
+import { ChevronLeft, X, Settings, Clock, Bell, Truck } from "lucide-react"
 import { toast } from "react-hot-toast"
 import api from "@/lib/axios"
 import { useAuth } from "@/contexts/auth-context"
@@ -24,6 +25,8 @@ interface Branch {
 
 export default function RestaurantSettingsPage() {
   const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
   const [settings, setSettings] = useState<BranchSettings>({
     isCollectionEnabled: false,
     isDeliveryEnabled: false,
@@ -162,7 +165,7 @@ export default function RestaurantSettingsPage() {
             <span className="font-medium">Restaurant Settings</span>
           </div>
           <div className="flex items-center">
-            <span className="mr-2">Admin user</span>
+            <span className="mr-2">{displayName}</span>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -197,7 +200,7 @@ export default function RestaurantSettingsPage() {
           <span className="font-medium">Restaurant Settings</span>
         </div>
         <div className="flex items-center">
-          <span className="mr-2">Admin user</span>
+          <span className="mr-2">{displayName}</span>
           <Button 
             variant="ghost" 
             size="sm" 

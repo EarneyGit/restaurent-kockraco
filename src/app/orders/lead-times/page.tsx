@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChevronLeft, X, Clock, Truck, Package, UtensilsCrossed } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
+import { useAuth } from '@/contexts/auth-context'
 
 const timeOptions = [
   '5 mins', '10 mins', '15 mins', '20 mins', '25 mins', '30 mins', 
@@ -22,6 +25,9 @@ interface LeadTimesData {
 }
 
 export default function LeadTimesPage() {
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
   const [collectionTime, setCollectionTime] = useState('20 mins')
   const [deliveryTime, setDeliveryTime] = useState('45 mins')
   const [isLoading, setIsLoading] = useState(false)
@@ -129,7 +135,7 @@ export default function LeadTimesPage() {
             <span className="font-medium">Restaurant Settings</span>
           </div>
           <div className="flex items-center">
-            <span className="mr-2">Admin user</span>
+            <span className="mr-2">{displayName}</span>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -165,7 +171,7 @@ export default function LeadTimesPage() {
           <span className="font-medium">Restaurant Settings</span>
         </div>
         <div className="flex items-center">
-          <span className="mr-2">Admin user</span>
+          <span className="mr-2">{displayName}</span>
           <Button 
             variant="ghost" 
             size="sm" 
