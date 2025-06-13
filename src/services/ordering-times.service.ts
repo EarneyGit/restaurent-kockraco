@@ -69,13 +69,44 @@ export interface RestrictionDaySettings {
 }
 
 export interface OrderingRestrictions {
-  monday: RestrictionDaySettings;
-  tuesday: RestrictionDaySettings;
-  wednesday: RestrictionDaySettings;
-  thursday: RestrictionDaySettings;
-  friday: RestrictionDaySettings;
-  saturday: RestrictionDaySettings;
-  sunday: RestrictionDaySettings;
+  type: 'None' | 'Combined Total' | 'Split Total';
+  combined: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
+  collection: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
+  delivery: {
+    sunday: RestrictionDaySettings;
+    monday: RestrictionDaySettings;
+    tuesday: RestrictionDaySettings;
+    wednesday: RestrictionDaySettings;
+    thursday: RestrictionDaySettings;
+    friday: RestrictionDaySettings;
+    saturday: RestrictionDaySettings;
+  };
+}
+
+export interface OrderingRestrictionsWeeklyType {
+  monday?: RestrictionDaySettings;
+  tuesday?: RestrictionDaySettings;
+  wednesday?: RestrictionDaySettings;
+  thursday?: RestrictionDaySettings;
+  friday?: RestrictionDaySettings;
+  saturday?: RestrictionDaySettings;
+  sunday?: RestrictionDaySettings;
 }
 
 export interface OrderingTimes {
@@ -83,7 +114,7 @@ export interface OrderingTimes {
   branchId: string;
   weeklySchedule: WeeklySchedule;
   closedDates: ClosedDate[];
-  restrictions: OrderingRestrictions;
+  restrictions: OrderingRestrictionsWeeklyType;
   createdAt: string;
   updatedAt: string;
 }

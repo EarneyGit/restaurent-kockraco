@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
-import { customerService, Customer, CustomerResponse } from '@/services/customer.service'
+import { customerService, CustomerSimple, CustomerResponse } from '@/services/customer.service'
 
 interface SearchFilters {
   userId: string
-  firstname: string
-  lastname: string
+  firstName: string
+  lastName: string
   email: string
   mobile: string
   postcode: string
@@ -18,15 +18,15 @@ export default function CustomersPage() {
   const [itemsPerPage, setItemsPerPage] = useState(20)
   const [filters, setFilters] = useState<SearchFilters>({
     userId: '',
-    firstname: '',
-    lastname: '',
+    firstName: '',
+    lastName: '',
     email: '',
     mobile: '',
     postcode: ''
   })
   
   // State for API data
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customers, setCustomers] = useState<CustomerSimple[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(1)
@@ -41,8 +41,8 @@ export default function CustomersPage() {
       const response: CustomerResponse = await customerService.getFilteredCustomers(
         {
           userId: filters.userId || undefined,
-          firstname: filters.firstname || undefined,
-          lastname: filters.lastname || undefined,
+          firstName: filters.firstName || undefined,
+          lastName: filters.lastName || undefined,
           email: filters.email || undefined,
           mobile: filters.mobile || undefined,
           postcode: filters.postcode || undefined,
@@ -86,7 +86,7 @@ export default function CustomersPage() {
   // Handle customer details view
   const handleViewDetails = async (customerId: string) => {
     try {
-      const response = await customerService.getCustomer(customerId)
+      const response = await customerService.getCustomerDetails(customerId)
       // You can implement a modal or navigate to a details page here
       console.log('Customer details:', response.data)
       // For now, just log the details
@@ -130,15 +130,15 @@ export default function CustomersPage() {
             type="text" 
             placeholder="First name" 
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            value={filters.firstname}
-            onChange={(e) => setFilters(prev => ({ ...prev, firstname: e.target.value }))}
+            value={filters.firstName}
+            onChange={(e) => setFilters(prev => ({ ...prev, firstName: e.target.value }))}
           />
           <input 
             type="text" 
             placeholder="Last name" 
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            value={filters.lastname}
-            onChange={(e) => setFilters(prev => ({ ...prev, lastname: e.target.value }))}
+            value={filters.lastName}
+            onChange={(e) => setFilters(prev => ({ ...prev, lastName: e.target.value }))}
           />
           <input 
             type="text" 
@@ -200,8 +200,8 @@ export default function CustomersPage() {
                   onClick={() => {
                     setFilters({
                       userId: '',
-                      firstname: '',
-                      lastname: '',
+                      firstName: '',
+                      lastName: '',
                       email: '',
                       mobile: '',
                       postcode: ''
@@ -234,8 +234,8 @@ export default function CustomersPage() {
             <tbody className="divide-y divide-gray-200">
                 {customers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm">{customer.firstname || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.lastname || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.firstName || 'N/A'}</td>
+                    <td className="px-6 py-3 text-sm">{customer.lastName || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm text-gray-500">{customer.email || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm">{customer.mobile || 'N/A'}</td>
                     <td className="px-6 py-3 text-sm">{customer.address || 'N/A'}</td>
