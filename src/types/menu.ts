@@ -43,6 +43,7 @@ export interface MenuItem {
   deleted?: boolean
   hidePrice?: boolean
   allowAddWithoutChoices?: boolean
+  isGroupItem?: boolean
 }
 
 export interface DayAvailability {

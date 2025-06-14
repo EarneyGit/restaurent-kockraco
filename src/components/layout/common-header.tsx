@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo, useCallback } from 'react'
 import { LogOut, Eye } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -9,15 +9,19 @@ interface CommonHeaderProps {
   showViewStore?: boolean
 }
 
-export default function CommonHeader({ title, showViewStore = true }: CommonHeaderProps) {
+const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }: CommonHeaderProps) {
   const { logout, user } = useAuth()
-  
   // Use actual user data if available
-  const displayName = user?.name || title || 'Admin user'
+  const displayName = user?.firstName + " " + user?.lastName || title || 'Adminn user'
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
-  }
+  }, [logout])
+
+  const handleViewStore = useCallback(() => {
+    // Placeholder for view store functionality
+    console.log('View store clicked')
+  }, [])
 
   return (
     <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
@@ -25,7 +29,10 @@ export default function CommonHeader({ title, showViewStore = true }: CommonHead
       <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
       <div className="flex justify-end flex-1 items-center space-x-4">
         {showViewStore && (
-          <button className="flex items-center text-gray-700 font-medium">
+          <button 
+            className="flex items-center text-gray-700 font-medium"
+            onClick={handleViewStore}
+          >
             <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
@@ -41,4 +48,6 @@ export default function CommonHeader({ title, showViewStore = true }: CommonHead
       </div>
     </header>
   )
-} 
+})
+
+export default CommonHeader 

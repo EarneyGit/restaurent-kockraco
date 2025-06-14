@@ -6,6 +6,7 @@ import { ChevronLeft, X } from "lucide-react"
 import { BaseUrl } from '@/lib/config'
 import { toast } from 'react-hot-toast'
 import api from '@/lib/axios'
+import { useAuth } from '@/contexts/auth-context'
 
 interface Product {
   name: string
@@ -38,6 +39,9 @@ interface Order {
 }
 
 export default function TodayOrdersPage() {
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
   const [orderCount, setOrderCount] = useState(0)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,7 +90,7 @@ export default function TodayOrdersPage() {
           <span className="font-medium">Today's Orders</span>
         </div>
         <div className="flex items-center">
-          <span className="mr-2">Admin user</span>
+          <span className="mr-2">{displayName}</span>
           <Button 
             variant="ghost" 
             size="sm" 

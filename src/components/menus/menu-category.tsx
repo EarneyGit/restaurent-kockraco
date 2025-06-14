@@ -24,6 +24,7 @@ interface MenuCategoryProps {
   onDelete: (id: string) => void
   onUpdate: (category: Category) => void
   allCategories: Category[]
+  onRefresh?: () => void
 }
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
@@ -34,7 +35,7 @@ const DEFAULT_AVAILABILITY = {
   times: []
 } as const
 
-export function MenuCategory({ category, onDelete, onUpdate, allCategories }: MenuCategoryProps) {
+export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRefresh }: MenuCategoryProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [showSettings, setShowSettings] = useState(false)
@@ -150,6 +151,11 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
       // After successful creation, refresh products
       await fetchProducts();
       toast.success('Product duplicated successfully');
+      
+      // Trigger parent refresh to get updated categories
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error duplicating product:', error);
       toast.error('Failed to duplicate product');
@@ -229,23 +235,27 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   }
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!itemId) {
-      toast.error('Invalid product ID')
-      return
-    }
+    if (!confirm('Are you sure you want to delete this item?')) return;
 
-    if (!confirm('Are you sure you want to delete this item?')) return
-    
     try {
       const response = await api.delete(`/products/${itemId}`)
       const data = response.data
-
-      // Remove the item from the products array
-      setProducts(products.filter(item => item.id !== itemId))
+      
+      if (!data.success) {
+        throw new Error('Failed to delete product')
+      }
+      
+      // Remove from local products state
+      setProducts(prev => prev.filter(p => p.id !== itemId))
       toast.success('Product deleted successfully')
+      
+      // Trigger parent refresh to get updated categories
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
-      console.error('Error deleting item:', error)
-      toast.error('Failed to delete item')
+      console.error('Error deleting product:', error)
+      toast.error('Failed to delete product')
     }
   }
 
@@ -322,13 +332,12 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
           deleted: Boolean(data.data.deleted),
           hidePrice: Boolean(data.data.hidePrice),
           allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
+          isGroupItem: Boolean(data.data.isGroupItem),
         }
         console.log("Transformed item for edit modal:", transformedItem);
         
-        // Determine if this is a group item by checking for selectedItems
-        // A group item would have selectedItems array with values and itemSettings configured
-        const isGroupItem = Array.isArray(processedSelectedItems) && 
-                           processedSelectedItems.length > 0;
+        // Determine if this is a group item by checking the isGroupItem field from backend
+        const isGroupItem = Boolean(data.data.isGroupItem);
         
         console.log("Is this a group item?", isGroupItem);
         
@@ -352,16 +361,18 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
 
   const handleSaveItem = async (updatedItem: MenuItem) => {
     try {
-      // Find the index of the updated item in products array
-      const itemIndex = products.findIndex(item => item.id === updatedItem.id)
-      if (itemIndex !== -1) {
-        // Update the products array with the new item data
-        const newProducts = [...products]
-        newProducts[itemIndex] = updatedItem
-        setProducts(newProducts)
-      }
+      setProducts(prev => 
+        prev.map(p => 
+          p.id === updatedItem.id ? updatedItem : p
+        )
+      )
       setEditingItem(null)
-      setEditingGroupItem(null)
+      toast.success('Product updated successfully')
+      
+      // Trigger parent refresh to get updated categories
+      if (onRefresh) {
+        onRefresh()
+      }
     } catch (error) {
       console.error('Error updating product:', error)
       toast.error('Failed to update product')
@@ -377,11 +388,15 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories }: Me
   }
 
   const handleSaveNewItem = (newItem: MenuItem) => {
-    onUpdate({
-      ...category,
-      items: [...(category.items || []), { ...newItem, category: category.id }]
-    })
+    // Add the new item to the local products state
+    setProducts(prev => [...prev, newItem])
     setIsAddModalOpen(false)
+    toast.success('Product added successfully')
+    
+    // Trigger parent refresh to get updated categories
+    if (onRefresh) {
+      onRefresh()
+    }
   }
 
   const handleMoveSelected = (targetCategoryId: string) => {

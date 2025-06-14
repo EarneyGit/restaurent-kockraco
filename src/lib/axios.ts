@@ -25,9 +25,15 @@ function getAuthHeader() {
 // Helper to handle auth errors
 async function handleAuthError(error: any) {
   if (typeof window !== 'undefined' && error.response?.status === 401) {
+    // Clear auth data from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    
+    // Check if we're already on the login page to avoid redirect loops
+    const isLoginPage = window.location.pathname === '/login';
+    if (!isLoginPage) {
+      window.location.href = '/login';
+    }
   }
   return Promise.reject(error);
 }

@@ -172,28 +172,21 @@ export function AttributesTab({ productId, productName, categoryId, onAttributes
       console.error('Error fetching product settings:', error)
     }
   }
-
   // Update product's allowAddWithoutChoices setting
   const updateProductAllowAddWithoutChoices = async (value: boolean) => {
     if (!productId) return
     
-    console.log('🔄 Toggle clicked:', { productId, currentState: productAllowAddWithoutChoices, newValue: value })
-    
     // Optimistically update the state first
     setProductAllowAddWithoutChoices(value)
+    console.log('productAllowAddWithoutChoices', productAllowAddWithoutChoices)
     
     try {
-      const formData = new FormData()
-      formData.append('allowAddWithoutChoices', value.toString())
-      
-      const response = await api.put(`/products/${productId}`, formData)
+      // Use JSON, not FormData, and send as boolean
+      const response = await api.put(`/products/${productId}`, { allowAddWithoutChoices: value })
       const data = response.data
-      
-      console.log('✅ API Response:', { success: data.success, allowAddWithoutChoices: data.data?.allowAddWithoutChoices })
       
       if (data.success) {
         toast.success(`Product setting updated: ${value ? 'Allow' : 'Require'} add without choices`)
-        
         // Refresh the product settings to ensure consistency
         await fetchProductSettings()
       } else {

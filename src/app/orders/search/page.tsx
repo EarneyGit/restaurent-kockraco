@@ -7,6 +7,7 @@ import { ChevronLeft, X, Mail, Phone } from "lucide-react"
 import { BaseUrl } from '@/lib/config'
 import { toast } from 'react-hot-toast'
 import api from '@/lib/axios'
+import { useAuth } from '@/contexts/auth-context'
 
 interface Product {
   _id: string
@@ -26,7 +27,8 @@ interface OrderProduct {
 
 interface User {
   _id: string
-  name: string
+  firstName: string
+  lastName: string
   email: string
   phone: string
   id: string
@@ -70,6 +72,9 @@ interface Order {
 }
 
 export default function SearchOrdersPage() {
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
   const [searchText, setSearchText] = useState("")
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -233,7 +238,7 @@ export default function SearchOrdersPage() {
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="font-medium">{order.user?.name || 'Guest'}</div>
+                    <div className="font-medium">{(order.user?.firstName + " " + order.user?.lastName) || 'Guest'}</div>
                     <div className="text-sm text-gray-500">{order.deliveryMethod}</div>
                   </div>
                   <div className="text-right">
@@ -262,7 +267,7 @@ export default function SearchOrdersPage() {
             <span className="font-medium">Search Orders</span>
           </div>
           <div className="flex items-center">
-            <span className="mr-2">Admin user</span>
+            <span className="mr-2">{displayName}</span>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -294,10 +299,10 @@ export default function SearchOrdersPage() {
                 <div className="text-right">
                   <div className="flex items-center justify-end mb-2">
                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-sm">
-                      {(selectedOrder.user?.name || 'Guest').split(' ').map(n => n[0]).join('')}
+                      {(selectedOrder.user?.firstName + " " + selectedOrder.user?.lastName).split(' ').map(n => n[0]).join('')}
                     </div>
                   </div>
-                  <div className="font-medium">{selectedOrder.user?.name || 'Guest'}</div>
+                  <div className="font-medium">{(selectedOrder.user?.firstName + " " + selectedOrder.user?.lastName) || 'Guest'}</div>
                   <div className="text-sm text-gray-500">
                     {selectedOrder.branchId.name}
                   </div>

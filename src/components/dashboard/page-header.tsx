@@ -11,7 +11,7 @@ function PageHeader({ userName = 'Owner Durai', userRole = 'Admin' }: PageHeader
   const { logout, user } = useAuth()
   
   // Use actual user data if available
-  const displayName = user?.name || userName
+  const displayName = user?.firstName + " " + user?.lastName || userName
   const displayRole = user?.roleDetails?.name || user?.role || userRole
 
   const handleLogout = () => {

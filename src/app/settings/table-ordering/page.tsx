@@ -11,8 +11,14 @@ import { ChevronDown, ChevronUp, Trash2, Edit, Eye, Plus, Loader2, QrCode } from
 import { cn } from "@/lib/utils"
 import { tableOrderingService, type TableGroup, type Table } from "@/services/table-ordering.service"
 import { toast } from "sonner"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function TableOrderingPage() {
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
   const [groups, setGroups] = useState<TableGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
@@ -387,7 +393,7 @@ export default function TableOrderingPage() {
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
         <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
             <Eye className="h-5 w-5 mr-1" />

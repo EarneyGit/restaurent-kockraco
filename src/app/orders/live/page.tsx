@@ -44,7 +44,8 @@ interface OrderItem {
 
 interface User {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   id: string;
@@ -501,7 +502,7 @@ export default function LiveOrdersPage() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-medium text-lg mb-1">
-                      {order.user?.name || "Guest"}
+                      {(order.user?.firstName + " " + order.user?.lastName) || "Guest"}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">
                       {getDeliveryMethodDisplay(order.deliveryMethod)}
@@ -703,7 +704,7 @@ export default function LiveOrdersPage() {
                     <User className="h-6 w-6 text-emerald-600" />
                   </div>
                   <div>
-                    <div className="font-semibold text-lg">{selectedOrder.user?.name || 'Guest'}</div>
+                    <div className="font-semibold text-lg">{(selectedOrder.user?.firstName + " " + selectedOrder.user?.lastName) || 'Guest'}</div>
                     {selectedOrder.user && (
                       <div className="text-sm text-gray-600 space-y-1">
                         {selectedOrder.user.email && (
