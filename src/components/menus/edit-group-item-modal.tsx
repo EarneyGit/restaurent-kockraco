@@ -639,7 +639,10 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           endDate: priceChange.endDate,
           startPrice: currentItem.price,
           endPrice: priceChange.value,
-          active: priceChange.active
+          active: priceChange.active,
+          daysOfWeek: priceChange.daysOfWeek || [],
+          timeStart: priceChange.timeStart,
+          timeEnd: priceChange.timeEnd
         });
         
         if (response.success) {

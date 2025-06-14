@@ -590,7 +590,10 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           endDate: priceChange.endDate,
           startPrice: currentItem.price,
           endPrice: priceChange.value,
-          active: priceChange.active
+          active: priceChange.active,
+          daysOfWeek: priceChange.daysOfWeek || [],
+          timeStart: priceChange.timeStart,
+          timeEnd: priceChange.timeEnd
         });
         
         if (response.success) {

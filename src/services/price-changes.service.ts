@@ -55,8 +55,12 @@ export interface TemporaryPriceChange {
   revertPrice: number;
   active: boolean;
   name: string;
+  type?: string;
   deleted: boolean;
   deletedAt?: string;
+  daysOfWeek?: string[];
+  timeStart?: string;
+  timeEnd?: string;
 }
 
 export interface TemporaryPriceChangesResponse {
@@ -149,6 +153,9 @@ export interface UpdatePriceChangeRequest {
   startPrice?: number;
   endPrice?: number;
   active?: boolean;
+  daysOfWeek?: string[];
+  timeStart?: string;
+  timeEnd?: string;
 }
 
 export interface CreateIndividualPriceChangeRequest {

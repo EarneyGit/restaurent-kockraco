@@ -462,6 +462,26 @@ export default function PriceChangesPage() {
                     <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
                     <div className="text-gray-600">{formatDisplayDate(change.endDate)}</div>
                     <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                    {/* <div className="mt-2 text-sm text-gray-500">
+                      <div>
+                        {formatDisplayDate(change.startDate)} -
+                        {formatDisplayDate(change.endDate)}
+                      </div>
+                      {change.daysOfWeek && change.daysOfWeek.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {change.daysOfWeek.map(day => (
+                            <span key={day} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full capitalize">
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {change.timeStart && change.timeEnd && (
+                        <div className="mt-1">
+                          {change.timeStart} - {change.timeEnd}
+                        </div>
+                      )}
+                    </div> */}
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
@@ -523,6 +543,26 @@ export default function PriceChangesPage() {
                     <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
                     <div className="text-gray-600">{formatDisplayDate(change.endDate)}</div>
                     <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                    {/* <div className="mt-2 text-sm text-gray-500">
+                      <div>
+                        {formatDisplayDate(change.startDate)} -
+                        {formatDisplayDate(change.endDate)}
+                      </div>
+                      {change.daysOfWeek && change.daysOfWeek.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {change.daysOfWeek.map(day => (
+                            <span key={day} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full capitalize">
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {change.timeStart && change.timeEnd && (
+                        <div className="mt-1">
+                          {change.timeStart} - {change.timeEnd}
+                        </div>
+                      )}
+                    </div> */}
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
@@ -586,6 +626,16 @@ export default function PriceChangesPage() {
                     <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
                     <div className="text-gray-600">{formatDisplayDate(change.endDate)}</div>
                     <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                    {change.daysOfWeek && change.daysOfWeek.length > 0 && (
+                      <div className="col-span-5 text-xs text-gray-500 mt-1">
+                        <span className="font-medium">Days:</span> {change.daysOfWeek.join(', ')}
+                        {change.timeStart && change.timeEnd && (
+                          <span className="ml-3">
+                            <span className="font-medium">Time:</span> {change.timeStart} - {change.timeEnd}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -631,6 +681,16 @@ export default function PriceChangesPage() {
                     <div className="text-gray-600">£{change.startPrice.toFixed(2)}</div>
                     <div className="text-gray-600">{formatDisplayDate(change.endDate)}</div>
                     <div className="text-gray-600">£{change.endPrice.toFixed(2)}</div>
+                    {change.daysOfWeek && change.daysOfWeek.length > 0 && (
+                      <div className="col-span-5 text-xs text-gray-500 mt-1">
+                        <span className="font-medium">Days:</span> {change.daysOfWeek.join(', ')}
+                        {change.timeStart && change.timeEnd && (
+                          <span className="ml-3">
+                            <span className="font-medium">Time:</span> {change.timeStart} - {change.timeEnd}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
