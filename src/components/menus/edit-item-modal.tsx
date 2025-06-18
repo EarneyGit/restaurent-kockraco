@@ -25,6 +25,7 @@ import { AttributesTab } from './attributes-tab'
 import React from 'react'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
+import { priceChangesService, ProductPriceChange } from '@/services/price-changes.service'
 
 interface EditItemModalProps {
   item: MenuItem | null
@@ -96,7 +97,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           contains: [],
           mayContain: []
         },
-        priceChanges: item.priceChanges || [],
+        priceChanges: [], // Will be loaded from API
         selectedItems: item.selectedItems || [],
         itemSettings: item.itemSettings || {
           showSelectedOnly: false,
@@ -155,6 +156,47 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
   })
   
   const [currentTab, setCurrentTab] = useState('details');
+  const [apiPriceChanges, setApiPriceChanges] = useState<ProductPriceChange[]>([]);
+  const [loadingPriceChanges, setLoadingPriceChanges] = useState(false);
+
+  // Helper function to convert ProductPriceChange to PriceChange
+  const convertToPriceChange = (apiPriceChange: ProductPriceChange): PriceChange => {
+    return {
+      id: apiPriceChange.id,
+      name: apiPriceChange.name,
+      type: apiPriceChange.type as 'increase' | 'decrease' | 'fixed',
+      value: apiPriceChange.value,
+      startDate: format(new Date(apiPriceChange.startDate), 'yyyy-MM-dd'),
+      endDate: format(new Date(apiPriceChange.endDate), 'yyyy-MM-dd'),
+      daysOfWeek: apiPriceChange.daysOfWeek,
+      timeStart: apiPriceChange.timeStart,
+      timeEnd: apiPriceChange.timeEnd,
+      active: apiPriceChange.active
+    };
+  };
+
+  // Load price changes from API when modal opens with an existing item
+  useEffect(() => {
+    const loadPriceChanges = async () => {
+      if (!item?.id || !open) return;
+      
+      setLoadingPriceChanges(true);
+      try {
+        const response = await priceChangesService.getProductPriceChanges(item.id);
+        if (response.success) {
+          setApiPriceChanges(response.data);
+        } else {
+          console.error('Failed to load price changes:', response);
+        }
+      } catch (error) {
+        console.error('Error loading price changes:', error);
+      } finally {
+        setLoadingPriceChanges(false);
+      }
+    };
+
+    loadPriceChanges();
+  }, [item?.id, open]);
 
   // Effect to update currentItem when item prop changes
   useEffect(() => {
@@ -204,7 +246,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           contains: [],
           mayContain: []
         },
-        priceChanges: item.priceChanges || [],
+        priceChanges: [],
         selectedItems: item.selectedItems || [],
         itemSettings: itemSettings,
         // Explicitly convert all top-level settings to their proper types
@@ -269,8 +311,24 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString())
       formData.append('deleted', Boolean(currentItem.deleted).toString())
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString())
-
+      
+      // Fetch the current allowAddWithoutChoices value from the product instead of using currentItem
+      let allowAddWithoutChoicesValue = currentItem.allowAddWithoutChoices;
+      
+      // If this is an existing product, get the current value from the server
+      if (currentItem.id) {
+        try {
+          const productResponse = await api.get(`/products/${currentItem.id}`)
+          if (productResponse.data.success) {
+            allowAddWithoutChoicesValue = Boolean(productResponse.data.data.allowAddWithoutChoices)
+          }
+        } catch (error) {
+          console.error('Error fetching current product settings:', error)
+        }
+      }
+      
+      formData.append('allowAddWithoutChoices', Boolean(allowAddWithoutChoicesValue).toString())
+      
       // Mark this as a regular item (not a group item)
       formData.append('isGroupItem', 'false')
 
@@ -286,7 +344,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))
       formData.append('allergens', JSON.stringify(currentItem.allergens))
-      formData.append('priceChanges', JSON.stringify(currentItem.priceChanges))
+      formData.append('priceChanges', JSON.stringify([]))
       
       // For regular items, we don't need selectedItems and itemSettings
       // These are only for group items
@@ -517,32 +575,118 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
     setEditingPriceChange(newPriceChange)
   }
 
-  const savePriceChange = (priceChange: PriceChange) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      priceChanges: [
-        ...(prev.priceChanges || []).filter(pc => pc.id !== priceChange.id),
-        priceChange
-      ]
-    }))
+  const savePriceChange = async (priceChange: PriceChange) => {
+    if (!currentItem.id) {
+      toast.error('Please save the item first before adding price changes');
+      return;
+    }
+
+    try {
+      if (priceChange.id && apiPriceChanges.find(pc => pc.id === priceChange.id)) {
+        // Update existing price change
+        const response = await priceChangesService.updatePriceChange(priceChange.id, {
+          name: priceChange.name,
+          startDate: priceChange.startDate,
+          endDate: priceChange.endDate,
+          startPrice: currentItem.price,
+          endPrice: priceChange.value,
+          active: priceChange.active,
+          daysOfWeek: priceChange.daysOfWeek || [],
+          timeStart: priceChange.timeStart,
+          timeEnd: priceChange.timeEnd
+        });
+        
+        if (response.success) {
+          toast.success('Price change updated successfully');
+          // Reload price changes
+          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          if (updatedResponse.success) {
+            setApiPriceChanges(updatedResponse.data);
+          }
+        } else {
+          toast.error('Failed to update price change');
+        }
+      } else {
+        // Create new price change
+        const response = await priceChangesService.createIndividualPriceChange({
+          productId: currentItem.id,
+          name: priceChange.name,
+          type: priceChange.type,
+          value: priceChange.value,
+          startDate: priceChange.startDate,
+          endDate: priceChange.endDate,
+          daysOfWeek: priceChange.daysOfWeek || [],
+          timeStart: priceChange.timeStart,
+          timeEnd: priceChange.timeEnd,
+          active: priceChange.active
+        });
+        
+        if (response.success) {
+          toast.success('Price change created successfully');
+          // Reload price changes
+          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          if (updatedResponse.success) {
+            setApiPriceChanges(updatedResponse.data);
+          }
+        } else {
+          toast.error('Failed to create price change');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving price change:', error);
+      toast.error('Failed to save price change');
+    }
+    
     setEditingPriceChange(null)
   }
 
-  const deletePriceChange = (id: string) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      priceChanges: prev.priceChanges?.filter(pc => pc.id !== id) || []
-    }))
+  const deletePriceChange = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this price change?')) {
+      return;
+    }
+
+    try {
+      const response = await priceChangesService.deletePriceChange(id);
+      
+      if (response.success) {
+        toast.success('Price change deleted successfully');
+        // Reload price changes
+        if (currentItem.id) {
+          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          if (updatedResponse.success) {
+            setApiPriceChanges(updatedResponse.data);
+          }
+        }
+      } else {
+        toast.error('Failed to delete price change');
+      }
+    } catch (error) {
+      console.error('Error deleting price change:', error);
+      toast.error('Failed to delete price change');
+    }
   }
 
-  const togglePriceChangeActive = useCallback((id: string) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      priceChanges: prev.priceChanges?.map(pc =>
-        pc.id === id ? { ...pc, active: !pc.active } : pc
-      ) || []
-    }));
-  }, []);
+  const togglePriceChangeActive = useCallback(async (id: string) => {
+    try {
+      const response = await priceChangesService.togglePriceChange(id);
+      
+      if (response.success) {
+        toast.success('Price change status updated');
+        // Reload price changes
+        if (currentItem.id) {
+          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          if (updatedResponse.success) {
+            setApiPriceChanges(updatedResponse.data);
+          }
+        }
+      } else {
+        toast.error('Failed to update price change status');
+      }
+    } catch (error) {
+      console.error('Error toggling price change:', error);
+      toast.error('Failed to update price change status');
+    }
+  }, [currentItem.id]);
   
   // Memoize Switch handlers to prevent infinite loops
   const handleAvailabilityToggleCallback = useCallback((day: typeof DAYS_OF_WEEK[number]) => {
@@ -562,7 +706,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
   const callbacks = useMemo(() => {
     // Create callbacks for price changes
     const priceChangeCallbacks: Record<string, () => void> = {};
-    (currentItem.priceChanges || []).forEach(priceChange => {
+    apiPriceChanges.forEach(priceChange => {
       priceChangeCallbacks[priceChange.id] = () => {
         togglePriceChangeActive(priceChange.id);
       };
@@ -580,7 +724,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       priceChanges: priceChangeCallbacks,
       days: dayCallbacks
     };
-  }, [currentItem.priceChanges, togglePriceChangeActive, handleAvailabilityToggleCallback]);
+  }, [apiPriceChanges, togglePriceChangeActive, handleAvailabilityToggleCallback]);
 
   // Replace callbacksRef.current with callbacks from useMemo
   const callbacksRef = React.useRef(callbacks);
@@ -621,15 +765,28 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString());
       formData.append('deleted', Boolean(currentItem.deleted).toString());
       formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString());
-
+      
+      // Fetch the current allowAddWithoutChoices value from the product
+      let allowAddWithoutChoicesValue = currentItem.allowAddWithoutChoices;
+      
+      try {
+        const productResponse = await api.get(`/products/${item.id}`)
+        if (productResponse.data.success) {
+          allowAddWithoutChoicesValue = Boolean(productResponse.data.data.allowAddWithoutChoices)
+        }
+      } catch (error) {
+        console.error('Error fetching current product settings:', error)
+      }
+      
+      formData.append('allowAddWithoutChoices', Boolean(allowAddWithoutChoicesValue).toString());
+      
       // Mark this as a regular item (not a group item)
       formData.append('isGroupItem', 'false');
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability));
       formData.append('allergens', JSON.stringify(currentItem.allergens));
-      formData.append('priceChanges', JSON.stringify(currentItem.priceChanges));
+      formData.append('priceChanges', JSON.stringify([]));
       formData.append('selectedItems', JSON.stringify([]));
       formData.append('itemSettings', JSON.stringify({
         showSelectedOnly: false,
@@ -844,7 +1001,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
 
           <TabsContent value="price-changes" className="space-y-6">
             <div className="space-y-4">
-              {currentItem.priceChanges?.map(priceChange => (
+              {apiPriceChanges.map(priceChange => (
                 <div
                   key={priceChange.id}
                   className={`border rounded-lg p-4 ${
@@ -875,7 +1032,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                           {priceChange.type === 'fixed' && (
                             <>
                               <PoundSterling className="h-4 w-4" />
-                              <span>£{priceChange.value.toFixed(2)}</span>
+                              <span>£{priceChange.tempPrice?.toFixed(2) || priceChange.value.toFixed(2)}</span>
                             </>
                           )}
                         </div>
@@ -885,7 +1042,7 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setEditingPriceChange(priceChange)}
+                        onClick={() => setEditingPriceChange(convertToPriceChange(priceChange))}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -1233,33 +1390,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
               <div className="flex flex-col space-y-3">
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="freeDelivery"
-                    checked={Boolean(currentItem.freeDelivery)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
-                  />
-                  <Label htmlFor="freeDelivery">Free Delivery</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="collectionOnly"
-                    checked={Boolean(currentItem.collectionOnly)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
-                  />
-                  <Label htmlFor="collectionOnly">Collection Only</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
-                    id="deleted"
-                    checked={Boolean(currentItem.deleted)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
-                  />
-                  <Label htmlFor="deleted">Deleted</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <StableSwitch
                     id="hidePrice"
                     checked={Boolean(currentItem.hidePrice)}
                     onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
@@ -1269,15 +1399,21 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
                 
                 <div className="flex items-center space-x-2">
                   <StableSwitch
-                    id="allowAddWithoutChoices"
-                    checked={Boolean(currentItem.allowAddWithoutChoices)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, allowAddWithoutChoices: checked }))}
+                    id="hideItem"
+                    checked={Boolean(currentItem.hideItem)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hideItem: checked }))}
                   />
-                  <Label htmlFor="allowAddWithoutChoices">Allow add without choices</Label>
+                  <Label htmlFor="hideItem">Hide Item</Label>
                 </div>
-                <p className="text-xs text-gray-500 ml-6">
-                  When enabled, customers can order this product without selecting any attributes
-                </p>
+                
+                <div className="flex items-center space-x-2">
+                  <StableSwitch
+                    id="freeDelivery"
+                    checked={Boolean(currentItem.freeDelivery)}
+                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
+                  />
+                  <Label htmlFor="freeDelivery">Free Delivery</Label>
+                </div>
               </div>
             </div>
           </TabsContent>

@@ -104,7 +104,7 @@ export default function HomePage() {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
 
   // Use actual user data if available
-  const displayName = user?.name || 'Admin User'
+  const displayName = user?.firstName + " " + user?.lastName || 'Admin User'
 
   const handleLogout = () => {
     logout()

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import Sidebar from './sidebar'
+import { TokenVerifier } from '../auth/token-verifier'
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ''
@@ -37,6 +38,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <main className={`min-h-screen bg-gray-100 ${showSidebar ? 'flex' : ''}`}>
+      {/* TokenVerifier doesn't render anything, but verifies token on each page render */}
+      <TokenVerifier />
+      
       {showSidebar && (
         <div className="w-64 fixed h-screen overflow-hidden">
           <Sidebar />

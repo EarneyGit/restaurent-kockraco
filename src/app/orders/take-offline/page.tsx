@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronLeft, X } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChevronLeft, X, Search, Clock, Package, AlertTriangle } from "lucide-react"
 import { toast } from "react-hot-toast"
 import api from "@/lib/axios"
+import { useAuth } from "@/contexts/auth-context"
 
 interface Product {
   id: string
@@ -25,7 +27,10 @@ interface Attribute {
 }
 
 export default function TakeOfflinePage() {
-  const [searchText, setSearchText] = useState("")
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
+  const [searchTerm, setSearchTerm] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [attributes, setAttributes] = useState<Attribute[]>([])
   const [loading, setLoading] = useState(false)
@@ -135,9 +140,9 @@ export default function TakeOfflinePage() {
   // Handle search
   const handleSearch = (type: 'products' | 'attributes') => {
     if (type === 'products') {
-      fetchProducts(searchText)
+      fetchProducts(searchTerm)
     } else {
-      fetchAttributes(searchText)
+      fetchAttributes(searchTerm)
     }
   }
 
@@ -161,7 +166,7 @@ export default function TakeOfflinePage() {
           <span className="font-medium">Take items offline</span>
         </div>
         <div className="flex items-center">
-          <span className="mr-2">Admin user</span>
+          <span className="mr-2">{displayName}</span>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -179,8 +184,8 @@ export default function TakeOfflinePage() {
           <Input
             type="text"
             placeholder="Enter search text here"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
 

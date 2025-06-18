@@ -16,8 +16,13 @@ export interface DaySettings {
     end: string;
   };
   collection: {
+    useDifferentTimes: boolean;
     leadTime: number;
     displayedTime: string;
+    customTimes: {
+      start: string;
+      end: string;
+    };
   };
   delivery: {
     useDifferentTimes: boolean;
@@ -361,8 +366,13 @@ class OrderingTimesService {
         end: "16:00"
       },
       collection: {
+        useDifferentTimes: false,
         leadTime: 20,
-        displayedTime: "12:10"
+        displayedTime: "12:10",
+        customTimes: {
+          start: "11:45",
+          end: "21:50"
+        }
       },
       delivery: {
         useDifferentTimes: false,

@@ -1,76 +1,82 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, RefreshCw, Plus, Eye } from "lucide-react";
-import { AddCategoryModal } from "@/components/menus/add-category-modal";
-import { MenuCategory } from "@/components/menus/menu-category";
-import { Category } from "@/types/menu";
-import { AttributeTypesModal } from "@/components/menus/attribute-types-modal";
-import PageLayout from "@/components/layout/page-layout";
-import { toast } from "react-hot-toast";
-import axios from "axios";
-import api from "@/lib/axios";
-import { BaseUrl } from "@/lib/config";
-import CommonHeader from "@/components/layout/common-header";
+import { useState, useEffect, useCallback } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Search, RefreshCw, Plus, Eye } from 'lucide-react'
+import { AddCategoryModal } from '@/components/menus/add-category-modal'
+import { MenuCategory } from '@/components/menus/menu-category'
+import { Category } from '@/types/menu'
+import { AttributeTypesModal } from '@/components/menus/attribute-types-modal'
+import PageLayout from "@/components/layout/page-layout"
+import { toast } from 'react-hot-toast'
+import axios from 'axios'
+import api from '@/lib/axios'
+import { BaseUrl } from '@/lib/config'
+import CommonHeader from '@/components/layout/common-header'
 
 export default function MenuSetupPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isAttributeTypesModalOpen, setIsAttributeTypesModalOpen] =
-    useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAttributeTypesModalOpen, setIsAttributeTypesModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Fetch categories and their products
-  const fetchCategories = async () => {
+  // Memoized fetch function to avoid recreating on every render
+  const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log("Fetching categories from API...");
-      const response = await api.get("/categories");
+      console.log('Fetching categories from API...')
+      const response = await api.get('/categories');
       const { data } = response;
-
-      console.log("Raw API response:", data);
-
+      
+      console.log('Raw API response:', data)
+      
       if (data.success) {
         const transformedCategories = data.data.map((category: any) => {
-          console.log("Transforming category:", category.name, category);
-
+          console.log('Transforming category:', category.name, category)
+          
           return {
-            id: category._id || category.id,
-            name: category.name,
-            description: category.description || "",
+          id: category._id || category.id,
+          name: category.name,
+          description: category.description || '',
             displayOrder: category.displayOrder ?? 0,
-            hidden: category.hidden || false,
-            includeAttributes: category.includeAttributes || false,
-            includeDiscounts: category.includeDiscounts || false,
-            imageUrl: category.imageUrl || "",
+          hidden: category.hidden || false,
+          includeAttributes: category.includeAttributes || false,
+          includeDiscounts: category.includeDiscounts || false,
+            imageUrl: category.imageUrl || '',
             availability: category.availability || {},
-            printers: category.printers || ["Kitchen (P2)"],
+            printers: category.printers || ['Kitchen (P2)'],
             branch: category.branch,
-            items: [],
-          };
+          items: []
+          }
         });
-
-        console.log("Transformed categories:", transformedCategories);
+        
+        console.log('Transformed categories:', transformedCategories)
         setCategories(transformedCategories);
       } else {
-        throw new Error(data.message || "Failed to fetch categories");
+        throw new Error(data.message || 'Failed to fetch categories');
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Failed to fetch categories");
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCategories();
   }, []);
 
-  const handleAddCategory = async (newCategory: Omit<Category, "id">) => {
+  // Function to trigger refresh
+  const triggerRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  // Fetch categories when component mounts or when refresh is triggered
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories, refreshTrigger]);
+
+  const handleAddCategory = async (newCategory: Omit<Category, 'id'>) => {
     try {
       const response = await api.post("/categories", newCategory);
       const { data } = response;
@@ -80,10 +86,12 @@ export default function MenuSetupPage() {
           ...newCategory,
           id: data.data._id || data.data.id,
         };
-
-        setCategories((prev) => [...prev, savedCategory]);
-        toast.success("Category added successfully");
-        fetchCategories();
+        
+        setCategories(prev => [...prev, savedCategory]);
+        toast.success('Category added successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || "Failed to add category");
       }
@@ -101,8 +109,11 @@ export default function MenuSetupPage() {
       const { data } = response;
 
       if (data.success) {
-        setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
-        toast.success("Category deleted successfully");
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        toast.success('Category deleted successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || "Failed to delete category");
       }
@@ -126,7 +137,10 @@ export default function MenuSetupPage() {
             cat.id === updatedCategory.id ? updatedCategory : cat
           )
         );
-        toast.success("Category updated successfully");
+        toast.success('Category updated successfully');
+        
+        // Trigger refresh to get updated data
+        triggerRefresh();
       } else {
         throw new Error(data.message || "Failed to update category");
       }
@@ -190,6 +204,7 @@ export default function MenuSetupPage() {
                 onDelete={handleDeleteCategory}
                 onUpdate={handleUpdateCategory}
                 allCategories={categories}
+                onRefresh={triggerRefresh}
               />
             ))}
           </div>

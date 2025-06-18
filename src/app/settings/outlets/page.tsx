@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, Loader2 } from "lucide-react"
 import { outletService, type OutletSettings } from "@/services/outlet.service"
 import { toast } from "sonner"
+import { useAuth } from '@/contexts/auth-context'
 
 const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
   ssr: false,
@@ -16,6 +17,11 @@ const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
 })
 
 export default function OutletsPage() {
+  const { user } = useAuth()
+  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  
+  const [activeTab, setActiveTab] = useState<'details' | 'opening-hours' | 'delivery-areas' | 'special-notes'>('details')
+
   const [outletData, setOutletData] = useState<OutletSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -147,7 +153,7 @@ export default function OutletsPage() {
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
         <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
             <Eye className="h-5 w-5 mr-1" />
