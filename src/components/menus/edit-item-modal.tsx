@@ -603,8 +603,12 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           if (updatedResponse.success) {
             setApiPriceChanges(updatedResponse.data);
           }
+          // Close the modal only on success
+          setEditingPriceChange(null);
         } else {
-          toast.error('Failed to update price change');
+          // Show specific backend error message
+          toast.error(response.message || 'Failed to update price change');
+          // Don't close the modal to allow user to fix the error
         }
       } else {
         // Create new price change
@@ -628,16 +632,30 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           if (updatedResponse.success) {
             setApiPriceChanges(updatedResponse.data);
           }
+          // Close the modal only on success
+          setEditingPriceChange(null);
         } else {
-          toast.error('Failed to create price change');
+          // Show specific backend error message
+          toast.error(response.message || 'Failed to create price change');
+          // Don't close the modal to allow user to fix the error
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving price change:', error);
-      toast.error('Failed to save price change');
+      // Handle different types of errors
+      let errorMessage = 'Failed to save price change';
+      
+      if (error.response?.data?.message) {
+        // Backend validation error
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        // Network or other errors
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+      // Don't close the modal to allow user to fix the error
     }
-    
-    setEditingPriceChange(null)
   }
 
   const deletePriceChange = async (id: string) => {
@@ -658,11 +676,20 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           }
         }
       } else {
-        toast.error('Failed to delete price change');
+        toast.error(response.message || 'Failed to delete price change');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting price change:', error);
-      toast.error('Failed to delete price change');
+      // Handle different types of errors
+      let errorMessage = 'Failed to delete price change';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   }
 
@@ -680,11 +707,20 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
           }
         }
       } else {
-        toast.error('Failed to update price change status');
+        toast.error(response.message || 'Failed to update price change status');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling price change:', error);
-      toast.error('Failed to update price change status');
+      // Handle different types of errors
+      let errorMessage = 'Failed to update price change status';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   }, [currentItem.id]);
   
