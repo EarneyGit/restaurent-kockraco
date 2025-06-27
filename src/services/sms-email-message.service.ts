@@ -117,8 +117,17 @@ class SmsEmailMessageService {
 
   // Create new SMS/Email message
   async createSmsEmailMessage(data: CreateSmsEmailMessageData): Promise<ApiResponse<SmsEmailMessage>> {
-    const response = await axios.post(this.baseUrl, data);
-    return response.data;
+    console.log('Service createSmsEmailMessage called with data:', data); // Debug log
+    console.log('Making POST request to:', this.baseUrl); // Debug log
+    
+    try {
+      const response = await axios.post(this.baseUrl, data);
+      console.log('Service received response:', response.data); // Debug log
+      return response.data;
+    } catch (error) {
+      console.error('Service error:', error); // Debug log
+      throw error;
+    }
   }
 
   // Update SMS/Email message

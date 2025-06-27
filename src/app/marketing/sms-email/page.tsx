@@ -50,19 +50,26 @@ export default function SmsEmailPage() {
   }
 
   const handleSave = async (data: CreateSmsEmailMessageData) => {
+    console.log('Parent handleSave called with data:', data); // Debug log
+    
     try {
       setLoading(true)
+      console.log('Calling smsEmailMessageService.createSmsEmailMessage...'); // Debug log
       const response = await smsEmailMessageService.createSmsEmailMessage(data)
+      console.log('API response:', response); // Debug log
+      
       if (response.success) {
         toast.success('Message created successfully')
         fetchMessages() // Refresh the list
         fetchStats() // Refresh stats
       } else {
         toast.error(response.message || 'Failed to create message')
+        throw new Error(response.message || 'Failed to create message')
       }
     } catch (error: any) {
       console.error('Error creating message:', error)
       toast.error(error.response?.data?.message || 'Failed to create message')
+      throw error // Re-throw to prevent modal from closing
     } finally {
       setLoading(false)
     }
@@ -239,6 +246,7 @@ export default function SmsEmailPage() {
           open={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
+          loading={loading}
         />
       </div>
     </PageLayout>
