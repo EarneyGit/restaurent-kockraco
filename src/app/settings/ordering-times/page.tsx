@@ -242,6 +242,11 @@ export default function OrderingTimesPage() {
       })
 
       toast.success(`${orderingTimesService.getDayDisplayName(day)} settings updated`)
+      
+      // Refresh the data to ensure we have the latest state
+      setTimeout(() => {
+        loadOrderingTimes()
+      }, 500)
     } catch (error) {
       console.error('Error updating day settings:', error)
       toast.error('Failed to update day settings')
@@ -257,6 +262,11 @@ export default function OrderingTimesPage() {
       setSaving(true)
       await orderingTimesService.updateWeeklySchedule(orderingTimes.weeklySchedule)
       toast.success('All ordering times saved successfully')
+      
+      // Refresh the data to ensure we have the latest state
+      setTimeout(() => {
+        loadOrderingTimes()
+      }, 500)
     } catch (error) {
       console.error('Error saving all changes:', error)
       toast.error('Failed to save all changes')
@@ -273,16 +283,16 @@ export default function OrderingTimesPage() {
     router.push("/settings/ordering-times/restrictions")
   }
 
-  if (loading) {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin mr-2" />
-          Loading ordering times...
-        </div>
-      </PageLayout>
-    )
-  }
+  // if (loading) {
+  //   return (
+  //     <PageLayout>
+  //       <div className="flex items-center justify-center min-h-screen">
+  //         <Loader2 className="h-8 w-8 animate-spin mr-2" />
+  //         Loading ordering times...
+  //       </div>
+  //     </PageLayout>
+  //   )
+  // }
 
   if (!orderingTimes) {
     return (
@@ -525,7 +535,7 @@ export default function OrderingTimesPage() {
                                 )}
                                 <div className="grid grid-cols-2 gap-6">
                                   <div>
-                                    <Label>Collection Lead Times</Label>
+                                    <Label>Collection Lead Times <span className="text-gray-500">(Only in 5-minute intervals)</span></Label>
                                     <div className="flex items-center gap-2 mt-1">
                                       <Input
                                         type="number"
@@ -617,7 +627,7 @@ export default function OrderingTimesPage() {
                                 )}
                                 <div className="grid grid-cols-2 gap-6">
                                   <div>
-                                    <Label>Delivery Lead Times</Label>
+                                    <Label>Delivery Lead Times <span className="text-gray-500">(Only in 5-minute intervals)</span></Label>
                                     <div className="flex items-center gap-2 mt-1">
                                       <Input
                                         type="number"
