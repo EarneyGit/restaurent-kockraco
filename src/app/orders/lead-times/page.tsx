@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
 import { useAuth } from '@/contexts/auth-context'
+import { Toaster } from 'react-hot-toast'
 
 const timeOptions = [
   '5 mins', '10 mins', '15 mins', '20 mins', '25 mins', '30 mins', 
@@ -22,6 +23,8 @@ const timeOptions = [
 interface LeadTimesData {
   collection: string
   delivery: string
+  day?: string
+  date?: string
 }
 
 export default function LeadTimesPage() {
@@ -31,13 +34,11 @@ export default function LeadTimesPage() {
   const [collectionTime, setCollectionTime] = useState('20 mins')
   const [deliveryTime, setDeliveryTime] = useState('45 mins')
   const [isLoading, setIsLoading] = useState(false)
-  const [isFetching, setIsFetching] = useState(true)
   const [leadTimes, setLeadTimes] = useState<LeadTimesData | null>(null)
 
   // Fetch current lead times on component mount
   useEffect(() => {
     const fetchLeadTimes = async () => {
-      setIsFetching(true)
       try {
         const response = await api.get('/settings/lead-times')
         
@@ -46,7 +47,6 @@ export default function LeadTimesPage() {
           setLeadTimes(data)
           setCollectionTime(data.collection || '20 mins')
           setDeliveryTime(data.delivery || '45 mins')
-          toast.success('Lead times loaded successfully')
         } else {
           toast.error(response.data.message || 'Failed to fetch lead times')
         }
@@ -65,8 +65,6 @@ export default function LeadTimesPage() {
         } else {
           toast.error('Failed to fetch lead times. Please try again.')
         }
-      } finally {
-        setIsFetching(false)
       }
     }
 
@@ -74,6 +72,7 @@ export default function LeadTimesPage() {
   }, [])
 
   const handleSave = async () => {
+    console.log(collectionTime, deliveryTime)
     if (!collectionTime || !deliveryTime) {
       toast.error('Please select both collection and delivery times')
       return
@@ -86,7 +85,7 @@ export default function LeadTimesPage() {
         delivery: deliveryTime
       })
 
-      if (response.data.success) {
+      if (response) {
         setLeadTimes(response.data.data)
         toast.success('Lead times updated successfully')
       } else {
@@ -118,46 +117,13 @@ export default function LeadTimesPage() {
     window.location.href = path
   }
 
-  // Show loading state while fetching initial data
-  if (isFetching) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="flex justify-between items-center bg-white border-b">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => handleNavigate('/orders/live')}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <span className="font-medium">Restaurant Settings</span>
-          </div>
-          <div className="flex items-center">
-            <span className="mr-2">{displayName}</span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleNavigate('/orders/live/exit')}
-            >
-              Exit <X className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </header>
-
-        <div className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-            <span className="ml-2 text-gray-600">Loading lead times...</span>
-          </div>
-        </div>
-      </div>
-    )
+  const formatDayName = (day: string) => {
+    return day.charAt(0).toUpperCase() + day.slice(1)
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-3 bg-white border-b">
         <div className="flex items-center gap-4">
@@ -183,7 +149,14 @@ export default function LeadTimesPage() {
       </header>
 
       <div className="p-6">
-        <h1 className="text-3xl font-semibold mb-8">Change Lead Times</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold mb-2">Change Lead Times</h1>
+          {leadTimes && leadTimes.day && (
+            <p className="text-gray-600">
+              Today's Settings ({formatDayName(leadTimes.day)} - {leadTimes.date})
+            </p>
+          )}
+        </div>
         
         <div className="bg-white rounded-lg shadow-sm p-6 max-w-md">
           <div className="space-y-6">
@@ -231,22 +204,14 @@ export default function LeadTimesPage() {
               </div>
             </div>
             
-
-            
             <div className="pt-4">
               <Button 
                 onClick={handleSave}
+                type="button"
                 className="bg-emerald-500 hover:bg-emerald-600 text-white w-24"
-                disabled={isLoading || isFetching}
+                disabled={isLoading}
               >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
-                  </div>
-                ) : (
-                  'Save'
-                )}
+                {isLoading ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>
