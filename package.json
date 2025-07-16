@@ -34,6 +34,7 @@
     "@types/date-fns": "2.6.0",
     "class-variance-authority": "0.7.0",
     "clsx": "2.0.0",
+    "critters": "^0.0.25",
     "date-fns": "2.30.0",
     "lucide-react": "^0.511.0",
     "next": "14.0.4",
