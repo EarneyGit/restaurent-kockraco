@@ -218,25 +218,8 @@ export default function LiveOrdersPage() {
   const confirmCancelOrder = async () => {
     setCancelLoading(true);
     if (selectedOrder) {
-      // If payment method is card and there is a stripePaymentIntentId, call cancel payment API
-      if (
-        selectedOrder.paymentMethod === 'card' &&
-        selectedOrder.stripePaymentIntentId
-      ) {
-        try {
-          const response = await api.post(
-            `/orders/cancel-payment/${selectedOrder.stripePaymentIntentId}`
-          );
-          if (response.data.success) {
-            toast.success('Payment refunded successfully');
-          } else {
-            toast.error(response.data.message || 'Refund failed');
-          }
-        } catch (err) {
-          toast.error('Error processing refund');
-        }
-      }
-      // Update order status as before
+      // Simply update the order status to cancelled
+      // The backend will handle refund processing for card/online payments
       await updateOrderStatus(selectedOrder._id, 'cancelled');
     } else {
       toast.error('No selected order!');
