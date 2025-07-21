@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu, X, LogOut, ChevronLeft, Mail, Phone, Clock, User } from "lucide-react";
+import { Menu, X, LogOut, ChevronLeft, Mail, Phone, Clock, User, Loader2 } from "lucide-react";
 import { BaseUrl } from "@/lib/config";
 import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
@@ -68,6 +68,7 @@ interface Order {
   estimatedTimeToComplete?: number;
   createdAt: string;
   updatedAt?: string;
+  stripePaymentIntentId?: string; // Added for payment cancellation
 }
 
 export default function LiveOrdersPage() {
@@ -205,10 +206,31 @@ export default function LiveOrdersPage() {
     }
   };
 
+  console.log("Hii")
+
+  const [showCancelPopup, setShowCancelPopup] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
   const handleCancelOrder = () => {
+    setShowCancelPopup(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    setCancelLoading(true);
     if (selectedOrder) {
-      updateOrderStatus(selectedOrder._id, 'cancelled');
+      // Simply update the order status to cancelled
+      // The backend will handle refund processing for card/online payments
+      await updateOrderStatus(selectedOrder._id, 'cancelled');
+    } else {
+      toast.error('No selected order!');
+      console.log('No selectedOrder in handleCancelOrder');
     }
+    setCancelLoading(false);
+    setShowCancelPopup(false);
+  };
+
+  const cancelCancelOrder = () => {
+    setShowCancelPopup(false);
   };
 
   const handlePrintOrder = () => {
@@ -231,7 +253,6 @@ export default function LiveOrdersPage() {
             toast.success(`Order delayed by ${additionalMinutes} minutes`);
             // Refresh orders list
             fetchOrders();
-            // Update selected order if it's the same one
             if (selectedOrder && selectedOrder._id === delayingOrderId) {
               fetchOrderDetails(delayingOrderId, selectedOrder.branchId._id);
             }
@@ -259,7 +280,6 @@ export default function LiveOrdersPage() {
     fetchOrders();
   }, []);
 
-  console.log("orders", orders);
   
   useEffect(() => {
     // Initial fetch
@@ -637,12 +657,18 @@ export default function LiveOrdersPage() {
                     Ready
                   </Button>
                   <Button
+                    type="button"
                     onClick={handleCancelOrder}
                     variant="outline"
                     size="lg"
                     className="px-6 py-3 border-red-500 text-red-500 hover:bg-red-50"
+                    disabled={cancelLoading}
                   >
-                    Cancel
+                    {cancelLoading ? (
+                      <span className="flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Cancelling...</span>
+                    ) : (
+                      'Cancel'
+                    )}
                   </Button>
                   <Button
                     onClick={handlePrintOrder}
@@ -770,6 +796,23 @@ export default function LiveOrdersPage() {
                 }}
               >
                 Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Popup */}
+      {showCancelPopup && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4 border-b border-gray-300 pb-3">Cancel this order?</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to cancel this order? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={cancelCancelOrder} disabled={cancelLoading}>No, Don't</Button>
+              <Button onClick={confirmCancelOrder} disabled={cancelLoading}>
+                {cancelLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
+                Yes, Please!
               </Button>
             </div>
           </div>
