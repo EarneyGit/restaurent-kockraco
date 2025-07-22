@@ -37,7 +37,13 @@ interface OrderItem {
     id: string;
   };
   quantity: number;
-  price: number;
+  price: number | {
+    base: number;
+    currentEffectivePrice: number;
+    attributes: number;
+    total: number;
+  };
+  itemTotal?: number;
   _id: string;
   addons: any[];
 }
@@ -284,6 +290,9 @@ export default function LiveOrdersPage() {
   useEffect(() => {
     // Initial fetch
     fetchOrders();
+    
+    // Clear selected order when changing tabs
+    setSelectedOrder(null);
 
     // Set up socket listeners
     onOrderEvent(handleOrderEvent);
@@ -712,7 +721,11 @@ export default function LiveOrdersPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="text-gray-600">Qty: {item.quantity}</span>
-                        <span className="font-semibold">£{(item.price * item.quantity).toFixed(2)}</span>
+                        <span className="font-semibold">£{(typeof item.price === 'number' 
+                          ? (item.price * item.quantity).toFixed(2) 
+                          : item.itemTotal 
+                            ? item.itemTotal.toFixed(2) 
+                            : (item.price.total * item.quantity).toFixed(2))}</span>
                       </div>
                     </div>
                   ))}
