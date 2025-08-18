@@ -19,8 +19,9 @@ const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }:
   }, [logout])
 
   const handleViewStore = useCallback(() => {
-    // Placeholder for view store functionality
-    console.log('View store clicked')
+    // Use the viewYourStore function from utils
+    const { viewYourStore } = require('@/lib/utils')
+    viewYourStore()
   }, [])
 
   return (
@@ -50,4 +51,4 @@ const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }:
   )
 })
 
-export default CommonHeader 
+export default CommonHeader

@@ -374,7 +374,10 @@ export default function PriceChangesPage() {
         <div className="flex-1"></div>
         <h1 className="text-xl font-semibold flex-1 text-center">Dunfermline</h1>
         <div className="flex justify-end flex-1">
-          <button className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+          <button 
+            onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
+            className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+          >
             <Eye className="h-4 w-4 mr-2" />
             View Your Store
           </button>
@@ -724,4 +727,4 @@ export default function PriceChangesPage() {
       />
     </PageLayout>
   )
-} 
+}

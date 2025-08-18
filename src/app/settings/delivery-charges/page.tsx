@@ -619,7 +619,13 @@ export default function DeliveryChargesPage() {
         <div className="flex-1"></div>
         <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
-          <button className="flex items-center text-gray-700 font-medium">
+          <button 
+            className="flex items-center text-gray-700 font-medium"
+            onClick={() => {
+              const { viewYourStore } = require('@/lib/utils')
+              viewYourStore()
+            }}
+          >
             <Eye className="h-5 w-5 mr-1" />
             View Your Store
           </button>
@@ -935,4 +941,4 @@ export default function DeliveryChargesPage() {
       />
     </PageLayout>
   )
-} 
+}
