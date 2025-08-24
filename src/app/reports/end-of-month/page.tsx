@@ -1,21 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { ItemsTable } from '@/components/reports/items-table'
-import { PrinterIcon } from 'lucide-react'
-import { format, subMonths } from 'date-fns'
-import { SaleData } from '@/types/reports'
+import { PrinterIcon, RefreshCw } from 'lucide-react'
+import { format } from 'date-fns'
+import { reportService } from '@/services/report.service'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface MonthOption {
   value: string;
   label: string;
+  month: number;
+  year: number;
 }
 
 // Generate months from June 2023 to current month
@@ -27,7 +24,9 @@ const generateMonthOptions = () => {
   while (date <= currentDate) {
     options.push({
       value: format(date, 'yyyy-MM'),
-      label: format(date, 'MMMM yyyy')
+      label: format(date, 'MMMM yyyy'),
+      month: date.getMonth() + 1, // 1-based month
+      year: date.getFullYear()
     })
     date = new Date(date.getFullYear(), date.getMonth() + 1, 1)
   }
@@ -37,78 +36,86 @@ const generateMonthOptions = () => {
 
 const monthOptions = generateMonthOptions()
 
-// Sample data for current and previous month
-const generateSampleData = (month: string): SaleData[] => {
-  const [year, monthNum] = month.split('-').map(Number)
-  const date = new Date(year, monthNum - 1)
-  
-  if (format(date, 'yyyy-MM') === format(new Date(), 'yyyy-MM')) {
-    return [
-      {
-        id: '12707587',
-        customer: '2382095 - Chris Jermain',
-        value: 24.46,
-        discount: 0.00,
-        tip: 0.00,
-        postcode: 'KY12 8YP',
-        pay: 'Card',
-        type: 'Delivery',
-        created: format(date, 'dd/MM/yyyy'),
-        platform: 'App4'
-      },
-      {
-        id: '12706377',
-        customer: '[Guest] Danny Morgan',
-        value: 22.28,
-        discount: 0.00,
-        tip: 0.00,
-        postcode: 'KY12 8DE',
-        pay: 'Card',
-        type: 'Collection',
-        created: format(date, 'dd/MM/yyyy'),
-        platform: 'App4'
-      }
-    ]
-  } else if (format(date, 'yyyy-MM') === format(subMonths(new Date(), 1), 'yyyy-MM')) {
-    return [
-      {
-        id: '12705555',
-        customer: '2382095 - Chris Jermain',
-        value: 35.50,
-        discount: 2.00,
-        tip: 0.00,
-        postcode: 'KY12 8YP',
-        pay: 'Cash',
-        type: 'Delivery',
-        created: format(date, 'dd/MM/yyyy'),
-        platform: 'App4'
-      }
-    ]
-  }
-  
-  return []
-}
-
 export default function EndOfMonthPage() {
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].value)
-  const [filteredData, setFilteredData] = useState<SaleData[]>(generateSampleData(selectedMonth))
-  const [expandedItems, setExpandedItems] = useState<string[]>(['all-sales'])
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0])
+  const [loading, setLoading] = useState(false)
 
-  const handleMonthChange = (month: string) => {
-    setSelectedMonth(month)
-    setFilteredData(generateSampleData(month))
+
+  // Report data
+  const [summary, setSummary] = useState({
+    totalOrders: 0,
+    totalSales: 0,
+    totalTips: 0,
+    totalDeliveryFees: 0,
+    averageOrderValue: 0,
+    uniqueCustomers: 0
+  })
+
+  const [dailyBreakdown, setDailyBreakdown] = useState<Array<{
+    _id: { year: number; month: number; day: number };
+    orders: number;
+    sales: number;
+    averageOrderValue: number;
+  }>>([])
+
+  const [topCustomers, setTopCustomers] = useState<Array<{
+    _id: string;
+    totalOrders: number;
+    totalSpent: number;
+    customerName: string;
+    customerEmail: string;
+  }>>([])
+
+  // Fetch report data
+  const fetchReportData = async (monthOption: MonthOption) => {
+    setLoading(true)
+    try {
+      const response = await reportService.getEndOfMonthReport(
+        monthOption.month,
+        monthOption.year
+      )
+      
+      if (response.success && response.data) {
+        setSummary(response.data.summary)
+        setDailyBreakdown(response.data.dailyBreakdown)
+        setTopCustomers(response.data.topCustomers)
+      }
+    } catch (error) {
+      console.error('Failed to fetch report data:', error)
+      toast.error('Failed to fetch report data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchReportData(selectedMonth)
+  }, [selectedMonth])
+
+  const handleMonthChange = (value: string) => {
+    const monthOption = monthOptions.find(opt => opt.value === value)
+    if (monthOption) {
+      setSelectedMonth(monthOption)
+    }
+  }
+
+  const handleRefresh = () => {
+    fetchReportData(selectedMonth)
   }
 
   const handlePrint = () => {
     window.print()
   }
 
-  const cardOnlyData = filteredData.filter(sale => sale.pay === 'Card')
-  const cashOnlyData = filteredData.filter(sale => sale.pay === 'Cash')
+  // Calculate daily sales chart data
+  const dailySalesData = dailyBreakdown.map(day => ({
+    date: `${day._id.day}/${day._id.month}`,
+    sales: day.sales,
+    orders: day.orders
+  }))
 
-  const handleAccordionChange = (value: string[]) => {
-    setExpandedItems(value)
-  }
+  const totalDays = dailyBreakdown.length
+  const daysWithSales = dailyBreakdown.filter(day => day.orders > 0).length
 
   return (
     <>
@@ -116,7 +123,7 @@ export default function EndOfMonthPage() {
         <h1 className="text-2xl font-medium">End of Month Report</h1>
         <div className="flex gap-4 items-center no-print">
           <select
-            value={selectedMonth}
+            value={selectedMonth.value}
             onChange={(e) => handleMonthChange(e.target.value)}
             className="w-[200px] h-10 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
@@ -126,6 +133,14 @@ export default function EndOfMonthPage() {
               </option>
             ))}
           </select>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            className="bg-white"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
           <Button onClick={handlePrint} variant="outline" className="bg-white">
             <PrinterIcon className="mr-2 h-4 w-4" />
             Print
@@ -133,60 +148,128 @@ export default function EndOfMonthPage() {
         </div>
       </div>
 
-      <Accordion
-        type="multiple"
-        value={expandedItems}
-        onValueChange={handleAccordionChange}
-        className="w-full space-y-4"
-      >
-        <AccordionItem value="all-sales" className="border-none">
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-medium">
-                All Sales {!filteredData.length && '(no data)'}
-              </h2>
-              <AccordionTrigger />
-            </div>
-            <AccordionContent>
-              <div className="p-4">
-                <ItemsTable data={filteredData} type="sales" />
+      {/* Monthly Summary */}
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h2 className="text-lg font-medium mb-4">Monthly Summary - {selectedMonth.label}</h2>
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-32" />
               </div>
-            </AccordionContent>
+            ))}
           </div>
-        </AccordionItem>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Total Orders</p>
+              <p className="text-2xl font-semibold">{summary.totalOrders}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Sales</p>
+              <p className="text-2xl font-semibold">£{summary.totalSales.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Average Order</p>
+              <p className="text-2xl font-semibold">£{summary.averageOrderValue.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Tips</p>
+              <p className="text-2xl font-semibold">£{summary.totalTips.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Delivery Fees</p>
+              <p className="text-2xl font-semibold">£{summary.totalDeliveryFees.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Unique Customers</p>
+              <p className="text-2xl font-semibold">{summary.uniqueCustomers}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
-        <AccordionItem value="card-only" className="border-none">
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-medium">
-                Sales by Card Only {!cardOnlyData.length && '(no data)'}
-              </h2>
-              <AccordionTrigger />
-            </div>
-            <AccordionContent>
-              <div className="p-4">
-                <ItemsTable data={cardOnlyData} type="sales" />
-              </div>
-            </AccordionContent>
+      {/* Daily Breakdown */}
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h2 className="text-lg font-medium mb-4">Daily Breakdown</h2>
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
           </div>
-        </AccordionItem>
+        ) : dailyBreakdown.length > 0 ? (
+          <>
+            <div className="mb-4 text-sm text-gray-600">
+              {daysWithSales} out of {totalDays} days had sales
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Date</th>
+                    <th className="text-right py-2">Orders</th>
+                    <th className="text-right py-2">Sales</th>
+                    <th className="text-right py-2">Average Order</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dailyBreakdown.map((day) => (
+                    <tr key={`${day._id.year}-${day._id.month}-${day._id.day}`} className="border-b">
+                      <td className="py-2">
+                        {format(new Date(day._id.year, day._id.month - 1, day._id.day), 'dd MMM yyyy')}
+                      </td>
+                      <td className="text-right py-2">{day.orders}</td>
+                      <td className="text-right py-2">£{day.sales.toFixed(2)}</td>
+                      <td className="text-right py-2">£{day.averageOrderValue.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No sales data for this month</p>
+        )}
+      </div>
 
-        <AccordionItem value="cash-only" className="border-none">
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-medium">
-                Sales by Cash Only {!cashOnlyData.length && '(no data)'}
-              </h2>
-              <AccordionTrigger />
-            </div>
-            <AccordionContent>
-              <div className="p-4">
-                <ItemsTable data={cashOnlyData} type="sales" />
-              </div>
-            </AccordionContent>
+      {/* Top Customers */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h2 className="text-lg font-medium mb-4">Top Customers</h2>
+        {loading ? (
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
           </div>
-        </AccordionItem>
-      </Accordion>
+        ) : topCustomers.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Customer</th>
+                  <th className="text-left py-2">Email</th>
+                  <th className="text-right py-2">Orders</th>
+                  <th className="text-right py-2">Total Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topCustomers.map((customer) => (
+                  <tr key={customer._id} className="border-b">
+                    <td className="py-2">{customer.customerName}</td>
+                    <td className="py-2 text-gray-600">{customer.customerEmail}</td>
+                    <td className="text-right py-2">{customer.totalOrders}</td>
+                    <td className="text-right py-2">£{customer.totalSpent.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No customer data for this month</p>
+        )}
+      </div>
     </>
   )
-} 
+}
