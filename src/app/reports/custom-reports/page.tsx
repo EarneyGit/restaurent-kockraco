@@ -12,117 +12,178 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { reportService } from '@/services/report.service'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { FileDown, Printer } from 'lucide-react'
 
-type ReportType = 'menu-category' | 'daily-totals' | 'order-export' | null
+type ReportType = 'menu-category-totals' | 'daily-totals' | 'order-export' | null
 
-interface DailyTotal {
-  outlet: string
-  date: string
-  total: number
+interface MenuCategoryTotal {
+  _id: {
+    categoryId: string;
+    categoryName: string;
+  };
+  totalQuantity: number;
+  totalRevenue: number;
 }
 
-// Sample data - replace with API call
-const sampleData: DailyTotal[] = [
-  { outlet: 'Admin user', date: '17/04/2025', total: 88.63 },
-  { outlet: 'Admin user', date: '18/04/2025', total: 0.00 },
-  { outlet: 'Admin user', date: '19/04/2025', total: 27.97 },
-  { outlet: 'Admin user', date: '20/04/2025', total: 80.38 },
-  { outlet: 'Admin user', date: '21/04/2025', total: 22.47 },
-  { outlet: 'Admin user', date: '22/04/2025', total: 0.00 },
-  { outlet: 'Admin user', date: '23/04/2025', total: 0.00 },
-  { outlet: 'Admin user', date: '24/04/2025', total: 86.83 },
-  { outlet: 'Admin user', date: '25/04/2025', total: 143.53 },
-  { outlet: 'Admin user', date: '26/04/2025', total: 55.42 },
-  { outlet: 'Admin user', date: '27/04/2025', total: 107.83 },
-  { outlet: 'Admin user', date: '28/04/2025', total: 21.96 },
-  { outlet: 'Admin user', date: '29/04/2025', total: 0.00 },
-  { outlet: 'Admin user', date: '30/04/2025', total: 0.00 }
-]
+interface DailyTotal {
+  _id: {
+    year: number;
+    month: number;
+    day: number;
+  };
+  totalOrders: number;
+  totalSales: number;
+  averageOrderValue: number;
+}
+
+interface OrderExport {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  orderType: string;
+  status: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  subtotal: number;
+  tax: number;
+  deliveryFee: number;
+  discount: number;
+  tips: number;
+  total: number;
+  branchName: string;
+  createdAt: string;
+  items: any[];
+}
 
 export default function CustomReportsPage() {
   const [selectedReport, setSelectedReport] = useState<ReportType>(null)
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [reportData, setReportData] = useState<DailyTotal[]>([])
+  const [reportData, setReportData] = useState<any[]>([])
 
-  // Function to parse date string in DD/MM/YYYY format
-  const parseDate = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('/')
-    return new Date(Number(year), Number(month) - 1, Number(day))
-  }
-
-  // Function to format date to DD/MM/YYYY
-  const formatDate = (date: Date) => {
-    return format(date, 'dd/MM/yyyy')
-  }
 
   const handleLoadReport = async () => {
-    if (!startDate || !endDate) return
+    if (!startDate || !endDate || !selectedReport) return
     
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await reportService.getCustomReport(
+        selectedReport,
+        format(startDate, 'yyyy-MM-dd'),
+        format(endDate, 'yyyy-MM-dd')
+      )
       
-      // Filter data based on date range
-      const filtered = sampleData.filter(item => {
-        const itemDate = parseDate(item.date)
-        return itemDate >= startDate && itemDate <= endDate
-      })
-      
-      setReportData(filtered)
+      if (response.success && response.data) {
+        setReportData(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to load report:', error)
+      toast.error('Failed to load report. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleExportPDF = () => {
-    if (!reportData.length) return
+  const handleExportPDF = async () => {
+    if (!reportData.length || !selectedReport) return
 
     // Create table content for PDF
-    const tableContent = reportData.map(row => [
-      row.outlet,
-      row.date,
-      `£${row.total.toFixed(2)}`
-    ])
+    let tableContent: any[][] = []
+    let headers: string[] = []
+    let title = ''
 
-    // Create a hidden form to submit for PDF generation
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = '/api/export-pdf' // Your PDF generation endpoint
-    form.target = '_blank'
+    switch (selectedReport) {
+      case 'menu-category-totals':
+        title = 'Totals By Menu Category'
+        headers = ['Category', 'Quantity', 'Revenue']
+        tableContent = (reportData as MenuCategoryTotal[]).map(row => [
+          row._id.categoryName || 'Uncategorized',
+          row.totalQuantity.toString(),
+          `£${row.totalRevenue.toFixed(2)}`
+        ])
+        break
+      case 'daily-totals':
+        title = 'Daily Totals'
+        headers = ['Date', 'Orders', 'Sales', 'Average Order']
+        tableContent = (reportData as DailyTotal[]).map(row => [
+          `${row._id.day}/${row._id.month}/${row._id.year}`,
+          row.totalOrders.toString(),
+          `£${row.totalSales.toFixed(2)}`,
+          `£${row.averageOrderValue.toFixed(2)}`
+        ])
+        break
+      case 'order-export':
+        title = 'Order Export'
+        headers = ['Order ID', 'Customer', 'Type', 'Status', 'Total', 'Date']
+        tableContent = (reportData as OrderExport[]).map(row => [
+          row.orderId,
+          row.customerName,
+          row.orderType,
+          row.status,
+          `£${row.total.toFixed(2)}`,
+          format(new Date(row.createdAt), 'dd/MM/yyyy HH:mm')
+        ])
+        break
+    }
 
-    const input = document.createElement('input')
-    input.type = 'hidden'
-    input.name = 'data'
-    input.value = JSON.stringify({
-      title: 'Daily Totals Report',
-      dateRange: `${formatDate(startDate!)} to ${formatDate(endDate!)}`,
-      headers: ['Outlet', 'Date', 'Total'],
-      rows: tableContent
-    })
-
-    form.appendChild(input)
-    document.body.appendChild(form)
-    form.submit()
-    document.body.removeChild(form)
+    // For now, we'll trigger a print dialog for PDF
+    // In production, you'd want to implement a proper PDF generation endpoint
+    window.print()
   }
 
   const handleExportCSV = () => {
-    if (!reportData.length) return
+    if (!reportData.length || !selectedReport) return
 
     // Create CSV content
-    const headers = ['Outlet', 'Date', 'Total']
-    const rows = reportData.map(row => [
-      row.outlet,
-      row.date,
-      row.total.toFixed(2)
-    ])
+    let headers: string[] = []
+    let rows: any[][] = []
+
+    switch (selectedReport) {
+      case 'menu-category-totals':
+        headers = ['Category', 'Quantity', 'Revenue']
+        rows = (reportData as MenuCategoryTotal[]).map(row => [
+          row._id.categoryName || 'Uncategorized',
+          row.totalQuantity,
+          row.totalRevenue.toFixed(2)
+        ])
+        break
+      case 'daily-totals':
+        headers = ['Date', 'Orders', 'Sales', 'Average Order']
+        rows = (reportData as DailyTotal[]).map(row => [
+          `${row._id.day}/${row._id.month}/${row._id.year}`,
+          row.totalOrders,
+          row.totalSales.toFixed(2),
+          row.averageOrderValue.toFixed(2)
+        ])
+        break
+      case 'order-export':
+        headers = ['Order ID', 'Customer', 'Email', 'Type', 'Status', 'Payment Method', 'Subtotal', 'Tax', 'Delivery Fee', 'Discount', 'Tips', 'Total', 'Branch', 'Date']
+        rows = (reportData as OrderExport[]).map(row => [
+          row.orderId,
+          row.customerName,
+          row.customerEmail,
+          row.orderType,
+          row.status,
+          row.paymentMethod,
+          row.subtotal.toFixed(2),
+          row.tax.toFixed(2),
+          row.deliveryFee.toFixed(2),
+          row.discount.toFixed(2),
+          row.tips.toFixed(2),
+          row.total.toFixed(2),
+          row.branchName,
+          format(new Date(row.createdAt), 'dd/MM/yyyy HH:mm')
+        ])
+        break
+    }
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n')
 
     // Create and trigger download
@@ -130,7 +191,7 @@ export default function CustomReportsPage() {
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `daily_totals_${formatDate(startDate!)}_${formatDate(endDate!)}.csv`)
+    link.setAttribute('download', `${selectedReport}_${format(startDate!, 'yyyy-MM-dd')}_${format(endDate!, 'yyyy-MM-dd')}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -140,14 +201,100 @@ export default function CustomReportsPage() {
     window.print()
   }
 
+  const renderReportTable = () => {
+    if (!reportData.length || !selectedReport) return null
+
+    switch (selectedReport) {
+      case 'menu-category-totals':
+        const categoryData = reportData as MenuCategoryTotal[]
+        return (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Revenue</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categoryData.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{row._id.categoryName || 'Uncategorized'}</TableCell>
+                  <TableCell className="text-right">{row.totalQuantity}</TableCell>
+                  <TableCell className="text-right">£{row.totalRevenue.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )
+
+      case 'daily-totals':
+        const dailyData = reportData as DailyTotal[]
+        return (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Orders</TableHead>
+                <TableHead className="text-right">Sales</TableHead>
+                <TableHead className="text-right">Average Order</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dailyData.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>{`${row._id.day}/${row._id.month}/${row._id.year}`}</TableCell>
+                  <TableCell className="text-right">{row.totalOrders}</TableCell>
+                  <TableCell className="text-right">£{row.totalSales.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">£{row.averageOrderValue.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )
+
+      case 'order-export':
+        const orderData = reportData as OrderExport[]
+        return (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orderData.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-mono text-sm">{row.orderId}</TableCell>
+                  <TableCell>{row.customerName}</TableCell>
+                  <TableCell className="capitalize">{row.orderType}</TableCell>
+                  <TableCell className="capitalize">{row.status}</TableCell>
+                  <TableCell className="text-right">£{row.total.toFixed(2)}</TableCell>
+                  <TableCell>{format(new Date(row.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )
+
+      default:
+        return null
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Report Type Selection */}
       <div className="grid grid-cols-3 gap-4">
         <Button
-          variant={selectedReport === 'menu-category' ? 'default' : 'outline'}
-          className={selectedReport === 'menu-category' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white'}
-          onClick={() => setSelectedReport('menu-category')}
+          variant={selectedReport === 'menu-category-totals' ? 'default' : 'outline'}
+          className={selectedReport === 'menu-category-totals' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white'}
+          onClick={() => setSelectedReport('menu-category-totals')}
         >
           Totals By Menu Category
         </Button>
@@ -171,7 +318,7 @@ export default function CustomReportsPage() {
       {selectedReport && (
         <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
           <h2 className="text-xl font-medium">
-            {selectedReport === 'menu-category' && 'Totals By Menu Category'}
+            {selectedReport === 'menu-category-totals' && 'Totals By Menu Category'}
             {selectedReport === 'daily-totals' && 'Daily Totals'}
             {selectedReport === 'order-export' && 'Order Export'}
           </h2>
@@ -184,7 +331,6 @@ export default function CustomReportsPage() {
                   selected={startDate}
                   onSelect={setStartDate}
                   className="w-full"
-                //   placeholderText="dd/mm/yyyy"
                 />
               </div>
               <div className="space-y-2">
@@ -193,7 +339,6 @@ export default function CustomReportsPage() {
                   selected={endDate}
                   onSelect={setEndDate}
                   className="w-full"
-                //   placeholderText="dd/mm/yyyy"
                 />
               </div>
             </div>
@@ -212,6 +357,7 @@ export default function CustomReportsPage() {
                 className="bg-white"
                 disabled={isLoading || !reportData.length}
               >
+                <FileDown className="mr-2 h-4 w-4" />
                 PDF Export
               </Button>
               <Button
@@ -220,6 +366,7 @@ export default function CustomReportsPage() {
                 className="bg-white"
                 disabled={isLoading || !reportData.length}
               >
+                <FileDown className="mr-2 h-4 w-4" />
                 CSV Export
               </Button>
               <Button
@@ -228,6 +375,7 @@ export default function CustomReportsPage() {
                 className="bg-white"
                 disabled={isLoading || !reportData.length}
               >
+                <Printer className="mr-2 h-4 w-4" />
                 Desktop Print
               </Button>
             </div>
@@ -236,27 +384,15 @@ export default function CustomReportsPage() {
           {/* Report Results */}
           <div className="mt-6">
             {isLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading report...</div>
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
             ) : reportData.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Outlet</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reportData.map((row, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{row.outlet}</TableCell>
-                        <TableCell>{row.date}</TableCell>
-                        <TableCell className="text-right">£{row.total.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="rounded-md border overflow-x-auto">
+                {renderReportTable()}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -268,4 +404,4 @@ export default function CustomReportsPage() {
       )}
     </div>
   )
-} 
+}

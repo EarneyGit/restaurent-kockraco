@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { subDays } from 'date-fns'
+import { subDays, format } from 'date-fns'
 import { DiscountType } from '@/types/reports'
+import { reportService } from '@/services/report.service'
+import { toast } from 'sonner'
 
 interface DiscountHistoryItem {
   id: string
@@ -10,66 +12,6 @@ interface DiscountHistoryItem {
   date: string
 }
 
-// Sample data - replace with API call
-const sampleData: DiscountHistoryItem[] = [
-  {
-    id: '1',
-    customer: 'John Doe',
-    discount: 'User Reward',
-    value: 5.00,
-    date: '2024-03-15'
-  },
-  {
-    id: '2',
-    customer: 'Jane Smith',
-    discount: '20 discount offer for limited time',
-    value: 20.00,
-    date: '2024-03-14'
-  },
-  {
-    id: '3',
-    customer: 'Mike Johnson',
-    discount: 'First Order Discount',
-    value: 10.00,
-    date: '2024-03-14'
-  },
-  {
-    id: '4',
-    customer: 'Sarah Wilson',
-    discount: 'User Reward',
-    value: 7.50,
-    date: '2024-03-13'
-  },
-  {
-    id: '5',
-    customer: 'Chris Brown',
-    discount: 'Free Wrap',
-    value: 8.99,
-    date: '2024-03-13'
-  },
-  {
-    id: '6',
-    customer: 'Emma Davis',
-    discount: '20 discount offer for limited time',
-    value: 20.00,
-    date: '2024-03-12'
-  },
-  {
-    id: '7',
-    customer: 'Tom Wilson',
-    discount: 'Loyalty Points',
-    value: 15.00,
-    date: '2024-03-12'
-  },
-  {
-    id: '8',
-    customer: 'Lisa Anderson',
-    discount: 'First Order Discount',
-    value: 10.00,
-    date: '2024-03-11'
-  }
-]
-
 export function useDiscountHistory() {
   const [startDate, setStartDate] = useState(() => subDays(new Date(), 7))
   const [endDate, setEndDate] = useState(() => new Date())
@@ -77,46 +19,50 @@ export function useDiscountHistory() {
   const [filteredData, setFilteredData] = useState<DiscountHistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  const fetchData = async () => {
+
+  const fetchData = async (page = 1) => {
     setIsLoading(true)
     setError(null)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Filter data based on date range and type
-      const filtered = sampleData.filter(item => {
-        const itemDate = new Date(item.date)
-        const isInDateRange = itemDate >= startDate && itemDate <= endDate
-        
-        if (selectedType === 'all') return isInDateRange
-        
-        const discountTypeMap: Record<DiscountType, string> = {
-          'first-order': 'First Order Discount',
-          'loyalty': 'User Reward',
-          'limited-time': '20 discount offer for limited time',
-          'free-wrap': 'Free Wrap',
-          'all': ''
-        }
-        
-        return isInDateRange && item.discount === discountTypeMap[selectedType]
+      const response = await reportService.getDiscountHistory({
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        discountType: selectedType === 'all' ? undefined : selectedType,
+        page,
+        limit: 50
       })
       
-      setFilteredData(filtered)
+      if (response.success) {
+        setFilteredData(response.data)
+        if (response.pagination) {
+          setCurrentPage(response.pagination.currentPage)
+          setTotalPages(response.pagination.totalPages)
+        }
+      } else {
+        throw new Error('Failed to fetch discount history')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchData()
+    fetchData(1)
   }, [startDate, endDate, selectedType])
 
   const handleRefresh = () => {
-    fetchData()
+    fetchData(currentPage)
+  }
+
+  const handlePageChange = (page: number) => {
+    fetchData(page)
   }
 
   return {
@@ -126,9 +72,12 @@ export function useDiscountHistory() {
     filteredData,
     isLoading,
     error,
+    currentPage,
+    totalPages,
     setStartDate,
     setEndDate,
     setSelectedType,
-    handleRefresh
+    handleRefresh,
+    handlePageChange
   }
-} 
+}

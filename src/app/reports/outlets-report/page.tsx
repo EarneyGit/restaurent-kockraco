@@ -1,161 +1,193 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { PrinterIcon } from 'lucide-react'
-import { DatePicker } from '@/components/ui/date-picker'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { PrinterIcon, RefreshCw } from 'lucide-react'
+import { reportService } from '@/services/report.service'
+import branchService from '@/services/branch.service'
+import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
-import { format, isSameDay, isAfter, isBefore, startOfToday, endOfDay } from 'date-fns'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useAuth } from '@/contexts/auth-context'
 
-interface OutletData {
-  restaurant: string
-  acceptedOrders: number
-  acceptedTotal: number
-  rejectedOrders: number
-  rejectedTotal: number
-  date: string // Date in DD/MM/YYYY format
+interface BranchOption {
+  value: string;
+  label: string;
 }
-
-// Function to parse date string in DD/MM/YYYY format
-function parseDate(dateStr: string) {
-  const [day, month, year] = dateStr.split('/')
-  return new Date(Number(year), Number(month) - 1, Number(day))
-}
-
-// Function to filter and aggregate data by date range and restaurant
-function filterDataByDateRange(fromDate: Date, data: OutletData[]) {
-  const today = endOfDay(new Date())
-  
-  const filteredData = data.filter(item => {
-    const itemDate = parseDate(item.date)
-    return (
-      // Include if date is same as or after fromDate AND before or same as today
-      (isAfter(itemDate, fromDate) || isSameDay(itemDate, fromDate)) &&
-      (isBefore(itemDate, today) || isSameDay(itemDate, today))
-    )
-  })
-
-  // Aggregate data by restaurant
-  const restaurantMap = new Map<string, OutletData>()
-  
-  filteredData.forEach(item => {
-    const existing = restaurantMap.get(item.restaurant)
-    if (existing) {
-      restaurantMap.set(item.restaurant, {
-        restaurant: item.restaurant,
-        acceptedOrders: existing.acceptedOrders + item.acceptedOrders,
-        acceptedTotal: existing.acceptedTotal + item.acceptedTotal,
-        rejectedOrders: existing.rejectedOrders + item.rejectedOrders,
-        rejectedTotal: existing.rejectedTotal + item.rejectedTotal,
-        date: item.date
-      })
-    } else {
-      restaurantMap.set(item.restaurant, item)
-    }
-  })
-
-  return Array.from(restaurantMap.values())
-}
-
-// Sample data with dates
-const allSampleData: OutletData[] = [
-  {
-    restaurant: 'Edinburgh',
-    acceptedOrders: 2,
-    acceptedTotal: 38.96,
-    rejectedOrders: 0,
-    rejectedTotal: 0.00,
-    date: '15/05/2025'
-  },
-  {
-    restaurant: 'Edinburgh',
-    acceptedOrders: 3,
-    acceptedTotal: 52.50,
-    rejectedOrders: 1,
-    rejectedTotal: 15.99,
-    date: '14/05/2025'
-  },
-  {
-    restaurant: 'Admin user',
-    acceptedOrders: 1,
-    acceptedTotal: 26.44,
-    rejectedOrders: 0,
-    rejectedTotal: 0.00,
-    date: '15/05/2025'
-  },
-  {
-    restaurant: 'Admin user',
-    acceptedOrders: 2,
-    acceptedTotal: 45.90,
-    rejectedOrders: 1,
-    rejectedTotal: 12.99,
-    date: '14/05/2025'
-  }
-]
 
 export default function OutletsReportPage() {
-  const today = startOfToday()
-  const [selectedDate, setSelectedDate] = useState<Date>(today)
-  const [isLoading, setIsLoading] = useState(false)
-  const [data, setData] = useState<OutletData[]>(() => filterDataByDateRange(today, allSampleData))
+  const [selectedBranch, setSelectedBranch] = useState<string>('')
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('month')
+  const [branches, setBranches] = useState<BranchOption[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingBranches, setLoadingBranches] = useState(true)
 
-  const handleDateChange = async (date: Date | null) => {
-    if (!date) return
-    
-    setSelectedDate(date)
-    setIsLoading(true)
-    
+  const { user } = useAuth()
+
+  // Report data
+  const [reportData, setReportData] = useState<{
+    branch: { id: string; name: string; address: any };
+    period: { startDate: string; endDate: string };
+    summary: {
+      totalOrders: number;
+      totalSales: number;
+      averageOrderValue: number;
+      totalCustomers: number;
+    };
+    orderTypeBreakdown: Array<{
+      _id: string;
+      count: number;
+      revenue: number;
+    }>;
+    topProducts: Array<{
+      _id: string;
+      name: string;
+      quantity: number;
+      revenue: number;
+    }>;
+  } | null>(null)
+
+  // Fetch branches based on user role
+  const fetchBranches = async () => {
+    setLoadingBranches(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const filtered = filterDataByDateRange(date, allSampleData)
-      setData(filtered)
+      // If user is staff or manager, they can only see their own branch
+      if (user?.role === 'staff' || user?.role === 'manager') {
+        const myBranchResponse = await branchService.getMyBranch()
+        if (myBranchResponse.success && myBranchResponse.data) {
+          setBranches([{
+            value: myBranchResponse.data._id,
+            label: myBranchResponse.data.name
+          }])
+          setSelectedBranch(myBranchResponse.data._id)
+        }
+      } else {
+        // Admin/Superadmin can see all branches
+        const response = await branchService.getBranches()
+        if (response.success && response.data) {
+          const branchOptions = response.data.map(branch => ({
+            value: branch._id,
+            label: branch.name
+          }))
+          setBranches(branchOptions)
+          if (branchOptions.length > 0) {
+            setSelectedBranch(branchOptions[0].value)
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error fetching data:', error)
-      setData([])
+      console.error('Failed to fetch branches:', error)
+      toast.error('Failed to fetch branches. Please try again.')
     } finally {
-      setIsLoading(false)
+      setLoadingBranches(false)
     }
+  }
+
+  // Fetch report data
+  const fetchReportData = async () => {
+    if (!selectedBranch) return
+    
+    setLoading(true)
+    try {
+      const response = await reportService.getOutletReport(selectedBranch, selectedPeriod)
+      
+      if (response.success && response.data) {
+        setReportData(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch report data:', error)
+      toast.error('Failed to fetch report data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBranches()
+  }, [])
+
+  useEffect(() => {
+    if (selectedBranch) {
+      fetchReportData()
+    }
+  }, [selectedBranch, selectedPeriod])
+
+  const handleRefresh = () => {
+    fetchReportData()
   }
 
   const handlePrint = () => {
     window.print()
   }
 
-  // Calculate totals
-  const totalAcceptedOrders = data.reduce((sum, item) => sum + item.acceptedOrders, 0)
-  const totalAcceptedValue = data.reduce((sum, item) => sum + item.acceptedTotal, 0)
-  const totalRejectedOrders = data.reduce((sum, item) => sum + item.rejectedOrders, 0)
-  const totalRejectedValue = data.reduce((sum, item) => sum + item.rejectedTotal, 0)
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-medium">
-          Outlets Report: {format(selectedDate, 'dd/MM/yyyy')} - Present
-        </h1>
+        <h1 className="text-2xl font-medium">Outlets Report</h1>
         <div className="flex gap-4 items-center no-print">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">From:</span>
-            <DatePicker
-              selected={selectedDate}
-              onSelect={handleDateChange}
-              className="w-[200px]"
-            />
-          </div>
+          {loadingBranches ? (
+            <Skeleton className="h-10 w-[200px]" />
+          ) : (
+            <Select
+              value={selectedBranch}
+              onValueChange={setSelectedBranch}
+              disabled={branches.length === 1} // Disable if user can only see one branch
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map(branch => (
+                  <SelectItem key={branch.value} value={branch.value}>
+                    {branch.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select
+            value={selectedPeriod}
+            onValueChange={setSelectedPeriod}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="week">Last 7 Days</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="year">This Year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={handleRefresh} 
+            variant="outline" 
+            className="bg-white"
+            disabled={loading || !selectedBranch}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
           <Button 
             onClick={handlePrint} 
             variant="outline" 
             className="bg-white"
-            disabled={isLoading}
+            disabled={!reportData}
           >
             <PrinterIcon className="mr-2 h-4 w-4" />
             Print
@@ -163,109 +195,131 @@ export default function OutletsReportPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-4">
-          <h2 className="text-lg font-medium mb-4">Order Summary</h2>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Restaurant</TableHead>
-                  <TableHead>Accepted Orders</TableHead>
-                  <TableHead>Accepted Total</TableHead>
-                  <TableHead>Rejected/Refunded Orders</TableHead>
-                  <TableHead>Rejected/Refunded Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 2 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Skeleton className="h-5 w-[120px]" />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-5 w-[60px]" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-5 w-[80px]" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-5 w-[60px]" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-5 w-[80px]" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-gray-500">
-                      No data available for the selected date range
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data.map((item) => (
-                    <TableRow key={item.restaurant}>
-                      <TableCell>{item.restaurant}</TableCell>
-                      <TableCell>{item.acceptedOrders}</TableCell>
-                      <TableCell>£{item.acceptedTotal.toFixed(2)}</TableCell>
-                      <TableCell>{item.rejectedOrders}</TableCell>
-                      <TableCell>£{item.rejectedTotal.toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+      {reportData && (
+        <>
+          {/* Branch Info */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-medium mb-4">
+              {reportData.branch.name} - {formatDate(reportData.period.startDate)} to {formatDate(reportData.period.endDate)}
+            </h2>
+            {reportData.branch.address && (
+              <p className="text-sm text-gray-600">
+                {reportData.branch.address.street}, {reportData.branch.address.city}, {reportData.branch.address.state} {reportData.branch.address.postalCode}
+              </p>
+            )}
           </div>
-        </div>
-        <div className="border-t p-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="border rounded-md p-4">
-              <div className="text-sm text-gray-500">Accepted Orders</div>
-              {isLoading ? (
-                <div className="mt-1">
-                  <Skeleton className="h-8 w-24" />
+
+          {/* Summary */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-medium mb-4">Summary</h2>
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-32" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Total Orders</p>
+                  <p className="text-2xl font-semibold">{reportData.summary.totalOrders}</p>
                 </div>
-              ) : (
-                <div className="text-2xl mt-1">{totalAcceptedOrders}</div>
-              )}
-            </div>
-            <div className="border rounded-md p-4">
-              <div className="text-sm text-gray-500">Accepted Total</div>
-              {isLoading ? (
-                <div className="mt-1">
-                  <Skeleton className="h-8 w-24" />
+                <div>
+                  <p className="text-sm text-gray-500">Total Sales</p>
+                  <p className="text-2xl font-semibold">£{reportData.summary.totalSales.toFixed(2)}</p>
                 </div>
-              ) : (
-                <div className="text-2xl mt-1">£{totalAcceptedValue.toFixed(2)}</div>
-              )}
-            </div>
-            <div className="border rounded-md p-4">
-              <div className="text-sm text-gray-500">Rejected/Refunded Orders</div>
-              {isLoading ? (
-                <div className="mt-1">
-                  <Skeleton className="h-8 w-24" />
+                <div>
+                  <p className="text-sm text-gray-500">Average Order</p>
+                  <p className="text-2xl font-semibold">£{reportData.summary.averageOrderValue.toFixed(2)}</p>
                 </div>
-              ) : (
-                <div className="text-2xl mt-1">{totalRejectedOrders}</div>
-              )}
-            </div>
-            <div className="border rounded-md p-4">
-              <div className="text-sm text-gray-500">Rejected/Refunded Total</div>
-              {isLoading ? (
-                <div className="mt-1">
-                  <Skeleton className="h-8 w-24" />
+                <div>
+                  <p className="text-sm text-gray-500">Total Customers</p>
+                  <p className="text-2xl font-semibold">{reportData.summary.totalCustomers}</p>
                 </div>
-              ) : (
-                <div className="text-2xl mt-1">£{totalRejectedValue.toFixed(2)}</div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+
+          {/* Order Type Breakdown */}
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-medium mb-4">Order Type Breakdown</h2>
+            {loading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : reportData.orderTypeBreakdown.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Type</th>
+                      <th className="text-right py-2">Orders</th>
+                      <th className="text-right py-2">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.orderTypeBreakdown.map((type) => (
+                      <tr key={type._id} className="border-b">
+                        <td className="py-2 capitalize">{type._id}</td>
+                        <td className="text-right py-2">{type.count}</td>
+                        <td className="text-right py-2">£{type.revenue.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No order data available</p>
+            )}
+          </div>
+
+          {/* Top Products */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-medium mb-4">Top Products</h2>
+            {loading ? (
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : reportData.topProducts.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2">Product</th>
+                      <th className="text-right py-2">Quantity</th>
+                      <th className="text-right py-2">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.topProducts.map((product) => (
+                      <tr key={product._id} className="border-b">
+                        <td className="py-2">{product.name}</td>
+                        <td className="text-right py-2">{product.quantity}</td>
+                        <td className="text-right py-2">£{product.revenue.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No product data available</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {!loading && !reportData && selectedBranch && (
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <p className="text-gray-500">No report data available for the selected period</p>
         </div>
-      </div>
+      )}
     </>
   )
-} 
+}
