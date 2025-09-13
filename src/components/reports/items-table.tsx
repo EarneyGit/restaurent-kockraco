@@ -54,7 +54,7 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
 
   const salesData = data as SaleData[]
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -71,22 +71,36 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {salesData.map((sale) => (
-            <TableRow key={sale.id}>
-              <TableCell className="font-medium">{sale.id}</TableCell>
-              <TableCell className="text-gray-700">{sale.customer}</TableCell>
-              <TableCell>£{sale.value.toFixed(2)}</TableCell>
-              <TableCell>£{sale.discount.toFixed(2)}</TableCell>
-              <TableCell>£{sale.tip.toFixed(2)}</TableCell>
-              <TableCell>{sale.postcode}</TableCell>
-              <TableCell>{sale.pay}</TableCell>
-              <TableCell>{sale.type}</TableCell>
-              <TableCell>{sale.created}</TableCell>
-              <TableCell>{sale.platform}</TableCell>
-            </TableRow>
-          ))}
+          {salesData.map((sale) => {
+            // Handle discount whether it's object or 0
+            const discount =
+              typeof sale.discount === 'object'
+                ? sale.discount.discountAmount
+                : 0
+
+            return (
+              <TableRow key={sale.id}>
+                <TableCell className="font-medium">{sale.id}</TableCell>
+                <TableCell className="text-gray-700">
+                  {sale.customer}
+                </TableCell>
+                <TableCell>£{sale.value.toFixed(2)}</TableCell>
+                <TableCell>
+                  {discount > 0 ? `£${discount.toFixed(2)}` : '—'}
+                </TableCell>
+                <TableCell>
+                  {sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : '—'}
+                </TableCell>
+                <TableCell>{sale.postcode}</TableCell>
+                <TableCell>{sale.pay}</TableCell>
+                <TableCell>{sale.type}</TableCell>
+                <TableCell>{sale.created}</TableCell>
+                <TableCell>{sale.platform}</TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>
   )
-} 
+}
