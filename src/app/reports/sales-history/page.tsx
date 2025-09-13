@@ -24,7 +24,6 @@ export default function SalesHistoryPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
 
-
   // Fetch sales data
   const fetchSalesData = async (page = 1) => {
     setLoading(true)
@@ -76,8 +75,16 @@ export default function SalesHistoryPage() {
     }).replace(/\//g, '/')
   }
 
+  // Totals with discount handling
   const totalValue = salesData.reduce((sum, sale) => sum + sale.value, 0)
-  const totalDiscounts = salesData.reduce((sum, sale) => sum + sale.discount, 0)
+
+  const totalDiscounts = salesData.reduce((sum, sale) => {
+    if (typeof sale.discount === "object" && sale.discount.discountAmount) {
+      return sum + sale.discount.discountAmount
+    }
+    return sum
+  }, 0)
+
   const totalTips = salesData.reduce((sum, sale) => sum + sale.tip, 0)
 
   return (

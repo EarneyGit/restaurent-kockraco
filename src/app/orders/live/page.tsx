@@ -3,7 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Menu, X, LogOut, ChevronLeft, Mail, Phone, Clock, User, Loader2 } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogOut,
+  ChevronLeft,
+  Mail,
+  Phone,
+  Clock,
+  User,
+  Loader2,
+} from "lucide-react";
 import { BaseUrl } from "@/lib/config";
 import { useAuth } from "@/contexts/auth-context";
 import { useSocket } from "@/contexts/socket-context";
@@ -37,12 +47,14 @@ interface OrderItem {
     id: string;
   };
   quantity: number;
-  price: number | {
-    base: number;
-    currentEffectivePrice: number;
-    attributes: number;
-    total: number;
-  };
+  price:
+    | number
+    | {
+        base: number;
+        currentEffectivePrice: number;
+        attributes: number;
+        total: number;
+      };
   itemTotal?: number;
   _id: string;
   addons: any[];
@@ -65,6 +77,7 @@ interface Order {
   deliveryAddress: DeliveryAddress;
   items: OrderItem[];
   totalAmount: number;
+  finalTotal: number;
   status: "new" | "in-progress" | "complete";
   paymentMethod: string;
   paymentStatus: string;
@@ -92,7 +105,7 @@ export default function LiveOrdersPage() {
   const [orderCount, setOrderCount] = useState(0);
   const [showDelayPopup, setShowDelayPopup] = useState(false);
   const [delayingOrderId, setDelayingOrderId] = useState<string | null>(null);
-  
+
   // Order type filters
   const [showCollection, setShowCollection] = useState(true);
   const [showDelivery, setShowDelivery] = useState(true);
@@ -174,10 +187,20 @@ export default function LiveOrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const response = await api.put(`/orders/${orderId}`, { status: newStatus });
+      const response = await api.put(`/orders/${orderId}`, {
+        status: newStatus,
+      });
       const data = response.data;
       if (data.success) {
-        toast.success(`Order ${newStatus === 'processing' ? 'accepted' : newStatus === 'cancelled' ? 'rejected' : 'updated'} successfully`);
+        toast.success(
+          `Order ${
+            newStatus === "processing"
+              ? "accepted"
+              : newStatus === "cancelled"
+              ? "rejected"
+              : "updated"
+          } successfully`
+        );
         // Refresh orders list
         fetchOrders();
         // Clear selected order if it was updated
@@ -196,23 +219,23 @@ export default function LiveOrdersPage() {
 
   const handleAcceptOrder = () => {
     if (selectedOrder) {
-      updateOrderStatus(selectedOrder._id, 'processing');
+      updateOrderStatus(selectedOrder._id, "processing");
     }
   };
 
   const handleRejectOrder = () => {
     if (selectedOrder) {
-      updateOrderStatus(selectedOrder._id, 'cancelled');
+      updateOrderStatus(selectedOrder._id, "cancelled");
     }
   };
 
   const handleReadyOrder = () => {
     if (selectedOrder) {
-      updateOrderStatus(selectedOrder._id, 'completed');
+      updateOrderStatus(selectedOrder._id, "completed");
     }
   };
 
-  console.log("Hii")
+  console.log("Hii");
 
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -226,10 +249,10 @@ export default function LiveOrdersPage() {
     if (selectedOrder) {
       // Simply update the order status to cancelled
       // The backend will handle refund processing for card/online payments
-      await updateOrderStatus(selectedOrder._id, 'cancelled');
+      await updateOrderStatus(selectedOrder._id, "cancelled");
     } else {
-      toast.error('No selected order!');
-      console.log('No selectedOrder in handleCancelOrder');
+      toast.error("No selected order!");
+      console.log("No selectedOrder in handleCancelOrder");
     }
     setCancelLoading(false);
     setShowCancelPopup(false);
@@ -247,14 +270,17 @@ export default function LiveOrdersPage() {
     if (delayingOrderId) {
       try {
         // Find the order to get current estimated time
-        const orderToDelay = orders.find(order => order._id === delayingOrderId);
+        const orderToDelay = orders.find(
+          (order) => order._id === delayingOrderId
+        );
         if (orderToDelay) {
-          const newEstimatedTime = (orderToDelay.estimatedTimeToComplete || 45) + additionalMinutes;
-          
-          const response = await api.put(`/orders/${delayingOrderId}`, { 
-            estimatedTimeToComplete: newEstimatedTime 
+          const newEstimatedTime =
+            (orderToDelay.estimatedTimeToComplete || 45) + additionalMinutes;
+
+          const response = await api.put(`/orders/${delayingOrderId}`, {
+            estimatedTimeToComplete: newEstimatedTime,
           });
-          
+
           if (response.data.success) {
             toast.success(`Order delayed by ${additionalMinutes} minutes`);
             // Refresh orders list
@@ -281,16 +307,15 @@ export default function LiveOrdersPage() {
 
   // Socket event handler
   const handleOrderEvent = useCallback((message: any) => {
-    console.log('Order event received:', message);
+    console.log("Order event received:", message);
     // Simply refresh orders when any order event is received
     fetchOrders();
   }, []);
 
-  
   useEffect(() => {
     // Initial fetch
     fetchOrders();
-    
+
     // Clear selected order when changing tabs
     setSelectedOrder(null);
 
@@ -318,13 +343,13 @@ export default function LiveOrdersPage() {
   // Filter orders based on delivery method and toggle states
   const filteredOrders = orders.filter((order) => {
     if (order.status !== activeTab) return false;
-    
+
     const deliveryMethod = order.deliveryMethod?.toLowerCase();
-    
-    if (deliveryMethod === 'pickup' && !showCollection) return false;
-    if (deliveryMethod === 'delivery' && !showDelivery) return false;
-    if (deliveryMethod === 'dine_in' && !showTableOrdering) return false;
-    
+
+    if (deliveryMethod === "pickup" && !showCollection) return false;
+    if (deliveryMethod === "delivery" && !showDelivery) return false;
+    if (deliveryMethod === "dine_in" && !showTableOrdering) return false;
+
     return true;
   });
 
@@ -336,25 +361,25 @@ export default function LiveOrdersPage() {
   };
 
   const formatDetailedDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getDeliveryMethodDisplay = (method: string) => {
     switch (method?.toLowerCase()) {
-      case 'pickup':
-        return 'Collection';
-      case 'delivery':
-        return 'Delivery';
-      case 'dine_in':
-        return 'Table Ordering';
+      case "pickup":
+        return "Collection";
+      case "delivery":
+        return "Delivery";
+      case "dine_in":
+        return "Table Ordering";
       default:
-        return method || 'N/A';
+        return method || "N/A";
     }
   };
 
@@ -445,10 +470,12 @@ export default function LiveOrdersPage() {
             <span className="font-medium text-lg">Live Orders</span>
             {/* Socket connection status */}
             <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isConnected ? "bg-green-500" : "bg-red-500"
-              )}></div>
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                )}
+              ></div>
               <span className="text-xs text-gray-500">
                 {isConnected ? "Live" : "Offline"}
               </span>
@@ -463,75 +490,79 @@ export default function LiveOrdersPage() {
             >
               <LogOut className="h-4 w-4" />
             </Button>
-            
           </div>
         </header>
 
-      {/* Order Tabs */}
-      <div className="border-b bg-white">
-        <div className="flex">
-          <button
-            className={cn(
+        {/* Order Tabs */}
+        <div className="border-b bg-white">
+          <div className="flex">
+            <button
+              className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-              activeTab === "new"
+                activeTab === "new"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            )}
-            onClick={() => setActiveTab("new")}
-          >
-            New
-          </button>
-          <button
-            className={cn(
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              )}
+              onClick={() => setActiveTab("new")}
+            >
+              New
+            </button>
+            <button
+              className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-              activeTab === "in-progress"
+                activeTab === "in-progress"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            )}
-            onClick={() => setActiveTab("in-progress")}
-          >
-            In Progress
-          </button>
-          <button
-            className={cn(
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              )}
+              onClick={() => setActiveTab("in-progress")}
+            >
+              In Progress
+            </button>
+            <button
+              className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-              activeTab === "complete"
+                activeTab === "complete"
                   ? "border-emerald-500 text-emerald-600 bg-emerald-50"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            )}
-            onClick={() => setActiveTab("complete")}
-          >
-            Complete
-          </button>
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              )}
+              onClick={() => setActiveTab("complete")}
+            >
+              Complete
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Orders List */}
         <div className="flex-1 overflow-y-auto">
-        {loading ? (
-            <div className="p-4 text-center text-gray-500">Loading orders...</div>
-        ) : error ? (
-            <div className="p-4 text-center text-red-500">{error}</div>
-        ) : filteredOrders.length === 0 ? (
+          {loading ? (
             <div className="p-4 text-center text-gray-500">
-            {activeTab === "new" && "No new orders"}
-            {activeTab === "in-progress" && "No orders in progress"}
-            {activeTab === "complete" && "No completed orders"}
-          </div>
-        ) : (
+              Loading orders...
+            </div>
+          ) : error ? (
+            <div className="p-4 text-center text-red-500">{error}</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              {activeTab === "new" && "No new orders"}
+              {activeTab === "in-progress" && "No orders in progress"}
+              {activeTab === "complete" && "No completed orders"}
+            </div>
+          ) : (
             filteredOrders.map((order) => (
               <div
                 key={order._id}
                 className={cn(
                   "p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors",
-                  selectedOrder?._id === order._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  selectedOrder?._id === order._id
+                    ? "bg-blue-50 border-l-4 border-l-blue-500"
+                    : ""
                 )}
                 onClick={() => handleOrderClick(order)}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-medium text-lg mb-1">
-                      {(order.user?.firstName + " " + order.user?.lastName) || "Guest"}
+                      {order.user?.firstName + " " + order.user?.lastName ||
+                        "Guest"}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">
                       {getDeliveryMethodDisplay(order.deliveryMethod)}
@@ -559,11 +590,16 @@ export default function LiveOrdersPage() {
         <div className="bg-white border-b p-4">
           <div className="flex justify-between items-center mb-4">
             <span className="font-medium text-lg">Order Details</span>
-            <Button className="flex gap-2" variant="ghost" size="sm" onClick={() => handleNavigate("/")}>
-            Exit <X className="h-4 w-4" /> 
+            <Button
+              className="flex gap-2"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigate("/")}
+            >
+              Exit <X className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="flex gap-4 justify-center">
             <Button
               variant={showCollection ? "default" : "outline"}
@@ -571,7 +607,9 @@ export default function LiveOrdersPage() {
               onClick={() => setShowCollection(!showCollection)}
               className={cn(
                 "px-6 py-2",
-                showCollection ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                showCollection
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
               )}
             >
               Collection
@@ -582,7 +620,9 @@ export default function LiveOrdersPage() {
               onClick={() => setShowDelivery(!showDelivery)}
               className={cn(
                 "px-6 py-2",
-                showDelivery ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                showDelivery
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
               )}
             >
               Delivery
@@ -593,7 +633,9 @@ export default function LiveOrdersPage() {
               onClick={() => setShowTableOrdering(!showTableOrdering)}
               className={cn(
                 "px-6 py-2",
-                showTableOrdering ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                showTableOrdering
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
               )}
             >
               Table Ordering
@@ -612,126 +654,182 @@ export default function LiveOrdersPage() {
               {/* Order Number */}
               <div className="bg-white flex justify-between rounded-lg shadow-sm p-6 mb-4">
                 <div className="flex flex-col">
-                <h1 className="text-2xl  font-bold text-emerald-600 mb-2">
-                  Order No: {selectedOrder.orderNumber}
-                </h1>
-                
-                <div className="flex items-center gap-2 text-gray-600">
+                  <h1 className="text-2xl  font-bold text-emerald-600 mb-2">
+                    Order No: {selectedOrder.orderNumber}
+                  </h1>
+
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDetailedDate(selectedOrder.createdAt)}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDelayPopup(selectedOrder._id);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                >
                   <Clock className="h-4 w-4" />
-                  <span>{formatDetailedDate(selectedOrder.createdAt)}</span>
-                </div>
-                </div>
-                 <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDelayPopup(selectedOrder._id);
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
-                    >
-                      <Clock className="h-4 w-4" />
-                      Delay
-                    </button>
+                  Delay
+                </button>
               </div>
 
-           <div className="flex bg-white items-start justify-between">
-               {/* Delivery Type & Address */}
-               <div className=" rounded-lg shadow-sm p-6 mb-4">
-                <h2 className="text-lg font-semibold mb-3">
-                  {getDeliveryMethodDisplay(selectedOrder.deliveryMethod)}
-                </h2>
-                {selectedOrder.deliveryMethod === 'delivery' && selectedOrder.deliveryAddress && (
-                  <div className="text-gray-600">
-                    <p className="font-medium mb-1">Delivery Address</p>
-                    <p>
-                      {[
-                        selectedOrder.deliveryAddress.street,
-                        selectedOrder.deliveryAddress.city,
-                        selectedOrder.deliveryAddress.state
-                      ].filter(Boolean).join(', ')}
-                    </p>
+              <div className="flex bg-white items-start justify-between">
+                {/* Delivery Type & Address */}
+                <div className=" rounded-lg shadow-sm p-6 mb-4">
+                  <h2 className="text-lg font-semibold mb-3">
+                    {getDeliveryMethodDisplay(selectedOrder.deliveryMethod)}
+                  </h2>
+                  {selectedOrder.deliveryMethod === "delivery" &&
+                    selectedOrder.deliveryAddress && (
+                      <div className="text-gray-600">
+                        <p className="font-medium mb-1">Delivery Address</p>
+                        <p>
+                          {[
+                            selectedOrder.deliveryAddress.street,
+                            selectedOrder.deliveryAddress.city,
+                            selectedOrder.deliveryAddress.state,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    )}
+                  <div className="mt-3 text-sm text-gray-500">
+                    Payment: {selectedOrder.paymentMethod} (
+                    {selectedOrder.paymentStatus})
+                  </div>
+                </div>
+
+                {activeTab === "in-progress" && (
+                  <div className="flex gap-3 p-6 mb-4 justify-center">
+                    <Button
+                      onClick={handleReadyOrder}
+                      size="lg"
+                      className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600"
+                    >
+                      Ready
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCancelOrder}
+                      variant="outline"
+                      size="lg"
+                      className="px-6 py-3 border-red-500 text-red-500 hover:bg-red-50"
+                      disabled={cancelLoading}
+                    >
+                      {cancelLoading ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="animate-spin h-4 w-4" />{" "}
+                          Cancelling...
+                        </span>
+                      ) : (
+                        "Cancel"
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handlePrintOrder}
+                      variant="outline"
+                      size="lg"
+                      className="px-6 py-3 border-gray-500 text-gray-500 hover:bg-gray-50"
+                    >
+                      Print Order
+                    </Button>
                   </div>
                 )}
-                <div className="mt-3 text-sm text-gray-500">
-                  Payment: {selectedOrder.paymentMethod} ({selectedOrder.paymentStatus})
-                </div>
+                {/* Action Buttons */}
+                {activeTab === "new" && (
+                  <div className="flex gap-3 p-6 mb-4 justify-center">
+                    <Button
+                      onClick={handleRejectOrder}
+                      variant="outline"
+                      size="lg"
+                      className="px-8 py-3 border-red-500 text-red-500 hover:bg-red-50"
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      onClick={handleAcceptOrder}
+                      size="lg"
+                      className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600"
+                    >
+                      Accept
+                    </Button>
+                  </div>
+                )}
               </div>
-              
-              {activeTab === "in-progress" && (
-                <div className="flex gap-3 p-6 mb-4 justify-center">
-                  <Button
-                    onClick={handleReadyOrder}
-                    size="lg"
-                    className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600"
-                  >
-                    Ready
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleCancelOrder}
-                    variant="outline"
-                    size="lg"
-                    className="px-6 py-3 border-red-500 text-red-500 hover:bg-red-50"
-                    disabled={cancelLoading}
-                  >
-                    {cancelLoading ? (
-                      <span className="flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Cancelling...</span>
-                    ) : (
-                      'Cancel'
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handlePrintOrder}
-                    variant="outline"
-                    size="lg"
-                    className="px-6 py-3 border-gray-500 text-gray-500 hover:bg-gray-50"
-                  >
-                    Print Order
-                  </Button>
-                </div>
-              )}
-                        {/* Action Buttons */}
-                        {activeTab === "new" && (
-                <div className="flex gap-3 p-6 mb-4 justify-center">
-                  <Button
-                    onClick={handleRejectOrder}
-                    variant="outline"
-                    size="lg"
-                    className="px-8 py-3 border-red-500 text-red-500 hover:bg-red-50"
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    onClick={handleAcceptOrder}
-                    size="lg"
-                    className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600"
-                  >
-                    Accept
-                  </Button>
-                </div>
-              )}
-           </div>
               {/* Items */}
               <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
                 <h3 className="text-lg font-semibold mb-4">Items</h3>
                 <div className="space-y-3">
-                  {(selectedOrder.products || selectedOrder.items || []).map((item: OrderItem) => (
-                    <div key={item._id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                      <div className="flex-1">
-                        <div className="font-medium">{item.product?.name || 'Unknown Product'}</div>
+                  {(selectedOrder.products || selectedOrder.items || []).map(
+                    (item: OrderItem) => (
+                      <div
+                        key={item._id || item.id}
+                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {item.product?.name || "Unknown Product"}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-gray-600">
+                            Qty: {item.quantity}
+                          </span>
+                          <span className="font-semibold">
+                            £
+                            {typeof item.price === "number"
+                              ? (item.price * item.quantity).toFixed(2)
+                              : item.itemTotal
+                              ? item.itemTotal.toFixed(2)
+                              : (item.price.total * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-600">Qty: {item.quantity}</span>
-                        <span className="font-semibold">£{(typeof item.price === 'number' 
-                          ? (item.price * item.quantity).toFixed(2) 
-                          : item.itemTotal 
-                            ? item.itemTotal.toFixed(2) 
-                            : (item.price.total * item.quantity).toFixed(2))}</span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
+
+                  {/* Subtotal */}
                   <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                    <span className="text-base font-semibold">Subtotal</span>
+                    <span className="text-base font-semibold">
+                      £
+                      {selectedOrder?.discount?.originalTotal?.toFixed(2) ??
+                        selectedOrder?.subtotal?.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Discount if applied */}
+                  {selectedOrder?.discountApplied &&
+                    selectedOrder?.discountApplied?.discountAmount !== 0 && (
+                      <div className="flex justify-between items-center text-sm text-red-600">
+                        <span>
+                          Discount ({selectedOrder.discountApplied.name} -{" "}
+                          {selectedOrder.discountApplied.discountType ===
+                          "percentage"
+                            ? `${selectedOrder.discountApplied.discountValue}%`
+                            : `£${selectedOrder.discountApplied.discountValue}`}
+                          )
+                        </span>
+                        <span>
+                          -£
+                          {selectedOrder.discountApplied.discountAmount.toFixed(
+                            2
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Final Total */}
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-300">
                     <span className="text-lg font-bold">Total</span>
-                    <span className="text-xl font-bold text-emerald-600">£{selectedOrder.totalAmount.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-emerald-600">
+                      £
+                      {selectedOrder?.finalTotal?.toFixed(2) ??
+                        selectedOrder?.totalAmount?.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -743,7 +841,11 @@ export default function LiveOrdersPage() {
                     <User className="h-6 w-6 text-emerald-600" />
                   </div>
                   <div>
-                    <div className="font-semibold text-lg">{(selectedOrder.user?.firstName + " " + selectedOrder.user?.lastName) || 'Guest'}</div>
+                    <div className="font-semibold text-lg">
+                      {selectedOrder.user?.firstName +
+                        " " +
+                        selectedOrder.user?.lastName || "Guest"}
+                    </div>
                     {selectedOrder.user && (
                       <div className="text-sm text-gray-600 space-y-1">
                         {selectedOrder.user.email && (
@@ -763,16 +865,17 @@ export default function LiveOrdersPage() {
                   </div>
                 </div>
               </div>
-
-    
-
             </div>
           ) : (
             <div className="p-6 text-center text-gray-500">
-              <div className="text-lg mb-2">Select an order to view details</div>
-              <div className="text-sm">Choose an order from the list to see detailed information</div>
-          </div>
-        )}
+              <div className="text-lg mb-2">
+                Select an order to view details
+              </div>
+              <div className="text-sm">
+                Choose an order from the list to see detailed information
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -787,7 +890,7 @@ export default function LiveOrdersPage() {
             <p className="text-sm text-gray-500 mb-6">
               We'll notify your customer about the delay by email and SMS.
             </p>
-            
+
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[5, 10, 15, 20, 25, 30, 35, 40, 50].map((minutes) => (
                 <Button
@@ -799,7 +902,7 @@ export default function LiveOrdersPage() {
                 </Button>
               ))}
             </div>
-            
+
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
@@ -819,12 +922,25 @@ export default function LiveOrdersPage() {
       {showCancelPopup && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4 border-b border-gray-300 pb-3">Cancel this order?</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to cancel this order? This action cannot be undone.</p>
+            <h3 className="text-lg font-semibold mb-4 border-b border-gray-300 pb-3">
+              Cancel this order?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to cancel this order? This action cannot be
+              undone.
+            </p>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={cancelCancelOrder} disabled={cancelLoading}>No, Don't</Button>
+              <Button
+                variant="outline"
+                onClick={cancelCancelOrder}
+                disabled={cancelLoading}
+              >
+                No, Don't
+              </Button>
               <Button onClick={confirmCancelOrder} disabled={cancelLoading}>
-                {cancelLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
+                {cancelLoading ? (
+                  <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                ) : null}
                 Yes, Please!
               </Button>
             </div>
