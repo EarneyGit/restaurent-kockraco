@@ -332,14 +332,6 @@ export function EditItemModal({ item, categoryId, open, onClose, onSave }: EditI
       // Mark this as a regular item (not a group item)
       formData.append('isGroupItem', 'false')
 
-      // Log top-level settings being sent to the server
-      console.log("Sending top-level settings to server:", {
-        freeDelivery: Boolean(currentItem.freeDelivery),
-        collectionOnly: Boolean(currentItem.collectionOnly),
-        deleted: Boolean(currentItem.deleted),
-        hidePrice: Boolean(currentItem.hidePrice),
-        allowAddWithoutChoices: Boolean(currentItem.allowAddWithoutChoices)
-      });
 
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))

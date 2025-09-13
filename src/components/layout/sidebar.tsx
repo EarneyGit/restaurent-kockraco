@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useAuth } from '@/contexts/auth-context'
-import { 
-  LayoutDashboard, 
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import {
+  LayoutDashboard,
   ShoppingCart,
   ClipboardList,
   Settings,
@@ -21,20 +21,20 @@ import {
   CircleDollarSign,
   Utensils,
   Clock,
-  BuildingIcon
-} from "lucide-react"
+  BuildingIcon,
+} from "lucide-react";
 
 function Sidebar() {
-  const pathname = usePathname()
-  const { user } = useAuth()
-  
+  const pathname = usePathname() || "";
+  const { user } = useAuth();
+
   const [expandedMenus, setExpandedMenus] = useState({
     orders: false,
     menus: false,
     marketing: false,
     settings: false,
     help: false,
-    branches: false
+    branches: false,
   });
 
   type MenuKey = keyof typeof expandedMenus;
@@ -45,17 +45,18 @@ function Sidebar() {
       acc[key as MenuKey] = false;
       return acc;
     }, {} as Record<MenuKey, boolean>);
-    
+
     // If the menu is already open, just close it (like a toggle)
     // If it's closed, open it while keeping others closed
     setExpandedMenus({
       ...allClosed,
-      [menu]: !expandedMenus[menu]
+      [menu]: !expandedMenus[menu],
     });
   };
 
   // Check if user is superadmin
-  const isSuperAdmin = user?.role === 'superadmin' || user?.roleDetails?.slug === 'superadmin'
+  const isSuperAdmin =
+    user?.role === "superadmin" || user?.roleDetails?.slug === "superadmin";
 
   return (
     <div className="flex flex-col h-full bg-[#121831] text-white">
@@ -63,8 +64,21 @@ function Sidebar() {
       <div className="py-4 px-4 border-b border-blue-900 flex justify-start items-center">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-2">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+                fill="white"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
           <span className="text-lg font-semibold text-white">Restroman UK</span>
@@ -76,7 +90,9 @@ function Sidebar() {
           <Link
             href="/"
             className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-              pathname === "/" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+              pathname === "/"
+                ? "bg-blue-900 bg-opacity-30"
+                : "hover:bg-blue-900 hover:bg-opacity-20"
             }`}
           >
             <LayoutDashboard className="mr-3 h-5 w-5" />
@@ -86,12 +102,16 @@ function Sidebar() {
           {/* Orders */}
           <div>
             <button
-              onClick={() => toggleMenu('orders')}
+              onClick={() => toggleMenu("orders")}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
             >
               <Bell className="mr-3 h-5 w-5" />
               Orders
-              <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.orders ? 'transform rotate-180' : ''}`} />
+              <ChevronDown
+                className={`ml-auto h-5 w-5 transition-transform ${
+                  expandedMenus.orders ? "transform rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expandedMenus.orders && (
@@ -109,12 +129,16 @@ function Sidebar() {
           {/* Menus */}
           <div>
             <button
-              onClick={() => toggleMenu('menus')}
+              onClick={() => toggleMenu("menus")}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
             >
               <ClipboardList className="mr-3 h-5 w-5" />
               Menus
-              <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.menus ? 'transform rotate-180' : ''}`} />
+              <ChevronDown
+                className={`ml-auto h-5 w-5 transition-transform ${
+                  expandedMenus.menus ? "transform rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expandedMenus.menus && (
@@ -139,31 +163,39 @@ function Sidebar() {
                 </Link>
               </div>
             )}
-        </div>
+          </div>
 
           {/* Reports */}
-            <Link
+          <Link
             href="/reports"
             className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-              pathname === "/reports" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+              pathname === "/reports"
+                ? "bg-blue-900 bg-opacity-30"
+                : "hover:bg-blue-900 hover:bg-opacity-20"
             }`}
-            >
+          >
             <BarChart className="mr-3 h-5 w-5" />
             Reports
-            </Link>
+          </Link>
 
           {/* Branch Management - Only for SuperAdmin */}
           {isSuperAdmin && (
             <div>
               <button
-                onClick={() => toggleMenu('branches')}
+                onClick={() => toggleMenu("branches")}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  pathname.startsWith('/branches') ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                  pathname.startsWith("/branches")
+                    ? "bg-blue-900 bg-opacity-30"
+                    : "hover:bg-blue-900 hover:bg-opacity-20"
                 }`}
               >
                 <BuildingIcon className="mr-3 h-5 w-5" />
                 Branch Management
-                <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.branches ? 'transform rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`ml-auto h-5 w-5 transition-transform ${
+                    expandedMenus.branches ? "transform rotate-180" : ""
+                  }`}
+                />
               </button>
 
               {expandedMenus.branches && (
@@ -171,7 +203,9 @@ function Sidebar() {
                   <Link
                     href="/branches"
                     className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                      pathname === "/branches" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                      pathname === "/branches"
+                        ? "bg-blue-900 bg-opacity-30"
+                        : "hover:bg-blue-900 hover:bg-opacity-20"
                     }`}
                   >
                     All Branches
@@ -179,7 +213,9 @@ function Sidebar() {
                   <Link
                     href="/branches/settings"
                     className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                      pathname === "/branches/settings" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                      pathname === "/branches/settings"
+                        ? "bg-blue-900 bg-opacity-30"
+                        : "hover:bg-blue-900 hover:bg-opacity-20"
                     }`}
                   >
                     Branch Settings
@@ -187,7 +223,9 @@ function Sidebar() {
                   <Link
                     href="/branches/analytics"
                     className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                      pathname === "/branches/analytics" ? "bg-blue-900 bg-opacity-30" : "hover:bg-blue-900 hover:bg-opacity-20"
+                      pathname === "/branches/analytics"
+                        ? "bg-blue-900 bg-opacity-30"
+                        : "hover:bg-blue-900 hover:bg-opacity-20"
                     }`}
                   >
                     Branch Analytics
@@ -200,12 +238,16 @@ function Sidebar() {
           {/* Marketing */}
           <div>
             <button
-              onClick={() => toggleMenu('marketing')}
+              onClick={() => toggleMenu("marketing")}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
             >
               <MessageSquare className="mr-3 h-5 w-5" />
               Marketing
-              <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.marketing ? 'transform rotate-180' : ''}`} />
+              <ChevronDown
+                className={`ml-auto h-5 w-5 transition-transform ${
+                  expandedMenus.marketing ? "transform rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expandedMenus.marketing && (
@@ -237,7 +279,7 @@ function Sidebar() {
                 <Link
                   href="/marketing/business-offers"
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
-            >
+                >
                   Business Offers
                 </Link>
                 <Link
@@ -248,17 +290,21 @@ function Sidebar() {
                 </Link>
               </div>
             )}
-        </div>
+          </div>
 
           {/* Settings */}
           <div>
             <button
-              onClick={() => toggleMenu('settings')}
+              onClick={() => toggleMenu("settings")}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
             >
               <Settings className="mr-3 h-5 w-5" />
               Settings
-              <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.settings ? 'transform rotate-180' : ''}`} />
+              <ChevronDown
+                className={`ml-auto h-5 w-5 transition-transform ${
+                  expandedMenus.settings ? "transform rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expandedMenus.settings && (
@@ -306,12 +352,16 @@ function Sidebar() {
           {/* Help */}
           <div>
             <button
-              onClick={() => toggleMenu('help')}
+              onClick={() => toggleMenu("help")}
               className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
             >
               <HelpCircle className="mr-3 h-5 w-5" />
               Help
-              <ChevronDown className={`ml-auto h-5 w-5 transition-transform ${expandedMenus.help ? 'transform rotate-180' : ''}`} />
+              <ChevronDown
+                className={`ml-auto h-5 w-5 transition-transform ${
+                  expandedMenus.help ? "transform rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expandedMenus.help && (
@@ -328,7 +378,7 @@ function Sidebar() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Sidebar 
+export default Sidebar;
