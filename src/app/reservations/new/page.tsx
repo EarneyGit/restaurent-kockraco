@@ -32,7 +32,6 @@ export default function NewReservationPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Here you would typically send the data to your API
-    console.log("Form submitted:", formData)
     // Redirect or show success message
   }
 

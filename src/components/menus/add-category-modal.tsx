@@ -131,16 +131,13 @@ export function AddCategoryModal({
           formDataObject[key] = value;
         }
       });
-      console.log("Form data being sent:", formDataObject);
 
-      console.log("Making API call to create category...");
       const response = await api.post("/categories", formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log("API response received:", response.data);
 
       if (response.data.success) {
         // Transform the response data to match the Category type
@@ -152,7 +149,6 @@ export function AddCategoryModal({
             response.data.data.availability || formData.availability,
           printers: response.data.data.printers || formData.printers,
         };
-        console.log("Category created successfully:", newCategory);
         onAdd(newCategory);
         await onSuccess();
         resetForm();

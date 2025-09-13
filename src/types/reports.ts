@@ -1,8 +1,14 @@
+export interface DiscountObject {
+  discountAmount: number
+  discountType: "percentage" | "fixed"
+  discountValue: number
+}
+
 export interface SaleData {
   id: string
   customer: string
   value: number
-  discount: number
+  discount: number | DiscountObject // can be a number (like 0) or an object
   tip: number
   postcode: string
   pay: 'Card' | 'Cash'

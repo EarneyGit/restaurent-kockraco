@@ -5,14 +5,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { ItemSaleData, SaleData } from '@/types/reports'
-import { Skeleton } from '@/components/ui/skeleton'
+} from "@/components/ui/table";
+import { ItemSaleData, SaleData } from "@/types/reports";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ItemsTableProps {
-  data: ItemSaleData[] | SaleData[]
-  type: 'items' | 'sales'
-  isLoading?: boolean
+  data: ItemSaleData[] | SaleData[];
+  type: "items" | "sales";
+  isLoading?: boolean;
 }
 
 export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
@@ -23,11 +23,11 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
           <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
-    )
+    );
   }
 
-  if (type === 'items') {
-    const itemsData = data as ItemSaleData[]
+  if (type === "items") {
+    const itemsData = data as ItemSaleData[];
     return (
       <div className="rounded-md border">
         <Table>
@@ -49,10 +49,10 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
           </TableBody>
         </Table>
       </div>
-    )
+    );
   }
 
-  const salesData = data as SaleData[]
+  const salesData = data as SaleData[];
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
@@ -72,24 +72,20 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
         </TableHeader>
         <TableBody>
           {salesData.map((sale) => {
-            // Handle discount whether it's object or 0
             const discount =
-              typeof sale.discount === 'object'
+              typeof sale.discount === "object"
                 ? sale.discount.discountAmount
-                : 0
-
+                : sale.discount || 0;
             return (
               <TableRow key={sale.id}>
                 <TableCell className="font-medium">{sale.id}</TableCell>
-                <TableCell className="text-gray-700">
-                  {sale.customer}
-                </TableCell>
+                <TableCell className="text-gray-700">{sale.customer}</TableCell>
                 <TableCell>£{sale.value.toFixed(2)}</TableCell>
                 <TableCell>
-                  {discount > 0 ? `£${discount.toFixed(2)}` : '—'}
+                  {discount > 0 ? `£${discount.toFixed(2)}` : "—"}
                 </TableCell>
                 <TableCell>
-                  {sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : '—'}
+                  {sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : "—"}
                 </TableCell>
                 <TableCell>{sale.postcode}</TableCell>
                 <TableCell>{sale.pay}</TableCell>
@@ -97,10 +93,10 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 <TableCell>{sale.created}</TableCell>
                 <TableCell>{sale.platform}</TableCell>
               </TableRow>
-            )
+            );
           })}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

@@ -36,7 +36,6 @@ export default function BranchGalleries() {
 
   const deleteSelected = () => {
     // In a real application, this would delete the selected images
-    console.log("Deleting images:", selectedImages)
   }
 
   return (

@@ -227,10 +227,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
             // When editing, include all items except the current one to avoid circular references
             items.filter(menuItem => menuItem.id !== currentItemId) : 
             items;
-            
-          console.log("Menu items fetched:", filteredItems);
-          console.log("Current selectedItems:", currentItem.selectedItems);
-          
+                      
           setMenuItems(filteredItems);
         } else {
           throw new Error(data.message || 'Failed to fetch products');
@@ -275,19 +272,6 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         useProductPrices: Boolean(item.itemSettings?.useProductPrices),
         showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
       };
-      
-      console.log("Raw itemSettings from API:", item.itemSettings);
-      console.log("Processed itemSettings:", itemSettings);
-      
-      // Log top-level settings to debug
-      console.log("Top-level settings from API:", {
-        tillProviderProductId: item.tillProviderProductId,
-        cssClass: item.cssClass,
-        freeDelivery: item.freeDelivery,
-        collectionOnly: item.collectionOnly,
-        deleted: item.deleted,
-        hidePrice: item.hidePrice
-      });
       
       setCurrentItem({
         id: item.id,
@@ -381,15 +365,6 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       // Mark this as a group item
       formData.append('isGroupItem', 'true')
 
-      // Log top-level settings being sent to the server
-      console.log("Sending top-level settings to server:", {
-        freeDelivery: Boolean(currentItem.freeDelivery),
-        collectionOnly: Boolean(currentItem.collectionOnly),
-        deleted: Boolean(currentItem.deleted),
-        hidePrice: Boolean(currentItem.hidePrice),
-        allowAddWithoutChoices: Boolean(currentItem.allowAddWithoutChoices)
-      });
-
       // Add availability, allergens, and priceChanges as JSON strings
       formData.append('availability', JSON.stringify(currentItem.availability))
       formData.append('allergens', JSON.stringify(currentItem.allergens))
@@ -397,7 +372,6 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       
       // Add selectedItems and ensure itemSettings is correctly formatted
       formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []))
-      console.log("Saving itemSettings:", currentItem.itemSettings);
       formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {
         showSelectedOnly: false,
         showSelectedCategories: false,
@@ -785,9 +759,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       useProductPrices: Boolean(newSettings.useProductPrices),
       showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown)
     };
-    
-    console.log("Processed settings before state update:", processedSettings);
-    
+        
     setCurrentItem(prev => ({
       ...prev,
       itemSettings: processedSettings
@@ -796,17 +768,13 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
   
   // Memoize the onItemSelect callback to prevent infinite rerenders
   const handleItemSelect = useCallback((itemId) => {
-    console.log("Item selection triggered for:", itemId);
     setCurrentItem(prev => {
       // Ensure selectedItems is an array
       const currentSelectedItems = prev.selectedItems || [];
       
       // Check if the item is currently selected
       const isCurrentlySelected = currentSelectedItems.includes(itemId);
-      
-      console.log("Item is currently selected:", isCurrentlySelected);
-      console.log("Current selected items:", currentSelectedItems);
-      
+            
       let newSelectedItems;
       
       if (isCurrentlySelected) {

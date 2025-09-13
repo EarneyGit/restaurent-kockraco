@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { SaleData } from '@/types/reports'
+import { SaleData, DiscountObject } from '@/types/reports'
 
 interface ReportsTableProps {
   data: SaleData[]
@@ -14,13 +14,13 @@ interface ReportsTableProps {
 
 export function ReportsTable({ data }: ReportsTableProps) {
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Order Number</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>value</TableHead>
+            <TableHead>Value</TableHead>
             <TableHead>Discount</TableHead>
             <TableHead>Tip</TableHead>
             <TableHead>Postcode</TableHead>
@@ -31,22 +31,29 @@ export function ReportsTable({ data }: ReportsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((sale) => (
-            <TableRow key={sale.id}>
-              <TableCell className="text-blue-600">{sale.id}</TableCell>
-              <TableCell>{sale.customer}</TableCell>
-              <TableCell>£{sale.value.toFixed(2)}</TableCell>
-              <TableCell>£{sale.discount.toFixed(2)}</TableCell>
-              <TableCell>£{sale.tip.toFixed(2)}</TableCell>
-              <TableCell>{sale.postcode}</TableCell>
-              <TableCell>{sale.pay}</TableCell>
-              <TableCell>{sale.type}</TableCell>
-              <TableCell>{sale.created}</TableCell>
-              <TableCell>{sale.platform}</TableCell>
-            </TableRow>
-          ))}
+          {data.map((sale) => {
+            const discount: number =
+              typeof sale.discount === 'object'
+                ? sale.discount.discountAmount
+                : sale.discount || 0
+
+            return (
+              <TableRow key={sale.id}>
+                <TableCell className="text-blue-600">{sale.id}</TableCell>
+                <TableCell>{sale.customer}</TableCell>
+                <TableCell>£{sale.value.toFixed(2)}</TableCell>
+                <TableCell>{discount > 0 ? `£${discount.toFixed(2)}` : '—'}</TableCell>
+                <TableCell>{sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : '—'}</TableCell>
+                <TableCell>{sale.postcode}</TableCell>
+                <TableCell>{sale.pay}</TableCell>
+                <TableCell>{sale.type}</TableCell>
+                <TableCell>{sale.created}</TableCell>
+                <TableCell>{sale.platform}</TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>
   )
-} 
+}

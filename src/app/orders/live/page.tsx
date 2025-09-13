@@ -56,6 +56,7 @@ interface OrderItem {
         total: number;
       };
   itemTotal?: number;
+  id: string;
   _id: string;
   addons: any[];
 }
@@ -69,6 +70,17 @@ interface User {
   id: string;
 }
 
+interface DiscountApplied {
+  name: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+}
+
+interface Discount {
+  originalTotal: number;
+}
+
 interface Order {
   products: OrderItem[] | undefined;
   _id: string;
@@ -78,6 +90,9 @@ interface Order {
   items: OrderItem[];
   totalAmount: number;
   finalTotal: number;
+  subtotal?: number;
+  discount?: Discount;
+  discountApplied?: DiscountApplied;
   status: "new" | "in-progress" | "complete";
   paymentMethod: string;
   paymentStatus: string;
@@ -235,7 +250,6 @@ export default function LiveOrdersPage() {
     }
   };
 
-  console.log("Hii");
 
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -252,7 +266,6 @@ export default function LiveOrdersPage() {
       await updateOrderStatus(selectedOrder._id, "cancelled");
     } else {
       toast.error("No selected order!");
-      console.log("No selectedOrder in handleCancelOrder");
     }
     setCancelLoading(false);
     setShowCancelPopup(false);
@@ -307,7 +320,6 @@ export default function LiveOrdersPage() {
 
   // Socket event handler
   const handleOrderEvent = useCallback((message: any) => {
-    console.log("Order event received:", message);
     // Simply refresh orders when any order event is received
     fetchOrders();
   }, []);
@@ -766,7 +778,7 @@ export default function LiveOrdersPage() {
                   {(selectedOrder.products || selectedOrder.items || []).map(
                     (item: OrderItem) => (
                       <div
-                        key={item._id || item.id}
+                        key={item._id || item?.id}
                         className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
                       >
                         <div className="flex-1">
