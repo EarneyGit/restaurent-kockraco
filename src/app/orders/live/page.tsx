@@ -323,6 +323,7 @@ export default function LiveOrdersPage() {
     // play sound
     console.log("Order event received:", message);
     if (message?.event === "order_created") {
+      toast.success("New order received!");
       const audio = new Audio("/school-bell-1.mp3");
       audio.play();
     }
