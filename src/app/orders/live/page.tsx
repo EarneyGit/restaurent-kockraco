@@ -322,8 +322,10 @@ export default function LiveOrdersPage() {
     // Simply refresh orders when any order event is received
     // play sound
     console.log("Order event received:", message);
-    const audio = new Audio("/school-bell-1.mp3");
-    audio.play();
+    if (message?.event === "order_created") {
+      const audio = new Audio("/school-bell-1.mp3");
+      audio.play();
+    }
     fetchOrders();
   }, []);
 
