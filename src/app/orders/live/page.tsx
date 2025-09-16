@@ -407,6 +407,21 @@ export default function LiveOrdersPage() {
     return items.reduce((acc, item) => acc + (item?.quantity || 0), 0);
   };
 
+  // Helper functions to calculate order counts for each status
+  const getOrderCounts = () => {
+    const newCount = orders.filter((order) => order.status === "new").length;
+    const inProgressCount = orders.filter(
+      (order) => order.status === "in-progress"
+    ).length;
+    const completeCount = orders.filter(
+      (order) => order.status === "complete"
+    ).length;
+
+    return { newCount, inProgressCount, completeCount };
+  };
+
+  const { newCount, inProgressCount, completeCount } = getOrderCounts();
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar Menu */}
@@ -523,7 +538,7 @@ export default function LiveOrdersPage() {
               )}
               onClick={() => setActiveTab("new")}
             >
-              New
+              New ({newCount})
             </button>
             <button
               className={cn(
@@ -534,7 +549,7 @@ export default function LiveOrdersPage() {
               )}
               onClick={() => setActiveTab("in-progress")}
             >
-              In Progress
+              In Progress ({inProgressCount})
             </button>
             <button
               className={cn(
@@ -545,7 +560,7 @@ export default function LiveOrdersPage() {
               )}
               onClick={() => setActiveTab("complete")}
             >
-              Complete
+              Complete ({completeCount})
             </button>
           </div>
         </div>
