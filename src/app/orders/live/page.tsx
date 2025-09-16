@@ -250,7 +250,6 @@ export default function LiveOrdersPage() {
     }
   };
 
-
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
 
@@ -321,6 +320,10 @@ export default function LiveOrdersPage() {
   // Socket event handler
   const handleOrderEvent = useCallback((message: any) => {
     // Simply refresh orders when any order event is received
+    // play sound
+    console.log("Order event received:", message);
+    const audio = new Audio("./school-bell-1.mp3");
+    audio.play();
     fetchOrders();
   }, []);
 
