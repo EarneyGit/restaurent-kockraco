@@ -113,6 +113,7 @@ export default function LiveOrdersPage() {
     "new" | "in-progress" | "complete"
   >("new");
   const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]); // Store all orders for counting
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -140,6 +141,31 @@ export default function LiveOrdersPage() {
     }
   };
 
+  // Fetch all orders for counting
+  const fetchAllOrders = async () => {
+    try {
+      const response = await api.get("/orders?today=true");
+      const data = response.data;
+      if (data.success) {
+        // Map API status to UI status
+        const mappedOrders = data.data.map((order: any) => ({
+          ...order,
+          status:
+            order.status === "pending"
+              ? "new"
+              : order.status === "processing"
+              ? "in-progress"
+              : order.status === "completed"
+              ? "complete"
+              : order.status,
+        }));
+        setAllOrders(mappedOrders);
+      }
+    } catch (err) {
+      console.error("Error fetching all orders:", err);
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -161,7 +187,7 @@ export default function LiveOrdersPage() {
           apiStatus = "pending";
       }
 
-      const response = await api.get(`/orders?status=${apiStatus}`);
+      const response = await api.get(`/orders?status=${apiStatus}&today=true`);
       const data = response.data;
       if (data.success) {
         // Map API status back to UI status
@@ -218,6 +244,7 @@ export default function LiveOrdersPage() {
         );
         // Refresh orders list
         fetchOrders();
+        fetchAllOrders(); // Also refresh all orders for counting
         // Clear selected order if it was updated
         setSelectedOrder(null);
       } else {
@@ -297,6 +324,7 @@ export default function LiveOrdersPage() {
             toast.success(`Order delayed by ${additionalMinutes} minutes`);
             // Refresh orders list
             fetchOrders();
+            fetchAllOrders(); // Also refresh all orders for counting
             if (selectedOrder && selectedOrder._id === delayingOrderId) {
               fetchOrderDetails(delayingOrderId, selectedOrder.branchId._id);
             }
@@ -318,21 +346,26 @@ export default function LiveOrdersPage() {
   };
 
   // Socket event handler
-  const handleOrderEvent = useCallback((message: any) => {
-    // Simply refresh orders when any order event is received
-    // play sound
-    console.log("Order event received:", message);
-    if (message?.event === "order_created") {
-      toast.success("New order received!");
-      const audio = new Audio("/school-bell-1.mp3");
-      audio.play();
-    }
-    fetchOrders();
-  }, []);
+  const handleOrderEvent = useCallback(
+    (message: any) => {
+      // Simply refresh orders when any order event is received
+      // play sound
+      console.log("Order event received:", message);
+      if (message?.event === "order_created") {
+        toast.success("New order received!");
+        const audio = new Audio("/school-bell-1.mp3");
+        audio.play();
+      }
+      fetchOrders();
+      fetchAllOrders(); // Also fetch all orders for counting
+    },
+    [activeTab]
+  );
 
   useEffect(() => {
     // Initial fetch
     fetchOrders();
+    fetchAllOrders(); // Fetch all orders for counting
 
     // Clear selected order when changing tabs
     setSelectedOrder(null);
@@ -409,11 +442,11 @@ export default function LiveOrdersPage() {
 
   // Helper functions to calculate order counts for each status
   const getOrderCounts = () => {
-    const newCount = orders.filter((order) => order.status === "new").length;
-    const inProgressCount = orders.filter(
+    const newCount = allOrders.filter((order) => order.status === "new").length;
+    const inProgressCount = allOrders.filter(
       (order) => order.status === "in-progress"
     ).length;
-    const completeCount = orders.filter(
+    const completeCount = allOrders.filter(
       (order) => order.status === "complete"
     ).length;
 
