@@ -1382,10 +1382,10 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <div key={day} className="space-y-4 border-b pb-4 last:border-b-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <StableSwitch
+                      {/* <StableSwitch
                         checked={dayAvailability?.isAvailable ?? false}
                         onCheckedChange={callbacksRef.current.days[day]}
-                      />
+                      /> */}
                       <Label className="capitalize">{day}</Label>
                     </div>
                     <select
