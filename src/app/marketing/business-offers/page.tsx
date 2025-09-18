@@ -83,7 +83,7 @@ export default function BusinessOffersPage() {
       fetchOffers(); // Refresh the list
     } catch (err: any) {
       console.error("Error saving business offer:", err);
-      alert("Failed to save business offer: " + err.message);
+      setError("Failed to save business offer: " + (err.message || "Unknown error"));
     }
   };
 

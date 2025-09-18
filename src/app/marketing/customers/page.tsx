@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import { customerService, CustomerSimple, CustomerResponse } from '@/services/customer.service'
+import { useAuth } from '@/contexts/auth-context'
 
 interface SearchFilters {
-  userId: string
   firstName: string
   lastName: string
   email: string
@@ -14,10 +14,10 @@ interface SearchFilters {
 }
 
 export default function CustomersPage() {
+  const { user } = useAuth()
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
   const [filters, setFilters] = useState<SearchFilters>({
-    userId: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -31,6 +31,11 @@ export default function CustomersPage() {
   const [error, setError] = useState<string | null>(null)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCustomers, setTotalCustomers] = useState(0)
+  
+  // State for customer details modal
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerSimple | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalLoading, setModalLoading] = useState(false)
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -40,12 +45,12 @@ export default function CustomersPage() {
       
       const response: CustomerResponse = await customerService.getFilteredCustomers(
         {
-          userId: filters.userId || undefined,
           firstName: filters.firstName || undefined,
           lastName: filters.lastName || undefined,
           email: filters.email || undefined,
           mobile: filters.mobile || undefined,
           postcode: filters.postcode || undefined,
+          branchId: user?.branchId || undefined,
         },
         currentPage,
         itemsPerPage,
@@ -67,8 +72,10 @@ export default function CustomersPage() {
 
   // Fetch customers when component mounts or dependencies change
   useEffect(() => {
-    fetchCustomers()
-  }, [currentPage, itemsPerPage])
+    if (user?.branchId) {
+      fetchCustomers()
+    }
+  }, [currentPage, itemsPerPage, user?.branchId])
 
   // Handle search
   const handleSearch = () => {
@@ -86,49 +93,50 @@ export default function CustomersPage() {
   // Handle customer details view
   const handleViewDetails = async (customerId: string) => {
     try {
+      setModalLoading(true)
       const response = await customerService.getCustomerDetails(customerId)
-      // You can implement a modal or navigate to a details page here
-      console.log('Customer details:', response.data)
-      // For now, just log the details
-      alert(`Customer Details:\nName: ${customerService.formatCustomerName(response.data)}\nEmail: ${response.data.email}\nTotal Orders: ${response.data.totalOrders}\nTotal Spent: ${customerService.formatCurrency(response.data.totalSpent)}`)
+      setSelectedCustomer(response.data)
+      setIsModalOpen(true)
     } catch (err: any) {
       console.error('Error fetching customer details:', err)
-      alert('Failed to fetch customer details')
+      setError('Failed to fetch customer details')
+    } finally {
+      setModalLoading(false)
     }
+  }
+
+  // Close modal
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedCustomer(null)
   }
 
   return (
     <PageLayout>
       {/* Header */}
-      <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
+      <header className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-8 py-3 border-b bg-white gap-4">
         <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <h1 className="text-lg sm:text-xl font-medium text-center">Admin user</h1>
         <div className="flex justify-end flex-1">
           <button 
             onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
-            className="flex items-center text-gray-700 font-medium"
+            className="flex items-center text-gray-700 font-medium text-sm sm:text-base"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
               <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
             </svg>
-            View Your Store
+            <span className="hidden sm:inline">View Your Store</span>
+            <span className="sm:hidden">Store</span>
           </button>
         </div>
       </header>
       
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <h1 className="text-2xl font-medium mb-6">Customers</h1>
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <h1 className="text-xl sm:text-2xl font-medium mb-4 sm:mb-6">Customers</h1>
         
         {/* Search Filters */}
-        <div className="grid grid-cols-6 gap-4 mb-6">
-          <input 
-            type="text" 
-            placeholder="User Id" 
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            value={filters.userId}
-            onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <input 
             type="text" 
             placeholder="First name" 
@@ -202,7 +210,6 @@ export default function CustomersPage() {
                 <button 
                   onClick={() => {
                     setFilters({
-                      userId: '',
                       firstName: '',
                       lastName: '',
                       email: '',
@@ -219,72 +226,91 @@ export default function CustomersPage() {
               )}
             </div>
           ) : (
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-500">
-                <th className="px-6 py-3">Firstname</th>
-                <th className="px-6 py-3">Lastname</th>
-                <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Mobile</th>
-                <th className="px-6 py-3">Address</th>
-                <th className="px-6 py-3">Postcode</th>
-                  <th className="px-6 py-3">Orders</th>
-                  <th className="px-6 py-3">Total Spent</th>
-                  <th className="px-6 py-3">Type</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-                {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-sm">{customer.firstName || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.lastName || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm text-gray-500">{customer.email || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.mobile || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.address || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">{customer.postcode || 'N/A'}</td>
-                    <td className="px-6 py-3 text-sm">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        {customer.totalOrders}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-sm font-medium">
-                      {customerService.formatCurrency(customer.totalSpent)}
-                    </td>
-                    <td className="px-6 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${customerService.getCustomerTypeBadgeColor(customer.customerType)}`}>
-                        {customer.customerType}
-                      </span>
-                    </td>
-                  <td className="px-6 py-3 text-sm">
-                      <button 
-                        className="text-teal-500 hover:text-teal-700"
-                        onClick={() => handleViewDetails(customer.id)}
-                      >
-                      Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-50 text-left text-sm text-gray-500">
+                    <th className="px-3 sm:px-6 py-3">Name</th>
+                    <th className="px-3 sm:px-6 py-3 hidden sm:table-cell">Email</th>
+                    <th className="px-3 sm:px-6 py-3 hidden md:table-cell">Mobile</th>
+                    <th className="px-3 sm:px-6 py-3 hidden lg:table-cell">Address</th>
+                    <th className="px-3 sm:px-6 py-3">Orders</th>
+                    <th className="px-3 sm:px-6 py-3">Total Spent</th>
+                    <th className="px-3 sm:px-6 py-3 hidden md:table-cell">Type</th>
+                    <th className="px-3 sm:px-6 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
+                      <td className="px-3 sm:px-6 py-3 text-sm">
+                        <div className="font-medium text-gray-900">
+                          {customer.firstName || 'N/A'} {customer.lastName || 'N/A'}
+                        </div>
+                        <div className="text-gray-500 sm:hidden">
+                          {customer.email || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm text-gray-500 hidden sm:table-cell">
+                        {customer.email || 'N/A'}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm hidden md:table-cell">
+                        {customer.mobile || 'N/A'}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm hidden lg:table-cell">
+                        <div className="max-w-xs truncate" title={customer.address || 'N/A'}>
+                          {customer.address || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                          {customer.totalOrders}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm font-medium">
+                        {customerService.formatCurrency(customer.totalSpent)}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm hidden md:table-cell">
+                        <span className={`px-2 py-1 rounded-full text-xs ${customerService.getCustomerTypeBadgeColor(customer.customerType)}`}>
+                          {customer.customerType}
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-sm">
+                        <button 
+                          className="text-teal-500 hover:text-teal-700 font-medium"
+                          onClick={() => handleViewDetails(customer.id)}
+                          disabled={modalLoading}
+                        >
+                          {modalLoading ? 'Loading...' : 'Details'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
         
-        {/* Pagination Controls - Bottom Only */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        {/* Pagination Controls - Responsive */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span>Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalCustomers)} of {totalCustomers} customers</span>
+          </div>
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
+              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1 || loading}
+              title="First page"
             >
               &lt;&lt;
             </button>
             <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
+              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || loading}
+              title="Previous page"
             >
               &lt;
             </button>
@@ -298,7 +324,7 @@ export default function CustomersPage() {
                 <option key={i + 1} value={i + 1}>{i + 1}</option>
               ))}
             </select>
-            <span className="text-sm">of {totalPages}</span>
+            <span className="text-sm text-gray-600">of {totalPages}</span>
             <select 
               className="border rounded-md px-2 py-1 text-sm"
               value={itemsPerPage}
@@ -309,24 +335,156 @@ export default function CustomersPage() {
               <option value="50">50</option>
               <option value="100">100</option>
             </select>
-            <span className="text-sm">of {totalCustomers}</span>
             <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
+              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages || loading}
+              title="Next page"
             >
               &gt;
             </button>
             <button 
-              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50"
+              className="px-2 py-1 border rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages || loading}
+              title="Last page"
             >
               &gt;&gt;
             </button>
           </div>
         </div>
       </div>
+
+      {/* Customer Details Modal */}
+      {isModalOpen && selectedCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Customer Details</h2>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Personal Information */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Name</label>
+                      <p className="text-sm text-gray-900">
+                        {selectedCustomer.firstName || 'N/A'} {selectedCustomer.lastName || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Email</label>
+                      <p className="text-sm text-gray-900">{selectedCustomer.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Mobile</label>
+                      <p className="text-sm text-gray-900">{selectedCustomer.mobile || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Address</label>
+                      <p className="text-sm text-gray-900">{selectedCustomer.address || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Postcode</label>
+                      <p className="text-sm text-gray-900">{selectedCustomer.postcode || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Statistics */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Order Statistics</h3>
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-900">Total Orders</span>
+                        <span className="text-2xl font-bold text-blue-600">{selectedCustomer.totalOrders}</span>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-900">Total Spent</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {customerService.formatCurrency(selectedCustomer.totalSpent)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-purple-900">Average Order Value</span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {customerService.formatCurrency((selectedCustomer as any).averageOrderValue || 0)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-orange-900">Customer Type</span>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${customerService.getCustomerTypeBadgeColor(selectedCustomer.customerType)}`}>
+                          {selectedCustomer.customerType}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order History Summary */}
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Order History</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">First Order Date</label>
+                    <p className="text-sm text-gray-900">
+                      {(selectedCustomer as any).firstOrderDate 
+                        ? new Date((selectedCustomer as any).firstOrderDate).toLocaleDateString('en-GB', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                        : 'N/A'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Last Order Date</label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCustomer.lastOrderDate 
+                        ? new Date(selectedCustomer.lastOrderDate).toLocaleDateString('en-GB', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                        : 'N/A'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   )
 }

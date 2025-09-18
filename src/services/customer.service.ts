@@ -11,7 +11,9 @@ export interface CustomerSimple {
   mobile: string;
   totalOrders: number;
   totalSpent: number;
+  averageOrderValue?: number;
   lastOrderDate: string;
+  firstOrderDate?: string;
   customerType: 'Regular' | 'New';
 }
 
@@ -76,6 +78,7 @@ export interface CustomerFilters {
   postcode?: string;
   sortBy?: 'firstName' | 'email' | 'totalOrders' | 'totalSpent' | 'lastOrderDate';
   sortOrder?: 'asc' | 'desc';
+  branchId?: string;
 }
 
 export interface CustomerResponse {
@@ -199,6 +202,7 @@ class CustomerService {
       email?: string;
       mobile?: string;
       postcode?: string;
+      branchId?: string;
     },
     page: number = 1,
     limit: number = 20,
