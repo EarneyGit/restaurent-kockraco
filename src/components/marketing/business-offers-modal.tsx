@@ -53,6 +53,7 @@ export default function BusinessOffersModal({
     image: "",
     isActive: true
   })
+  const [errors, setErrors] = useState<{title?: string, content?: string}>({})
 
   useEffect(() => {
     if (offer) {
@@ -100,15 +101,38 @@ export default function BusinessOffersModal({
   }
 
   const handleSave = async () => {
-    // Convert form format to API format
-    const apiData: Partial<BusinessOffer> = {
-      ...formData,
-      startDate: formData.startDate ? formData.startDate.toISOString() : null,
-      endDate: formData.endDate ? formData.endDate.toISOString() : null,
+    // Clear previous errors
+    setErrors({})
+    
+    // Validate required fields
+    const newErrors: {title?: string, content?: string} = {}
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Please enter a title for the offer'
     }
-    await onSave(apiData)
-    onClose()
-    resetForm()
+    
+    if (!formData.content.trim()) {
+      newErrors.content = 'Please enter content for the offer'
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    
+    try {
+      // Convert form format to API format
+      const apiData: Partial<BusinessOffer> = {
+        ...formData,
+        startDate: formData.startDate ? formData.startDate.toISOString() : null,
+        endDate: formData.endDate ? formData.endDate.toISOString() : null,
+      }
+      await onSave(apiData)
+      onClose()
+      resetForm()
+    } catch (error) {
+      console.error('Error saving offer:', error)
+    }
   }
 
   return (
@@ -120,18 +144,25 @@ export default function BusinessOffersModal({
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter offer title"
+              className={errors.title ? "border-red-300" : ""}
             />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title}</p>
+            )}
           </div>
 
           <div className="grid gap-2">
-            <Label>Content</Label>
+            <Label>Content *</Label>
             <Tiptap content={formData.content} onChange={(value) => setFormData(prev => ({ ...prev, content: value }))} />
+            {errors.content && (
+              <p className="text-sm text-red-500">{errors.content}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
