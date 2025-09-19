@@ -148,7 +148,10 @@ class ServiceChargeService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        // Create a more detailed error with the actual message from backend
+        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        (error as any).response = { data: errorData };
+        throw error;
       }
 
       return await response.json();
@@ -168,7 +171,10 @@ class ServiceChargeService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        // Create a more detailed error with the actual message from backend
+        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        (error as any).response = { data: errorData };
+        throw error;
       }
 
       return await response.json();
