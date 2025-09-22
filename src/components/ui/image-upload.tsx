@@ -40,6 +40,21 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
   // If value is a string (URL), use it as preview
   const displayPreview = preview || (typeof value === 'string' ? value : null)
 
+  // Determine the correct image source
+  const getImageSrc = () => {
+    if (preview) {
+      return preview // Use local preview if available
+    }
+    if (typeof value === 'string') {
+      // Check if it's a blob URL (starts with 'blob:') or a data URL
+      if (value.startsWith('blob:') || value.startsWith('data:')) {
+        return value // Use blob URL or data URL directly
+      }
+      return `${BaseUrl}${value}` // Prepend BaseUrl for server URLs
+    }
+    return null
+  }
+
   return (
     <div className="space-y-4 w-full">
       <div
@@ -55,7 +70,7 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
         {displayPreview ? (
           <>
             <img
-              src={typeof value === 'string' ? `${BaseUrl}${value}` : displayPreview}
+              src={getImageSrc()}
               alt="Uploaded"
               className="max-h-[140px] object-contain"
             />

@@ -145,19 +145,35 @@ export function EditCategoryModal({
 
   const handleImageChange = (file: File) => {
     setImageFile(file)
+    // Create a blob URL for immediate preview
+    const blobUrl = URL.createObjectURL(file)
     setFormData(prev => ({
       ...prev,
-      imageUrl: URL.createObjectURL(file)
+      imageUrl: blobUrl
     }))
   }
 
   const handleImageRemove = () => {
+    // Clean up the blob URL to prevent memory leaks
+    if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.imageUrl)
+    }
     setImageFile(undefined)
     setFormData(prev => ({
       ...prev,
       imageUrl: ''
     }))
   }
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clean up blob URLs when component unmounts or when imageUrl changes
+      if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.imageUrl)
+      }
+    }
+  }, [formData.imageUrl])
 
   const handleSave = async () => {
     if (!formData.name?.trim()) {
@@ -276,8 +292,17 @@ export function EditCategoryModal({
     }))
   }
 
+  // Handle modal close with cleanup
+  const handleClose = () => {
+    // Clean up blob URL if it exists
+    if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.imageUrl)
+    }
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Edit Category</DialogTitle>
@@ -413,7 +438,7 @@ export function EditCategoryModal({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!formData.name?.trim() || isLoading}>

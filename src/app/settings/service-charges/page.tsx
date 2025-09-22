@@ -67,9 +67,11 @@ export default function ServiceChargesPage() {
       toast.success('Service charge updated successfully')
       setIsEditModalOpen(false)
       loadServiceCharges()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating service charge:', error)
-      toast.error('Failed to update service charge')
+      // Extract the actual error message from the error object
+      const errorMessage = error?.message || error?.response?.data?.message || 'Failed to update service charge'
+      toast.error(errorMessage)
     }
   }
 
@@ -79,9 +81,11 @@ export default function ServiceChargesPage() {
       toast.success('Service charge created successfully')
       setIsAddModalOpen(false)
       loadServiceCharges()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating service charge:', error)
-      toast.error('Failed to create service charge')
+      // Extract the actual error message from the error object
+      const errorMessage = error?.message || error?.response?.data?.message || 'Failed to create service charge'
+      toast.error(errorMessage)
     }
   }
 
