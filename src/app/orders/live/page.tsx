@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getTodayDate } from "@/lib/utils";
 import {
   Menu,
   X,
@@ -141,14 +141,7 @@ export default function LiveOrdersPage() {
     }
   };
 
-  // Helper function to get today's date in YYYY-MM-DD format using local timezone
-  const getTodayDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+
 
   // Fetch all orders for counting
   const fetchAllOrders = async () => {
