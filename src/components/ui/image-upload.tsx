@@ -52,7 +52,7 @@ export function ImageUpload({ value, onChange, onRemove }: ImageUploadProps) {
       }
       return `${BaseUrl}${value}` // Prepend BaseUrl for server URLs
     }
-    return null
+    return undefined
   }
 
   return (

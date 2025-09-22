@@ -141,10 +141,22 @@ export default function LiveOrdersPage() {
     }
   };
 
+  // Helper function to get today's date in YYYY-MM-DD format using local timezone
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Fetch all orders for counting
   const fetchAllOrders = async () => {
     try {
-      const response = await api.get("/orders?today=true");
+      const todayDate = getTodayDate();
+      const response = await api.get(
+        `/orders?startDate=${todayDate}&endDate=${todayDate}`
+      );
       const data = response.data;
       if (data.success) {
         // Map API status to UI status
@@ -187,7 +199,10 @@ export default function LiveOrdersPage() {
           apiStatus = "pending";
       }
 
-      const response = await api.get(`/orders?status=${apiStatus}&today=true`);
+      const todayDate = getTodayDate();
+      const response = await api.get(
+        `/orders?status=${apiStatus}&startDate=${todayDate}&endDate=${todayDate}`
+      );
       const data = response.data;
       if (data.success) {
         // Map API status back to UI status
