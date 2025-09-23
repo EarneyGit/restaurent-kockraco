@@ -1,102 +1,140 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { useDropzone } from 'react-dropzone'
-import { Image as LucideImage, X, Plus, Minus, Percent, PoundSterling, Edit, Trash2, Copy } from 'lucide-react'
-import Image from 'next/image'
-import { MenuItem, DayAvailability, TimeSlot, Allergen, PriceChange } from '@/types/menu'
-import { StableSwitch } from '@/components/ui/stable-switch'
-import { Badge } from '@/components/ui/badge'
-import { format } from 'date-fns'
-import { toast } from 'react-hot-toast'
-import { MenuItemsTab } from './menu-items-tab'
-import { AttributesTab } from './attributes-tab'
-import React from 'react'
-import { BaseUrl } from '@/lib/config'
-import api from '@/lib/axios'
-import { priceChangesService, ProductPriceChange } from '@/services/price-changes.service'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useDropzone } from "react-dropzone";
+import {
+  Image as LucideImage,
+  X,
+  Plus,
+  Minus,
+  Percent,
+  PoundSterling,
+  Edit,
+  Trash2,
+  Copy,
+} from "lucide-react";
+import Image from "next/image";
+import {
+  MenuItem,
+  DayAvailability,
+  TimeSlot,
+  Allergen,
+  PriceChange,
+} from "@/types/menu";
+import { StableSwitch } from "@/components/ui/stable-switch";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { MenuItemsTab } from "./menu-items-tab";
+import { AttributesTab } from "./attributes-tab";
+import React from "react";
+import { BaseUrl } from "@/lib/config";
+import api from "@/lib/axios";
+import {
+  priceChangesService,
+  ProductPriceChange,
+} from "@/services/price-changes.service";
+import { toast } from "sonner";
 
 interface EditGroupItemModalProps {
-  item: MenuItem | null
-  categoryId: string
-  open: boolean
-  onClose: () => void
-  onSave: (item: MenuItem) => void
+  item: MenuItem | null;
+  categoryId: string;
+  open: boolean;
+  onClose: () => void;
+  onSave: (item: MenuItem) => void;
 }
 
-const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+const DAYS_OF_WEEK = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 
 const DEFAULT_AVAILABILITY: DayAvailability = {
   isAvailable: true,
-  type: 'All Day',
-  times: []
-}
+  type: "All Day",
+  times: [],
+};
 
 const COMMON_ALLERGENS: Allergen[] = [
-  { id: 'celery', name: 'Celery' },
-  { id: 'crustaceans', name: 'Crustaceans' },
-  { id: 'eggs', name: 'Eggs' },
-  { id: 'fish', name: 'Fish' },
-  { id: 'gluten', name: 'Gluten' },
-  { id: 'lupin', name: 'Lupin' },
-  { id: 'milk', name: 'Milk' },
-  { id: 'molluscs', name: 'Molluscs' },
-  { id: 'mustard', name: 'Mustard' },
-  { id: 'nuts', name: 'Nuts' },
-  { id: 'peanuts', name: 'Peanuts' },
-  { id: 'sesame', name: 'Sesame' },
-  { id: 'soya', name: 'Soya' },
-  { id: 'sulphites', name: 'Sulphites' }
-]
+  { id: "celery", name: "Celery" },
+  { id: "crustaceans", name: "Crustaceans" },
+  { id: "eggs", name: "Eggs" },
+  { id: "fish", name: "Fish" },
+  { id: "gluten", name: "Gluten" },
+  { id: "lupin", name: "Lupin" },
+  { id: "milk", name: "Milk" },
+  { id: "molluscs", name: "Molluscs" },
+  { id: "mustard", name: "Mustard" },
+  { id: "nuts", name: "Nuts" },
+  { id: "peanuts", name: "Peanuts" },
+  { id: "sesame", name: "Sesame" },
+  { id: "soya", name: "Soya" },
+  { id: "sulphites", name: "Sulphites" },
+];
 
 const DEFAULT_PRICE_CHANGE: PriceChange = {
-  id: '',
-  name: '',
-  type: 'increase',
+  id: "",
+  name: "",
+  type: "increase",
   value: 0,
-  startDate: format(new Date(), 'yyyy-MM-dd'),
-  endDate: format(new Date(), 'yyyy-MM-dd'),
+  startDate: format(new Date(), "yyyy-MM-dd"),
+  endDate: format(new Date(), "yyyy-MM-dd"),
   daysOfWeek: [],
-  active: true
-}
+  active: true,
+};
 
-export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: EditGroupItemModalProps) {
+export function EditGroupItemModal({
+  item,
+  categoryId,
+  open,
+  onClose,
+  onSave,
+}: EditGroupItemModalProps) {
   const [currentItem, setCurrentItem] = useState<MenuItem>(() => {
     if (item) {
       // If item exists, we're in edit mode
       return {
         id: item.id,
-        name: item.name || '',
-        description: item.description || '',
+        name: item.name || "",
+        description: item.description || "",
         price: item.price || 0,
         weight: item.weight || 0,
-        calorificValue: item.calorificValue || '',
-        calorieDetails: item.calorieDetails || '',
+        calorificValue: item.calorificValue || "",
+        calorieDetails: item.calorieDetails || "",
         hideItem: item.hideItem || false,
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
         category: categoryId,
         images: item.images || [],
-        availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
-          ...acc,
-          [day]: { ...DEFAULT_AVAILABILITY }
-        }), {}),
+        availability:
+          item.availability ||
+          DAYS_OF_WEEK.reduce(
+            (acc, day) => ({
+              ...acc,
+              [day]: { ...DEFAULT_AVAILABILITY },
+            }),
+            {}
+          ),
         allergens: item.allergens || {
           contains: [],
-          mayContain: []
+          mayContain: [],
         },
         priceChanges: item.priceChanges || [],
         selectedItems: item.selectedItems || [],
@@ -108,32 +146,35 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
-        tillProviderProductId: item.tillProviderProductId || '',
-        cssClass: item.cssClass || '',
+        tillProviderProductId: item.tillProviderProductId || "",
+        cssClass: item.cssClass || "",
         freeDelivery: item.freeDelivery || false,
         collectionOnly: item.collectionOnly || false,
         deleted: item.deleted || false,
         hidePrice: item.hidePrice || false,
         allowAddWithoutChoices: item.allowAddWithoutChoices || false,
-      }
+      };
     } else {
       // If no item, we're in add new mode
       return {
-        id: '',
-        name: '',
+        id: "",
+        name: "",
         price: 0,
         hideItem: false,
         delivery: true,
         collection: true,
         dineIn: true,
         category: categoryId,
-        availability: DAYS_OF_WEEK.reduce((acc, day) => ({
-          ...acc,
-          [day]: { ...DEFAULT_AVAILABILITY }
-        }), {}),
+        availability: DAYS_OF_WEEK.reduce(
+          (acc, day) => ({
+            ...acc,
+            [day]: { ...DEFAULT_AVAILABILITY },
+          }),
+          {}
+        ),
         allergens: {
           contains: [],
-          mayContain: []
+          mayContain: [],
         },
         priceChanges: [],
         selectedItems: [],
@@ -145,36 +186,42 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           useProductPrices: false,
           showChoiceAsDropdown: false,
         },
-        tillProviderProductId: '',
-        cssClass: '',
+        tillProviderProductId: "",
+        cssClass: "",
         freeDelivery: false,
         collectionOnly: false,
         deleted: false,
         hidePrice: false,
         allowAddWithoutChoices: false,
-      }
+      };
     }
-  })
-  
-  const [menuItems, setMenuItems] = useState<{id: string, name: string, price: number, categoryId: string}[]>([]);
+  });
+
+  const [menuItems, setMenuItems] = useState<
+    { id: string; name: string; price: number; categoryId: string }[]
+  >([]);
   const [loadingMenuItems, setLoadingMenuItems] = useState(false);
-  const [currentTab, setCurrentTab] = useState('details');
-  const [apiPriceChanges, setApiPriceChanges] = useState<ProductPriceChange[]>([]);
+  const [currentTab, setCurrentTab] = useState("details");
+  const [apiPriceChanges, setApiPriceChanges] = useState<ProductPriceChange[]>(
+    []
+  );
   const [loadingPriceChanges, setLoadingPriceChanges] = useState(false);
 
   // Helper function to convert ProductPriceChange to PriceChange
-  const convertToPriceChange = (apiPriceChange: ProductPriceChange): PriceChange => {
+  const convertToPriceChange = (
+    apiPriceChange: ProductPriceChange
+  ): PriceChange => {
     return {
       id: apiPriceChange.id,
       name: apiPriceChange.name,
-      type: apiPriceChange.type as 'increase' | 'decrease' | 'fixed',
+      type: apiPriceChange.type as "increase" | "decrease" | "fixed",
       value: apiPriceChange.value,
-      startDate: format(new Date(apiPriceChange.startDate), 'yyyy-MM-dd'),
-      endDate: format(new Date(apiPriceChange.endDate), 'yyyy-MM-dd'),
+      startDate: format(new Date(apiPriceChange.startDate), "yyyy-MM-dd"),
+      endDate: format(new Date(apiPriceChange.endDate), "yyyy-MM-dd"),
       daysOfWeek: apiPriceChange.daysOfWeek,
       timeStart: apiPriceChange.timeStart,
       timeEnd: apiPriceChange.timeEnd,
-      active: apiPriceChange.active
+      active: apiPriceChange.active,
     };
   };
 
@@ -182,17 +229,19 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
   useEffect(() => {
     const loadPriceChanges = async () => {
       if (!item?.id || !open) return;
-      
+
       setLoadingPriceChanges(true);
       try {
-        const response = await priceChangesService.getProductPriceChanges(item.id);
+        const response = await priceChangesService.getProductPriceChanges(
+          item.id
+        );
         if (response.success) {
           setApiPriceChanges(response.data);
         } else {
-          console.error('Failed to load price changes:', response);
+          console.error("Failed to load price changes:", response);
         }
       } catch (error) {
-        console.error('Error loading price changes:', error);
+        console.error("Error loading price changes:", error);
       } finally {
         setLoadingPriceChanges(false);
       }
@@ -205,10 +254,10 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
   useEffect(() => {
     const fetchMenuItems = async () => {
       if (!open) return; // Only fetch when modal is open
-      
+
       setLoadingMenuItems(true);
       try {
-        const response = await api.get('/products');
+        const response = await api.get("/products");
         console.log("response", response);
         const data = response.data;
         if (data.success) {
@@ -217,32 +266,63 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
             id: product._id || product.id,
             name: product.name,
             price: product.price || 0,
-            categoryId: product.category?._id || product.category?.id || product.category
+            categoryId:
+              product.category?._id || product.category?.id || product.category,
           }));
-          
+
           // Ensure current item is available for selection if we're in edit mode
           // Filter out the current item only if we're creating a new item or it has no id
           const currentItemId = item?.id;
-          const filteredItems = currentItemId ? 
-            // When editing, include all items except the current one to avoid circular references
-            items.filter(menuItem => menuItem.id !== currentItemId) : 
-            items;
-                      
+          const filteredItems = currentItemId
+            ? // When editing, include all items except the current one to avoid circular references
+              items.filter((menuItem) => menuItem.id !== currentItemId)
+            : items;
+
           setMenuItems(filteredItems);
         } else {
-          throw new Error(data.message || 'Failed to fetch products');
+          throw new Error(data.message || "Failed to fetch products");
         }
       } catch (error) {
-        console.error('Error fetching menu items:', error);
-        toast.error('Failed to load menu items');
+        console.error("Error fetching menu items:", error);
+        toast.error("Failed to load menu items");
         // Fallback to sample data if API fails
         setMenuItems([
-          { id: '999', name: 'Original Chicken Tex Mex or Veggie Legend Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
-          { id: '998', name: 'Special Wrap', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac1' },
-          { id: '997', name: 'Any Drink', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
-          { id: '996', name: 'Chicken and Rice', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac2' },
-          { id: '995', name: 'Chocolate Cake', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
-          { id: '994', name: 'Ice Cream', price: 0, categoryId: '60d5ec9f1d7bf3458cfc9ac3' },
+          {
+            id: "999",
+            name: "Original Chicken Tex Mex or Veggie Legend Wrap",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac1",
+          },
+          {
+            id: "998",
+            name: "Special Wrap",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac1",
+          },
+          {
+            id: "997",
+            name: "Any Drink",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac2",
+          },
+          {
+            id: "996",
+            name: "Chicken and Rice",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac2",
+          },
+          {
+            id: "995",
+            name: "Chocolate Cake",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac3",
+          },
+          {
+            id: "994",
+            name: "Ice Cream",
+            price: 0,
+            categoryId: "60d5ec9f1d7bf3458cfc9ac3",
+          },
         ]);
       } finally {
         setLoadingMenuItems(false);
@@ -257,194 +337,239 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
     if (item) {
       // Process selectedItems from the API response format
       let processedSelectedItems = item.selectedItems || [];
-      
+
       // Handle when selectedItems are objects instead of strings
-      if (processedSelectedItems.length > 0 && typeof processedSelectedItems[0] === 'object') {
-        processedSelectedItems = processedSelectedItems.map((item: any) => item._id || item.id);
+      if (
+        processedSelectedItems.length > 0 &&
+        typeof processedSelectedItems[0] === "object"
+      ) {
+        processedSelectedItems = processedSelectedItems.map(
+          (item: any) => item._id || item.id
+        );
       }
-      
+
       // Ensure itemSettings is properly processed from the API response
       const itemSettings = {
         showSelectedOnly: Boolean(item.itemSettings?.showSelectedOnly),
-        showSelectedCategories: Boolean(item.itemSettings?.showSelectedCategories),
+        showSelectedCategories: Boolean(
+          item.itemSettings?.showSelectedCategories
+        ),
         limitSingleChoice: Boolean(item.itemSettings?.limitSingleChoice),
         addAttributeCharges: Boolean(item.itemSettings?.addAttributeCharges),
         useProductPrices: Boolean(item.itemSettings?.useProductPrices),
-        showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown)
+        showChoiceAsDropdown: Boolean(item.itemSettings?.showChoiceAsDropdown),
       };
-      
+
       setCurrentItem({
         id: item.id,
-        name: item.name || '',
-        description: item.description || '',
+        name: item.name || "",
+        description: item.description || "",
         price: item.price || 0,
         weight: item.weight || 0,
-        calorificValue: item.calorificValue || '',
-        calorieDetails: item.calorieDetails || '',
+        calorificValue: item.calorificValue || "",
+        calorieDetails: item.calorieDetails || "",
         hideItem: item.hideItem || false,
         delivery: item.delivery || true,
         collection: item.collection || true,
         dineIn: item.dineIn || true,
         category: categoryId,
         images: item.images || [],
-        availability: item.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
-          ...acc,
-          [day]: { ...DEFAULT_AVAILABILITY }
-        }), {}),
+        availability:
+          item.availability ||
+          DAYS_OF_WEEK.reduce(
+            (acc, day) => ({
+              ...acc,
+              [day]: { ...DEFAULT_AVAILABILITY },
+            }),
+            {}
+          ),
         allergens: item.allergens || {
           contains: [],
-          mayContain: []
+          mayContain: [],
         },
         priceChanges: item.priceChanges || [],
         selectedItems: processedSelectedItems,
         itemSettings: itemSettings,
         // Explicitly convert all top-level settings to their proper types
-        tillProviderProductId: item.tillProviderProductId || '',
-        cssClass: item.cssClass || '',
+        tillProviderProductId: item.tillProviderProductId || "",
+        cssClass: item.cssClass || "",
         freeDelivery: Boolean(item.freeDelivery),
         collectionOnly: Boolean(item.collectionOnly),
         deleted: Boolean(item.deleted),
         hidePrice: Boolean(item.hidePrice),
         allowAddWithoutChoices: item.allowAddWithoutChoices || false,
-      })
+      });
     }
-  }, [item, categoryId])
+  }, [item, categoryId]);
 
-  const [editingPriceChange, setEditingPriceChange] = useState<PriceChange | null>(null)
+  const [editingPriceChange, setEditingPriceChange] =
+    useState<PriceChange | null>(null);
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+      "image/*": [".jpeg", ".jpg", ".png", ".webp"],
     },
     onDrop: (acceptedFiles) => {
-      const imageUrls = acceptedFiles.map(file => URL.createObjectURL(file))
-      setCurrentItem(prev => ({
+      const imageUrls = acceptedFiles.map((file) => URL.createObjectURL(file));
+      setCurrentItem((prev) => ({
         ...prev,
-        images: [...(prev.images || []), ...acceptedFiles]
-      }))
-    }
-  })
+        images: [...(prev.images || []), ...acceptedFiles],
+      }));
+    },
+  });
 
   const getImageUrl = (image: string | File | Blob): string => {
     if (image instanceof File || image instanceof Blob) {
-      return URL.createObjectURL(image)
+      return URL.createObjectURL(image);
     }
     // For server-side images, add the base URL if the path is relative
-    if (typeof image === 'string' && image.startsWith('/')) {
-      return `${BaseUrl}${image}`
+    if (typeof image === "string" && image.startsWith("/")) {
+      return `${BaseUrl}${image}`;
     }
-    return image
-  }
+    return image;
+  };
 
   const handleSave = async () => {
+    if (!currentItem.name) return toast.error("Item name is required");
+
     try {
-      const formData = new FormData()
+      const formData = new FormData();
 
       // Add all current item data to formData
-      formData.append('name', currentItem.name)
-      formData.append('price', currentItem.price.toString())
-      formData.append('description', currentItem.description || '')
-      formData.append('weight', (currentItem.weight || '').toString())
-      formData.append('calorificValue', currentItem.calorificValue || '')
-      formData.append('calorieDetails', currentItem.calorieDetails || '')
-      formData.append('hideItem', currentItem.hideItem.toString())
-      formData.append('delivery', currentItem.delivery.toString())
-      formData.append('collection', currentItem.collection.toString())
-      formData.append('dineIn', currentItem.dineIn.toString())
-      formData.append('category', categoryId)
-      
+      formData.append("name", currentItem.name);
+      formData.append("price", currentItem.price.toString());
+      formData.append("description", currentItem.description || "");
+      formData.append("weight", (currentItem.weight || "").toString());
+      formData.append("calorificValue", currentItem.calorificValue || "");
+      formData.append("calorieDetails", currentItem.calorieDetails || "");
+      formData.append("hideItem", currentItem.hideItem.toString());
+      formData.append("delivery", currentItem.delivery.toString());
+      formData.append("collection", currentItem.collection.toString());
+      formData.append("dineIn", currentItem.dineIn.toString());
+      formData.append("category", categoryId);
+
       // Add new fields with proper boolean to string conversion
-      formData.append('tillProviderProductId', currentItem.tillProviderProductId || '')
-      formData.append('cssClass', currentItem.cssClass || '')
-      formData.append('freeDelivery', Boolean(currentItem.freeDelivery).toString())
-      formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString())
-      formData.append('deleted', Boolean(currentItem.deleted).toString())
-      formData.append('hidePrice', Boolean(currentItem.hidePrice).toString())
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString())
+      formData.append(
+        "tillProviderProductId",
+        currentItem.tillProviderProductId || ""
+      );
+      formData.append("cssClass", currentItem.cssClass || "");
+      formData.append(
+        "freeDelivery",
+        Boolean(currentItem.freeDelivery).toString()
+      );
+      formData.append(
+        "collectionOnly",
+        Boolean(currentItem.collectionOnly).toString()
+      );
+      formData.append("deleted", Boolean(currentItem.deleted).toString());
+      formData.append("hidePrice", Boolean(currentItem.hidePrice).toString());
+      formData.append(
+        "allowAddWithoutChoices",
+        Boolean(currentItem.allowAddWithoutChoices).toString()
+      );
 
       // Mark this as a group item
-      formData.append('isGroupItem', 'true')
+      formData.append("isGroupItem", "true");
 
       // Add availability, allergens, and priceChanges as JSON strings
-      formData.append('availability', JSON.stringify(currentItem.availability))
-      formData.append('allergens', JSON.stringify(currentItem.allergens))
-      formData.append('priceChanges', JSON.stringify([])) // Price changes are handled via API separately
-      
+      formData.append("availability", JSON.stringify(currentItem.availability));
+      formData.append("allergens", JSON.stringify(currentItem.allergens));
+      formData.append("priceChanges", JSON.stringify([])); // Price changes are handled via API separately
+
       // Add selectedItems and ensure itemSettings is correctly formatted
-      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []))
-      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {
-        showSelectedOnly: false,
-        showSelectedCategories: false,
-        limitSingleChoice: false,
-        addAttributeCharges: false,
-        useProductPrices: false,
-        showChoiceAsDropdown: false,
-      }))
+      formData.append(
+        "selectedItems",
+        JSON.stringify(currentItem.selectedItems || [])
+      );
+      formData.append(
+        "itemSettings",
+        JSON.stringify(
+          currentItem.itemSettings || {
+            showSelectedOnly: false,
+            showSelectedCategories: false,
+            limitSingleChoice: false,
+            addAttributeCharges: false,
+            useProductPrices: false,
+            showChoiceAsDropdown: false,
+          }
+        )
+      );
 
       // Handle images
       if (currentItem.images) {
         // Handle new image files (those added in the current session)
-        const newImages = currentItem.images.filter(image => image instanceof File || image instanceof Blob)
+        const newImages = currentItem.images.filter(
+          (image) => image instanceof File || image instanceof Blob
+        );
         newImages.forEach((image) => {
-          formData.append('images', image)
-        })
+          formData.append("images", image);
+        });
 
         // Handle existing image URLs (those loaded from the server)
         const existingImages = currentItem.images
-          .filter(image => typeof image === 'string')
-          .filter(image => typeof image === 'string' && !image.startsWith('blob:'))
-          
+          .filter((image) => typeof image === "string")
+          .filter(
+            (image) => typeof image === "string" && !image.startsWith("blob:")
+          );
+
         if (existingImages.length > 0) {
           // Tell the backend to keep these existing images
-          formData.append('existingImages', JSON.stringify(existingImages))
+          formData.append("existingImages", JSON.stringify(existingImages));
         } else if (currentItem.id && newImages.length === 0) {
           // If we're updating an item, and there are no new or existing images,
           // send an empty array to indicate all images should be removed
-          formData.append('existingImages', JSON.stringify([]))
+          formData.append("existingImages", JSON.stringify([]));
         }
       }
 
       // Get the correct ID for the API call
-      const productId = currentItem.id || item?.id
-      
-      const url = productId ? 
-        `/products/${productId}` : 
-        `/products`
+      const productId = currentItem.id || item?.id;
 
-      const method = productId ? 'PUT' : 'POST'
+      const url = productId ? `/products/${productId}` : `/products`;
 
-      const response = await api[method.toLowerCase()](url, formData)
-      const data = response.data
-      
+      const method = productId ? "PUT" : "POST";
+
+      const response = await api[method.toLowerCase()](url, formData);
+      const data = response.data;
+
       if (!data.success) {
-        throw new Error(data.message || 'Failed to save group item')
+        throw new Error(data.message || "Failed to save group item");
       }
 
       // Transform the response data to match MenuItem type
       const transformedItem: MenuItem = {
         id: data.data._id || data.data.id, // Handle both _id and id
         name: data.data.name,
-        description: data.data.description || '',
+        description: data.data.description || "",
         price: data.data.price,
         weight: data.data.weight || 0,
-        calorificValue: data.data.calorificValue || '',
-        calorieDetails: data.data.calorieDetails || '',
+        calorificValue: data.data.calorificValue || "",
+        calorieDetails: data.data.calorieDetails || "",
         hideItem: data.data.hideItem || false,
         delivery: data.data.delivery || true,
         collection: data.data.collection || true,
         dineIn: data.data.dineIn || true,
         category: data.data.category._id || data.data.category.id, // Handle both _id and id
         images: data.data.images || [],
-        availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
-          ...acc,
-          [day]: { ...DEFAULT_AVAILABILITY }
-        }), {}),
+        availability:
+          data.data.availability ||
+          DAYS_OF_WEEK.reduce(
+            (acc, day) => ({
+              ...acc,
+              [day]: { ...DEFAULT_AVAILABILITY },
+            }),
+            {}
+          ),
         allergens: data.data.allergens || {
           contains: [],
-          mayContain: []
+          mayContain: [],
         },
         priceChanges: data.data.priceChanges || [],
-        selectedItems: data.data.selectedItems?.map(item => typeof item === 'object' ? item._id || item.id : item) || [],
+        selectedItems:
+          data.data.selectedItems?.map((item) =>
+            typeof item === "object" ? item._id || item.id : item
+          ) || [],
         itemSettings: data.data.itemSettings || {
           showSelectedOnly: false,
           showSelectedCategories: false,
@@ -454,106 +579,120 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           showChoiceAsDropdown: false,
         },
         // Explicitly convert top-level settings to ensure proper types
-        tillProviderProductId: data.data.tillProviderProductId || '',
-        cssClass: data.data.cssClass || '',
+        tillProviderProductId: data.data.tillProviderProductId || "",
+        cssClass: data.data.cssClass || "",
         freeDelivery: Boolean(data.data.freeDelivery),
         collectionOnly: Boolean(data.data.collectionOnly),
         deleted: Boolean(data.data.deleted),
         hidePrice: Boolean(data.data.hidePrice),
         allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
-      }
-      
-      toast.success(`Group item ${productId ? 'updated' : 'created'} successfully`);
-      onSave(transformedItem)
-      onClose()
+      };
+
+      toast.success(
+        `Group item ${productId ? "updated" : "created"} successfully`
+      );
+      onSave(transformedItem);
+      onClose();
     } catch (error) {
-      console.error('Error saving group item:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to save group item')
+      console.error("Error saving group item:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save group item"
+      );
     }
-  }
+  };
 
   const removeImage = (index: number) => {
-    setCurrentItem(prev => ({
+    setCurrentItem((prev) => ({
       ...prev,
-      images: prev.images?.filter((_, i) => i !== index)
-    }))
-  }
+      images: prev.images?.filter((_, i) => i !== index),
+    }));
+  };
 
   const handleTextChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     field: keyof MenuItem
   ) => {
-    setCurrentItem(prev => ({ ...prev, [field]: e.target.value }))
-  }
+    setCurrentItem((prev) => ({ ...prev, [field]: e.target.value }));
+  };
 
   const handleNumberChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: keyof MenuItem
   ) => {
-    const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
-    setCurrentItem(prev => ({ ...prev, [field]: value }))
-  }
+    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+    setCurrentItem((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const handleAvailabilityTypeChange = (day: typeof DAYS_OF_WEEK[number], type: DayAvailability['type']) => {
-    setCurrentItem(prev => ({
+  const handleAvailabilityTypeChange = (
+    day: (typeof DAYS_OF_WEEK)[number],
+    type: DayAvailability["type"]
+  ) => {
+    setCurrentItem((prev) => ({
       ...prev,
       availability: {
         ...prev.availability,
         [day]: {
           ...prev.availability?.[day],
           type,
-          times: type === 'Specific Times' ? [{ start: '09:00', end: '17:00' }] : []
-        }
-      }
-    }))
-  }
+          times:
+            type === "Specific Times" ? [{ start: "09:00", end: "17:00" }] : [],
+        },
+      },
+    }));
+  };
 
-  const handleAvailabilityToggle = (day: typeof DAYS_OF_WEEK[number]) => {
-    setCurrentItem(prev => ({
+  const handleAvailabilityToggle = (day: (typeof DAYS_OF_WEEK)[number]) => {
+    setCurrentItem((prev) => ({
       ...prev,
       availability: {
         ...prev.availability,
         [day]: {
           ...prev.availability?.[day],
-          isAvailable: !prev.availability?.[day]?.isAvailable
-        }
-      }
-    }))
-  }
+          isAvailable: !prev.availability?.[day]?.isAvailable,
+        },
+      },
+    }));
+  };
 
-  const addTimeSlot = (day: typeof DAYS_OF_WEEK[number]) => {
-    setCurrentItem(prev => ({
+  const addTimeSlot = (day: (typeof DAYS_OF_WEEK)[number]) => {
+    setCurrentItem((prev) => ({
       ...prev,
       availability: {
         ...prev.availability,
         [day]: {
           ...prev.availability?.[day],
-          times: [...(prev.availability?.[day]?.times || []), { start: '09:00', end: '17:00' }]
-        }
-      }
-    }))
-  }
+          times: [
+            ...(prev.availability?.[day]?.times || []),
+            { start: "09:00", end: "17:00" },
+          ],
+        },
+      },
+    }));
+  };
 
-  const removeTimeSlot = (day: typeof DAYS_OF_WEEK[number], index: number) => {
-    setCurrentItem(prev => ({
+  const removeTimeSlot = (
+    day: (typeof DAYS_OF_WEEK)[number],
+    index: number
+  ) => {
+    setCurrentItem((prev) => ({
       ...prev,
       availability: {
         ...prev.availability,
         [day]: {
           ...prev.availability?.[day],
-          times: prev.availability?.[day]?.times?.filter((_, i) => i !== index)
-        }
-      }
-    }))
-  }
+          times: prev.availability?.[day]?.times?.filter((_, i) => i !== index),
+        },
+      },
+    }));
+  };
 
   const updateTimeSlot = (
-    day: typeof DAYS_OF_WEEK[number],
+    day: (typeof DAYS_OF_WEEK)[number],
     index: number,
     field: keyof TimeSlot,
     value: string
   ) => {
-    setCurrentItem(prev => ({
+    setCurrentItem((prev) => ({
       ...prev,
       availability: {
         ...prev.availability,
@@ -561,68 +700,78 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           ...prev.availability?.[day],
           times: prev.availability?.[day]?.times?.map((slot, i) =>
             i === index ? { ...slot, [field]: value } : slot
-          )
-        }
-      }
-    }))
-  }
+          ),
+        },
+      },
+    }));
+  };
 
-  const toggleAllergen = (allergenId: string, type: 'contains' | 'mayContain') => {
-    setCurrentItem(prev => {
-      const allergens = prev.allergens || { contains: [], mayContain: [] }
-      const currentList = allergens[type]
+  const toggleAllergen = (
+    allergenId: string,
+    type: "contains" | "mayContain"
+  ) => {
+    setCurrentItem((prev) => {
+      const allergens = prev.allergens || { contains: [], mayContain: [] };
+      const currentList = allergens[type];
       const updatedList = currentList.includes(allergenId)
-        ? currentList.filter(id => id !== allergenId)
-        : [...currentList, allergenId]
+        ? currentList.filter((id) => id !== allergenId)
+        : [...currentList, allergenId];
 
       // If an allergen is added to 'contains', remove it from 'mayContain' and vice versa
-      const otherType = type === 'contains' ? 'mayContain' : 'contains'
-      const otherList = allergens[otherType].filter(id => id !== allergenId)
+      const otherType = type === "contains" ? "mayContain" : "contains";
+      const otherList = allergens[otherType].filter((id) => id !== allergenId);
 
       return {
         ...prev,
         allergens: {
           ...allergens,
           [type]: updatedList,
-          [otherType]: otherList
-        }
-      }
-    })
-  }
+          [otherType]: otherList,
+        },
+      };
+    });
+  };
 
   const addPriceChange = () => {
     const newPriceChange: PriceChange = {
       ...DEFAULT_PRICE_CHANGE,
-      id: new Date().getTime().toString()
-    }
-    setEditingPriceChange(newPriceChange)
-  }
+      id: new Date().getTime().toString(),
+    };
+    setEditingPriceChange(newPriceChange);
+  };
 
   const savePriceChange = async (priceChange: PriceChange) => {
     if (!currentItem.id) {
-      toast.error('Please save the item first before adding price changes');
+      toast.error("Please save the item first before adding price changes");
       return;
     }
 
     try {
-      if (priceChange.id && apiPriceChanges.find(pc => pc.id === priceChange.id)) {
+      if (
+        priceChange.id &&
+        apiPriceChanges.find((pc) => pc.id === priceChange.id)
+      ) {
         // Update existing price change
-        const response = await priceChangesService.updatePriceChange(priceChange.id, {
-          name: priceChange.name,
-          startDate: priceChange.startDate,
-          endDate: priceChange.endDate,
-          startPrice: currentItem.price,
-          endPrice: priceChange.value,
-          active: priceChange.active,
-          daysOfWeek: priceChange.daysOfWeek || [],
-          timeStart: priceChange.timeStart,
-          timeEnd: priceChange.timeEnd
-        });
-        
+        const response = await priceChangesService.updatePriceChange(
+          priceChange.id,
+          {
+            name: priceChange.name,
+            startDate: priceChange.startDate,
+            endDate: priceChange.endDate,
+            startPrice: currentItem.price,
+            endPrice: priceChange.value,
+            active: priceChange.active,
+            daysOfWeek: priceChange.daysOfWeek || [],
+            timeStart: priceChange.timeStart,
+            timeEnd: priceChange.timeEnd,
+          }
+        );
+
         if (response.success) {
-          toast.success('Price change updated successfully');
+          toast.success("Price change updated successfully");
           // Reload price changes
-          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          const updatedResponse =
+            await priceChangesService.getProductPriceChanges(currentItem.id);
           if (updatedResponse.success) {
             setApiPriceChanges(updatedResponse.data);
           }
@@ -630,7 +779,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           setEditingPriceChange(null);
         } else {
           // Show specific backend error message
-          toast.error(response.message || 'Failed to update price change');
+          toast.error(response.message || "Failed to update price change");
           // Don't close the modal to allow user to fix the error
         }
       } else {
@@ -645,13 +794,14 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           daysOfWeek: priceChange.daysOfWeek || [],
           timeStart: priceChange.timeStart,
           timeEnd: priceChange.timeEnd,
-          active: priceChange.active
+          active: priceChange.active,
         });
-        
+
         if (response.success) {
-          toast.success('Price change created successfully');
+          toast.success("Price change created successfully");
           // Reload price changes
-          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          const updatedResponse =
+            await priceChangesService.getProductPriceChanges(currentItem.id);
           if (updatedResponse.success) {
             setApiPriceChanges(updatedResponse.data);
           }
@@ -659,15 +809,15 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           setEditingPriceChange(null);
         } else {
           // Show specific backend error message
-          toast.error(response.message || 'Failed to create price change');
+          toast.error(response.message || "Failed to create price change");
           // Don't close the modal to allow user to fix the error
         }
       }
     } catch (error: any) {
-      console.error('Error saving price change:', error);
+      console.error("Error saving price change:", error);
       // Handle different types of errors
-      let errorMessage = 'Failed to save price change';
-      
+      let errorMessage = "Failed to save price change";
+
       if (error.response?.data?.message) {
         // Backend validation error
         errorMessage = error.response.data.message;
@@ -675,77 +825,84 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         // Network or other errors
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
       // Don't close the modal to allow user to fix the error
     }
-  }
+  };
 
   const deletePriceChange = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this price change?')) {
+    if (!confirm("Are you sure you want to delete this price change?")) {
       return;
     }
 
     try {
       const response = await priceChangesService.deletePriceChange(id);
-      
-      if (response.success) {
-        toast.success('Price change deleted successfully');
-        // Reload price changes
-        if (currentItem.id) {
-          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
-          if (updatedResponse.success) {
-            setApiPriceChanges(updatedResponse.data);
-          }
-        }
-      } else {
-        toast.error(response.message || 'Failed to delete price change');
-      }
-    } catch (error: any) {
-      console.error('Error deleting price change:', error);
-      // Handle different types of errors
-      let errorMessage = 'Failed to delete price change';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-    }
-  }
 
-  const togglePriceChangeActive = useCallback(async (id: string) => {
-    try {
-      const response = await priceChangesService.togglePriceChange(id);
-      
       if (response.success) {
-        toast.success('Price change status updated');
+        toast.success("Price change deleted successfully");
         // Reload price changes
         if (currentItem.id) {
-          const updatedResponse = await priceChangesService.getProductPriceChanges(currentItem.id);
+          const updatedResponse =
+            await priceChangesService.getProductPriceChanges(currentItem.id);
           if (updatedResponse.success) {
             setApiPriceChanges(updatedResponse.data);
           }
         }
       } else {
-        toast.error(response.message || 'Failed to update price change status');
+        toast.error(response.message || "Failed to delete price change");
       }
     } catch (error: any) {
-      console.error('Error toggling price change:', error);
+      console.error("Error deleting price change:", error);
       // Handle different types of errors
-      let errorMessage = 'Failed to update price change status';
-      
+      let errorMessage = "Failed to delete price change";
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
     }
-  }, [currentItem.id]);
+  };
+
+  const togglePriceChangeActive = useCallback(
+    async (id: string) => {
+      try {
+        const response = await priceChangesService.togglePriceChange(id);
+
+        if (response.success) {
+          toast.success("Price change status updated");
+          // Reload price changes
+          if (currentItem.id) {
+            const updatedResponse =
+              await priceChangesService.getProductPriceChanges(currentItem.id);
+            if (updatedResponse.success) {
+              setApiPriceChanges(updatedResponse.data);
+            }
+          }
+        } else {
+          toast.error(
+            response.message || "Failed to update price change status"
+          );
+        }
+      } catch (error: any) {
+        console.error("Error toggling price change:", error);
+        // Handle different types of errors
+        let errorMessage = "Failed to update price change status";
+
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
+      }
+    },
+    [currentItem.id]
+  );
 
   // Memoize the onSettingsChange callback to prevent infinite rerenders
   const handleItemSettingsChange = useCallback((newSettings) => {
@@ -757,107 +914,126 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
       limitSingleChoice: Boolean(newSettings.limitSingleChoice),
       addAttributeCharges: Boolean(newSettings.addAttributeCharges),
       useProductPrices: Boolean(newSettings.useProductPrices),
-      showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown)
+      showChoiceAsDropdown: Boolean(newSettings.showChoiceAsDropdown),
     };
-        
-    setCurrentItem(prev => ({
+
+    setCurrentItem((prev) => ({
       ...prev,
-      itemSettings: processedSettings
+      itemSettings: processedSettings,
     }));
   }, []);
-  
+
   // Memoize the onItemSelect callback to prevent infinite rerenders
   const handleItemSelect = useCallback((itemId) => {
-    setCurrentItem(prev => {
+    setCurrentItem((prev) => {
       // Ensure selectedItems is an array
       const currentSelectedItems = prev.selectedItems || [];
-      
+
       // Check if the item is currently selected
       const isCurrentlySelected = currentSelectedItems.includes(itemId);
-            
+
       let newSelectedItems;
-      
+
       if (isCurrentlySelected) {
         // If deselecting an item, just remove it from selected items
-        newSelectedItems = currentSelectedItems.filter(id => id !== itemId);
+        newSelectedItems = currentSelectedItems.filter((id) => id !== itemId);
       } else {
         // If selecting an item, add it to selected items
         newSelectedItems = [...currentSelectedItems, itemId];
       }
-      
+
       console.log("New selected items:", newSelectedItems);
-      
+
       return {
         ...prev,
-        selectedItems: newSelectedItems
+        selectedItems: newSelectedItems,
       };
     });
   }, []);
-  
+
   // Memoize Switch handlers to prevent infinite loops
-  const handleAvailabilityToggleCallback = useCallback((day: typeof DAYS_OF_WEEK[number]) => {
-    setCurrentItem(prev => ({
-      ...prev,
-      availability: {
-        ...prev.availability,
-        [day]: {
-          ...prev.availability?.[day],
-          isAvailable: !prev.availability?.[day]?.isAvailable
-        }
-      }
-    }));
-  }, []);
+  const handleAvailabilityToggleCallback = useCallback(
+    (day: (typeof DAYS_OF_WEEK)[number]) => {
+      setCurrentItem((prev) => ({
+        ...prev,
+        availability: {
+          ...prev.availability,
+          [day]: {
+            ...prev.availability?.[day],
+            isAvailable: !prev.availability?.[day]?.isAvailable,
+          },
+        },
+      }));
+    },
+    []
+  );
 
   // Use useMemo instead of useEffect for callbacksRef to prevent unnecessary updates
   const callbacks = useMemo(() => {
     // Create callbacks for price changes
     const priceChangeCallbacks: Record<string, () => void> = {};
-    apiPriceChanges.forEach(priceChange => {
+    apiPriceChanges.forEach((priceChange) => {
       priceChangeCallbacks[priceChange.id] = () => {
         togglePriceChangeActive(priceChange.id);
       };
     });
-    
+
     // Create callbacks for days
     const dayCallbacks: Record<string, () => void> = {};
-    DAYS_OF_WEEK.forEach(day => {
+    DAYS_OF_WEEK.forEach((day) => {
       dayCallbacks[day] = () => {
         handleAvailabilityToggleCallback(day);
       };
     });
-    
+
     return {
       priceChanges: priceChangeCallbacks,
-      days: dayCallbacks
+      days: dayCallbacks,
     };
-  }, [apiPriceChanges, togglePriceChangeActive, handleAvailabilityToggleCallback]);
+  }, [
+    apiPriceChanges,
+    togglePriceChangeActive,
+    handleAvailabilityToggleCallback,
+  ]);
 
   // Replace callbacksRef.current with callbacks from useMemo
   const callbacksRef = React.useRef(callbacks);
-  
+
   // Update ref only when callbacks change
   React.useEffect(() => {
     callbacksRef.current = callbacks;
   }, [callbacks]);
 
   // Memoize the items and settings to prevent unnecessary rerenders
-  const memoizedMenuItems = useMemo(() => menuItems, [JSON.stringify(menuItems.map(item => item.id))]);
-  const memoizedSelectedItems = useMemo(() => currentItem.selectedItems || [], [JSON.stringify(currentItem.selectedItems)]);
-  
+  const memoizedMenuItems = useMemo(
+    () => menuItems,
+    [JSON.stringify(menuItems.map((item) => item.id))]
+  );
+  const memoizedSelectedItems = useMemo(
+    () => currentItem.selectedItems || [],
+    [JSON.stringify(currentItem.selectedItems)]
+  );
+
   // Force boolean conversion to ensure switch components get proper values
   const memoizedItemSettings = useMemo(() => {
     const settings = {
       showSelectedOnly: Boolean(currentItem.itemSettings?.showSelectedOnly),
-      showSelectedCategories: Boolean(currentItem.itemSettings?.showSelectedCategories),
+      showSelectedCategories: Boolean(
+        currentItem.itemSettings?.showSelectedCategories
+      ),
       limitSingleChoice: Boolean(currentItem.itemSettings?.limitSingleChoice),
-      addAttributeCharges: Boolean(currentItem.itemSettings?.addAttributeCharges),
+      addAttributeCharges: Boolean(
+        currentItem.itemSettings?.addAttributeCharges
+      ),
       useProductPrices: Boolean(currentItem.itemSettings?.useProductPrices),
-      showChoiceAsDropdown: Boolean(currentItem.itemSettings?.showChoiceAsDropdown),
+      showChoiceAsDropdown: Boolean(
+        currentItem.itemSettings?.showChoiceAsDropdown
+      ),
     };
-    
+
     console.log("Current item settings state:", currentItem.itemSettings);
     console.log("Memoized settings:", settings);
-    
+
     return settings;
   }, [
     currentItem.itemSettings?.showSelectedOnly,
@@ -865,7 +1041,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
     currentItem.itemSettings?.limitSingleChoice,
     currentItem.itemSettings?.addAttributeCharges,
     currentItem.itemSettings?.useProductPrices,
-    currentItem.itemSettings?.showChoiceAsDropdown
+    currentItem.itemSettings?.showChoiceAsDropdown,
   ]);
 
   // Log the memoized settings when they change
@@ -876,46 +1052,64 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
   // Function to duplicate the current product
   const handleDuplicate = async () => {
     if (!item?.id) {
-      toast.error('Cannot duplicate an unsaved item');
+      toast.error("Cannot duplicate an unsaved item");
       return;
     }
 
     try {
       // Create a new formData with all the current item data
       const formData = new FormData();
-      
+
       // Set a new name with "(Copy)" suffix
-      formData.append('name', `${currentItem.name} (Copy)`);
-      formData.append('price', currentItem.price.toString());
-      formData.append('description', currentItem.description || '');
-      formData.append('weight', (currentItem.weight || '').toString());
-      formData.append('calorificValue', currentItem.calorificValue || '');
-      formData.append('calorieDetails', currentItem.calorieDetails || '');
-      formData.append('hideItem', currentItem.hideItem.toString());
-      formData.append('delivery', currentItem.delivery.toString());
-      formData.append('collection', currentItem.collection.toString());
-      formData.append('dineIn', currentItem.dineIn.toString());
-      formData.append('category', categoryId);
-      
+      formData.append("name", `${currentItem.name} (Copy)`);
+      formData.append("price", currentItem.price.toString());
+      formData.append("description", currentItem.description || "");
+      formData.append("weight", (currentItem.weight || "").toString());
+      formData.append("calorificValue", currentItem.calorificValue || "");
+      formData.append("calorieDetails", currentItem.calorieDetails || "");
+      formData.append("hideItem", currentItem.hideItem.toString());
+      formData.append("delivery", currentItem.delivery.toString());
+      formData.append("collection", currentItem.collection.toString());
+      formData.append("dineIn", currentItem.dineIn.toString());
+      formData.append("category", categoryId);
+
       // Add new fields with proper boolean conversion
-      formData.append('tillProviderProductId', currentItem.tillProviderProductId || '');
-      formData.append('cssClass', currentItem.cssClass || '');
-      formData.append('freeDelivery', Boolean(currentItem.freeDelivery).toString());
-      formData.append('collectionOnly', Boolean(currentItem.collectionOnly).toString());
-      formData.append('deleted', Boolean(currentItem.deleted).toString());
-      formData.append('hidePrice', Boolean(currentItem.hidePrice).toString());
-      formData.append('allowAddWithoutChoices', Boolean(currentItem.allowAddWithoutChoices).toString());
+      formData.append(
+        "tillProviderProductId",
+        currentItem.tillProviderProductId || ""
+      );
+      formData.append("cssClass", currentItem.cssClass || "");
+      formData.append(
+        "freeDelivery",
+        Boolean(currentItem.freeDelivery).toString()
+      );
+      formData.append(
+        "collectionOnly",
+        Boolean(currentItem.collectionOnly).toString()
+      );
+      formData.append("deleted", Boolean(currentItem.deleted).toString());
+      formData.append("hidePrice", Boolean(currentItem.hidePrice).toString());
+      formData.append(
+        "allowAddWithoutChoices",
+        Boolean(currentItem.allowAddWithoutChoices).toString()
+      );
 
       // Mark this as a group item
-      formData.append('isGroupItem', 'true');
+      formData.append("isGroupItem", "true");
 
       // Add availability, allergens, and priceChanges as JSON strings
-      formData.append('availability', JSON.stringify(currentItem.availability));
-      formData.append('allergens', JSON.stringify(currentItem.allergens));
-      formData.append('priceChanges', JSON.stringify([])); // Price changes are handled via API separately
-      formData.append('selectedItems', JSON.stringify(currentItem.selectedItems || []));
-      formData.append('itemSettings', JSON.stringify(currentItem.itemSettings || {}));
-      
+      formData.append("availability", JSON.stringify(currentItem.availability));
+      formData.append("allergens", JSON.stringify(currentItem.allergens));
+      formData.append("priceChanges", JSON.stringify([])); // Price changes are handled via API separately
+      formData.append(
+        "selectedItems",
+        JSON.stringify(currentItem.selectedItems || [])
+      );
+      formData.append(
+        "itemSettings",
+        JSON.stringify(currentItem.itemSettings || {})
+      );
+
       // Log what we're sending to the server
       console.log("Duplicating group item with settings:", {
         freeDelivery: Boolean(currentItem.freeDelivery),
@@ -923,61 +1117,73 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
         deleted: Boolean(currentItem.deleted),
         hidePrice: Boolean(currentItem.hidePrice),
         allowAddWithoutChoices: Boolean(currentItem.allowAddWithoutChoices),
-        itemSettings: currentItem.itemSettings
+        itemSettings: currentItem.itemSettings,
       });
 
       // Handle existing images - we'll reference them as URLs
       if (currentItem.images && currentItem.images.length > 0) {
         const existingImages = currentItem.images
-          .filter(image => typeof image === 'string')
-          .filter(image => typeof image === 'string' && !image.startsWith('blob:'));
-          
+          .filter((image) => typeof image === "string")
+          .filter(
+            (image) => typeof image === "string" && !image.startsWith("blob:")
+          );
+
         if (existingImages.length > 0) {
-          formData.append('existingImages', JSON.stringify(existingImages));
+          formData.append("existingImages", JSON.stringify(existingImages));
         }
-        
+
         // Also handle any new image files that have been added but not saved yet
-        const newImages = currentItem.images.filter(image => image instanceof File || image instanceof Blob);
+        const newImages = currentItem.images.filter(
+          (image) => image instanceof File || image instanceof Blob
+        );
         newImages.forEach((image) => {
-          formData.append('images', image);
+          formData.append("images", image);
         });
       }
 
       // Create the new product
-      const response = await api.post('/products', formData);
+      const response = await api.post("/products", formData);
       const data = response.data;
-      
+
       if (!data.success) {
-        throw new Error(data.message || 'Failed to duplicate group item');
+        throw new Error(data.message || "Failed to duplicate group item");
       }
 
-      toast.success('Group item duplicated successfully');
-      
+      toast.success("Group item duplicated successfully");
+
       // Transform the response data to match MenuItem type
       const duplicatedItem: MenuItem = {
         id: data.data._id || data.data.id,
         name: data.data.name,
-        description: data.data.description || '',
+        description: data.data.description || "",
         price: data.data.price,
         weight: data.data.weight || 0,
-        calorificValue: data.data.calorificValue || '',
-        calorieDetails: data.data.calorieDetails || '',
+        calorificValue: data.data.calorificValue || "",
+        calorieDetails: data.data.calorieDetails || "",
         hideItem: data.data.hideItem || false,
         delivery: data.data.delivery || true,
         collection: data.data.collection || true,
         dineIn: data.data.dineIn || true,
         category: data.data.category._id || data.data.category.id,
         images: data.data.images || [],
-        availability: data.data.availability || DAYS_OF_WEEK.reduce((acc, day) => ({
-          ...acc,
-          [day]: { ...DEFAULT_AVAILABILITY }
-        }), {}),
+        availability:
+          data.data.availability ||
+          DAYS_OF_WEEK.reduce(
+            (acc, day) => ({
+              ...acc,
+              [day]: { ...DEFAULT_AVAILABILITY },
+            }),
+            {}
+          ),
         allergens: data.data.allergens || {
           contains: [],
-          mayContain: []
+          mayContain: [],
         },
         priceChanges: data.data.priceChanges || [],
-        selectedItems: data.data.selectedItems?.map(item => typeof item === 'object' ? item._id || item.id : item) || [],
+        selectedItems:
+          data.data.selectedItems?.map((item) =>
+            typeof item === "object" ? item._id || item.id : item
+          ) || [],
         itemSettings: data.data.itemSettings || {
           showSelectedOnly: false,
           showSelectedCategories: false,
@@ -987,21 +1193,25 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           showChoiceAsDropdown: false,
         },
         // Explicitly convert top-level settings to ensure proper types
-        tillProviderProductId: data.data.tillProviderProductId || '',
-        cssClass: data.data.cssClass || '',
+        tillProviderProductId: data.data.tillProviderProductId || "",
+        cssClass: data.data.cssClass || "",
         freeDelivery: Boolean(data.data.freeDelivery),
         collectionOnly: Boolean(data.data.collectionOnly),
         deleted: Boolean(data.data.deleted),
         hidePrice: Boolean(data.data.hidePrice),
         allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
       };
-      
+
       // Save the duplicated item
       onSave(duplicatedItem);
       onClose();
     } catch (error) {
-      console.error('Error duplicating group item:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to duplicate group item');
+      console.error("Error duplicating group item:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to duplicate group item"
+      );
     }
   };
 
@@ -1009,7 +1219,9 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{item ? 'Edit Group Item' : 'Add New Group Item'}</DialogTitle>
+          <DialogTitle>
+            {item ? "Edit Group Item" : "Add New Group Item"}
+          </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="details" onValueChange={setCurrentTab}>
@@ -1026,11 +1238,14 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           <TabsContent value="details" className="space-y-4">
             <div className="grid gap-4">
               <div>
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">
+                  {" "}
+                  Name <span className="text-red-500">*</span>
+                </Label>{" "}
                 <Input
                   id="name"
                   value={currentItem.name}
-                  onChange={(e) => handleTextChange(e, 'name')}
+                  onChange={(e) => handleTextChange(e, "name")}
                 />
               </div>
 
@@ -1038,8 +1253,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  value={currentItem.description || ''}
-                  onChange={(e) => handleTextChange(e, 'description')}
+                  value={currentItem.description || ""}
+                  onChange={(e) => handleTextChange(e, "description")}
                 />
               </div>
 
@@ -1051,7 +1266,7 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                     type="number"
                     step="0.01"
                     value={currentItem.price}
-                    onChange={(e) => handleNumberChange(e, 'price')}
+                    onChange={(e) => handleNumberChange(e, "price")}
                   />
                 </div>
 
@@ -1060,8 +1275,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                   <Input
                     id="weight"
                     type="number"
-                    value={currentItem.weight || ''}
-                    onChange={(e) => handleNumberChange(e, 'weight')}
+                    value={currentItem.weight || ""}
+                    onChange={(e) => handleNumberChange(e, "weight")}
                   />
                 </div>
               </div>
@@ -1070,8 +1285,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <Label htmlFor="calorificValue">Calorific Value</Label>
                 <Input
                   id="calorificValue"
-                  value={currentItem.calorificValue || ''}
-                  onChange={(e) => handleTextChange(e, 'calorificValue')}
+                  value={currentItem.calorificValue || ""}
+                  onChange={(e) => handleTextChange(e, "calorificValue")}
                 />
               </div>
 
@@ -1079,20 +1294,27 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <Label htmlFor="calorieDetails">Calorie Details</Label>
                 <Textarea
                   id="calorieDetails"
-                  value={currentItem.calorieDetails || ''}
-                  onChange={(e) => handleTextChange(e, 'calorieDetails')}
+                  value={currentItem.calorieDetails || ""}
+                  onChange={(e) => handleTextChange(e, "calorieDetails")}
                 />
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="media" className="space-y-4">
-            <div {...getRootProps()} className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-gray-400">
+            <div
+              {...getRootProps()}
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-gray-400"
+            >
               <input {...getInputProps()} />
               <div className="flex flex-col items-center">
                 <LucideImage className="h-12 w-12 text-gray-400" />
-                <p className="mt-2">Drag & drop images here, or click to select files</p>
-                <p className="text-sm text-gray-500">Supports: JPG, PNG, WebP</p>
+                <p className="mt-2">
+                  Drag & drop images here, or click to select files
+                </p>
+                <p className="text-sm text-gray-500">
+                  Supports: JPG, PNG, WebP
+                </p>
               </div>
             </div>
 
@@ -1121,38 +1343,44 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
 
           <TabsContent value="price-changes" className="space-y-6">
             <div className="space-y-4">
-              {apiPriceChanges.map(priceChange => (
+              {apiPriceChanges.map((priceChange) => (
                 <div
                   key={priceChange.id}
                   className={`border rounded-lg p-4 ${
-                    priceChange.active ? 'bg-white' : 'bg-gray-50'
+                    priceChange.active ? "bg-white" : "bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <StableSwitch
                         checked={priceChange.active}
-                        onCheckedChange={callbacksRef.current.priceChanges[priceChange.id]}
+                        onCheckedChange={
+                          callbacksRef.current.priceChanges[priceChange.id]
+                        }
                       />
                       <div>
                         <h4 className="font-medium">{priceChange.name}</h4>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
-                          {priceChange.type === 'increase' && (
+                          {priceChange.type === "increase" && (
                             <>
                               <Percent className="h-4 w-4" />
                               <span>+{priceChange.value}%</span>
                             </>
                           )}
-                          {priceChange.type === 'decrease' && (
+                          {priceChange.type === "decrease" && (
                             <>
                               <Percent className="h-4 w-4" />
                               <span>-{priceChange.value}%</span>
                             </>
                           )}
-                          {priceChange.type === 'fixed' && (
+                          {priceChange.type === "fixed" && (
                             <>
                               <PoundSterling className="h-4 w-4" />
-                              <span>£{priceChange.tempPrice?.toFixed(2) || priceChange.value.toFixed(2)}</span>
+                              <span>
+                                £
+                                {priceChange.tempPrice?.toFixed(2) ||
+                                  priceChange.value.toFixed(2)}
+                              </span>
                             </>
                           )}
                         </div>
@@ -1162,7 +1390,11 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setEditingPriceChange(convertToPriceChange(priceChange))}
+                        onClick={() =>
+                          setEditingPriceChange(
+                            convertToPriceChange(priceChange)
+                          )
+                        }
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -1178,18 +1410,23 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                   </div>
                   <div className="mt-2 text-sm text-gray-500">
                     <div>
-                      {format(new Date(priceChange.startDate), 'dd MMM yyyy')} -
-                      {format(new Date(priceChange.endDate), 'dd MMM yyyy')}
+                      {format(new Date(priceChange.startDate), "dd MMM yyyy")} -
+                      {format(new Date(priceChange.endDate), "dd MMM yyyy")}
                     </div>
-                    {priceChange.daysOfWeek && priceChange.daysOfWeek.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {priceChange.daysOfWeek.map(day => (
-                          <Badge key={day} variant="secondary" className="capitalize">
-                            {day}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    {priceChange.daysOfWeek &&
+                      priceChange.daysOfWeek.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {priceChange.daysOfWeek.map((day) => (
+                            <Badge
+                              key={day}
+                              variant="secondary"
+                              className="capitalize"
+                            >
+                              {day}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     {priceChange.timeStart && priceChange.timeEnd && (
                       <div className="mt-1">
                         {priceChange.timeStart} - {priceChange.timeEnd}
@@ -1211,11 +1448,16 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
             </div>
 
             {editingPriceChange && (
-              <Dialog open={true} onOpenChange={() => setEditingPriceChange(null)}>
+              <Dialog
+                open={true}
+                onOpenChange={() => setEditingPriceChange(null)}
+              >
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      {editingPriceChange.id ? 'Edit Price Change' : 'Add Price Change'}
+                      {editingPriceChange.id
+                        ? "Edit Price Change"
+                        : "Add Price Change"}
                     </DialogTitle>
                   </DialogHeader>
 
@@ -1225,10 +1467,12 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                       <Input
                         id="name"
                         value={editingPriceChange.name}
-                        onChange={(e) => setEditingPriceChange(prev => ({
-                          ...prev!,
-                          name: e.target.value
-                        }))}
+                        onChange={(e) =>
+                          setEditingPriceChange((prev) => ({
+                            ...prev!,
+                            name: e.target.value,
+                          }))
+                        }
                       />
                     </div>
 
@@ -1237,10 +1481,10 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                         <Label>Type</Label>
                         <select
                           value={editingPriceChange.type}
-                          onChange={(e) => 
-                            setEditingPriceChange(prev => ({
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
                               ...prev!,
-                              type: e.target.value as PriceChange['type']
+                              type: e.target.value as PriceChange["type"],
                             }))
                           }
                           className="w-full h-10 rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -1256,12 +1500,16 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                         <Input
                           id="value"
                           type="number"
-                          step={editingPriceChange.type === 'fixed' ? '0.01' : '1'}
+                          step={
+                            editingPriceChange.type === "fixed" ? "0.01" : "1"
+                          }
                           value={editingPriceChange.value}
-                          onChange={(e) => setEditingPriceChange(prev => ({
-                            ...prev!,
-                            value: parseFloat(e.target.value) || 0
-                          }))}
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
+                              ...prev!,
+                              value: parseFloat(e.target.value) || 0,
+                            }))
+                          }
                         />
                       </div>
                     </div>
@@ -1273,10 +1521,12 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                           id="startDate"
                           type="date"
                           value={editingPriceChange.startDate}
-                          onChange={(e) => setEditingPriceChange(prev => ({
-                            ...prev!,
-                            startDate: e.target.value
-                          }))}
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
+                              ...prev!,
+                              startDate: e.target.value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -1286,10 +1536,12 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                           id="endDate"
                           type="date"
                           value={editingPriceChange.endDate}
-                          onChange={(e) => setEditingPriceChange(prev => ({
-                            ...prev!,
-                            endDate: e.target.value
-                          }))}
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
+                              ...prev!,
+                              endDate: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                     </div>
@@ -1297,18 +1549,24 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                     <div>
                       <Label>Days of Week</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {DAYS_OF_WEEK.map(day => (
+                        {DAYS_OF_WEEK.map((day) => (
                           <Badge
                             key={day}
-                            variant={editingPriceChange.daysOfWeek.includes(day) ? "default" : "outline"}
+                            variant={
+                              editingPriceChange.daysOfWeek.includes(day)
+                                ? "default"
+                                : "outline"
+                            }
                             className="cursor-pointer"
                             onClick={() => {
-                              setEditingPriceChange(prev => {
-                                const daysOfWeek = prev!.daysOfWeek.includes(day)
-                                  ? prev!.daysOfWeek.filter(d => d !== day)
-                                  : [...prev!.daysOfWeek, day]
-                                return { ...prev!, daysOfWeek }
-                              })
+                              setEditingPriceChange((prev) => {
+                                const daysOfWeek = prev!.daysOfWeek.includes(
+                                  day
+                                )
+                                  ? prev!.daysOfWeek.filter((d) => d !== day)
+                                  : [...prev!.daysOfWeek, day];
+                                return { ...prev!, daysOfWeek };
+                              });
                             }}
                           >
                             {day}
@@ -1323,11 +1581,13 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                         <Input
                           id="timeStart"
                           type="time"
-                          value={editingPriceChange.timeStart || ''}
-                          onChange={(e) => setEditingPriceChange(prev => ({
-                            ...prev!,
-                            timeStart: e.target.value
-                          }))}
+                          value={editingPriceChange.timeStart || ""}
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
+                              ...prev!,
+                              timeStart: e.target.value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -1336,18 +1596,23 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                         <Input
                           id="timeEnd"
                           type="time"
-                          value={editingPriceChange.timeEnd || ''}
-                          onChange={(e) => setEditingPriceChange(prev => ({
-                            ...prev!,
-                            timeEnd: e.target.value
-                          }))}
+                          value={editingPriceChange.timeEnd || ""}
+                          onChange={(e) =>
+                            setEditingPriceChange((prev) => ({
+                              ...prev!,
+                              timeEnd: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                     </div>
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setEditingPriceChange(null)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingPriceChange(null)}
+                    >
                       Cancel
                     </Button>
                     <Button onClick={() => savePriceChange(editingPriceChange)}>
@@ -1365,21 +1630,24 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <p>Loading menu items...</p>
               </div>
             ) : (
-            <MenuItemsTab
+              <MenuItemsTab
                 items={memoizedMenuItems}
                 selectedItems={memoizedSelectedItems}
                 onItemSelect={handleItemSelect}
                 settings={memoizedItemSettings}
                 onSettingsChange={handleItemSettingsChange}
-            />
+              />
             )}
           </TabsContent>
 
           <TabsContent value="availability" className="space-y-6">
-            {DAYS_OF_WEEK.map(day => {
-              const dayAvailability = currentItem.availability?.[day]
+            {DAYS_OF_WEEK.map((day) => {
+              const dayAvailability = currentItem.availability?.[day];
               return (
-                <div key={day} className="space-y-4 border-b pb-4 last:border-b-0">
+                <div
+                  key={day}
+                  className="space-y-4 border-b pb-4 last:border-b-0"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       {/* <StableSwitch
@@ -1390,8 +1658,11 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                     </div>
                     <select
                       value={dayAvailability?.type}
-                      onChange={(e) => 
-                        handleAvailabilityTypeChange(day, e.target.value as DayAvailability['type'])
+                      onChange={(e) =>
+                        handleAvailabilityTypeChange(
+                          day,
+                          e.target.value as DayAvailability["type"]
+                        )
                       }
                       disabled={!dayAvailability?.isAvailable}
                       className="w-[180px] rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -1402,29 +1673,44 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                     </select>
                   </div>
 
-                  {dayAvailability?.isAvailable && dayAvailability.type === 'Specific Times' && (
-                    <div className="space-y-2 pl-10">
-                      {dayAvailability.times?.map((timeSlot, index) => (
-                        <div key={index} className="flex items-center gap-4">
-                          <Input
-                            type="time"
-                            value={timeSlot.start}
-                            onChange={(e) => updateTimeSlot(day, index, 'start', e.target.value)}
-                            className="w-32"
-                          />
-                          <span>to</span>
-                          <Input
-                            type="time"
-                            value={timeSlot.end}
-                            onChange={(e) => updateTimeSlot(day, index, 'end', e.target.value)}
-                            className="w-32"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {dayAvailability?.isAvailable &&
+                    dayAvailability.type === "Specific Times" && (
+                      <div className="space-y-2 pl-10">
+                        {dayAvailability.times?.map((timeSlot, index) => (
+                          <div key={index} className="flex items-center gap-4">
+                            <Input
+                              type="time"
+                              value={timeSlot.start}
+                              onChange={(e) =>
+                                updateTimeSlot(
+                                  day,
+                                  index,
+                                  "start",
+                                  e.target.value
+                                )
+                              }
+                              className="w-32"
+                            />
+                            <span>to</span>
+                            <Input
+                              type="time"
+                              value={timeSlot.end}
+                              onChange={(e) =>
+                                updateTimeSlot(
+                                  day,
+                                  index,
+                                  "end",
+                                  e.target.value
+                                )
+                              }
+                              className="w-32"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
-              )
+              );
             })}
           </TabsContent>
 
@@ -1433,23 +1719,29 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
               <div>
                 <h3 className="text-lg font-medium mb-2">Contains</h3>
                 <div className="flex flex-wrap gap-2">
-                  {COMMON_ALLERGENS.map(allergen => {
-                    const isContains = currentItem.allergens?.contains.includes(allergen.id)
-                    const isMayContain = currentItem.allergens?.mayContain.includes(allergen.id)
-                    
+                  {COMMON_ALLERGENS.map((allergen) => {
+                    const isContains = currentItem.allergens?.contains.includes(
+                      allergen.id
+                    );
+                    const isMayContain =
+                      currentItem.allergens?.mayContain.includes(allergen.id);
+
                     return (
                       <Badge
                         key={allergen.id}
                         variant={isContains ? "default" : "outline"}
                         className={`cursor-pointer ${
-                          isContains ? 'bg-red-500 hover:bg-red-600' : 
-                          isMayContain ? 'text-amber-500 border-amber-500' : ''
+                          isContains
+                            ? "bg-red-500 hover:bg-red-600"
+                            : isMayContain
+                            ? "text-amber-500 border-amber-500"
+                            : ""
                         }`}
-                        onClick={() => toggleAllergen(allergen.id, 'contains')}
+                        onClick={() => toggleAllergen(allergen.id, "contains")}
                       >
                         {allergen.name}
                       </Badge>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -1457,30 +1749,39 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
               <div>
                 <h3 className="text-lg font-medium mb-2">May Contain</h3>
                 <div className="flex flex-wrap gap-2">
-                  {COMMON_ALLERGENS.map(allergen => {
-                    const isContains = currentItem.allergens?.contains.includes(allergen.id)
-                    const isMayContain = currentItem.allergens?.mayContain.includes(allergen.id)
-                    
+                  {COMMON_ALLERGENS.map((allergen) => {
+                    const isContains = currentItem.allergens?.contains.includes(
+                      allergen.id
+                    );
+                    const isMayContain =
+                      currentItem.allergens?.mayContain.includes(allergen.id);
+
                     return (
                       <Badge
                         key={allergen.id}
                         variant={isMayContain ? "default" : "outline"}
                         className={`cursor-pointer ${
-                          isMayContain ? 'bg-amber-500 hover:bg-amber-600' : 
-                          isContains ? 'text-red-500 border-red-500' : ''
+                          isMayContain
+                            ? "bg-amber-500 hover:bg-amber-600"
+                            : isContains
+                            ? "text-red-500 border-red-500"
+                            : ""
                         }`}
-                        onClick={() => toggleAllergen(allergen.id, 'mayContain')}
+                        onClick={() =>
+                          toggleAllergen(allergen.id, "mayContain")
+                        }
                       >
                         {allergen.name}
                       </Badge>
-                    )
+                    );
                   })}
                 </div>
               </div>
 
               <div className="pt-4">
                 <p className="text-sm text-gray-500">
-                  Click on an allergen to toggle its status. An allergen cannot be both "Contains" and "May Contain" at the same time.
+                  Click on an allergen to toggle its status. An allergen cannot
+                  be both "Contains" and "May Contain" at the same time.
                 </p>
               </div>
             </div>
@@ -1489,11 +1790,13 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
           <TabsContent value="settings">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="tillProviderProductId">Till Provider Product ID</Label>
+                <Label htmlFor="tillProviderProductId">
+                  Till Provider Product ID
+                </Label>
                 <Input
                   id="tillProviderProductId"
-                  value={currentItem.tillProviderProductId || ''}
-                  onChange={(e) => handleTextChange(e, 'tillProviderProductId')}
+                  value={currentItem.tillProviderProductId || ""}
+                  onChange={(e) => handleTextChange(e, "tillProviderProductId")}
                 />
               </div>
 
@@ -1501,8 +1804,8 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                 <Label htmlFor="cssClass">CSS Class</Label>
                 <Input
                   id="cssClass"
-                  value={currentItem.cssClass || ''}
-                  onChange={(e) => handleTextChange(e, 'cssClass')}
+                  value={currentItem.cssClass || ""}
+                  onChange={(e) => handleTextChange(e, "cssClass")}
                 />
               </div>
 
@@ -1511,34 +1814,51 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
                   <StableSwitch
                     id="freeDelivery"
                     checked={Boolean(currentItem.freeDelivery)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, freeDelivery: checked }))}
+                    onCheckedChange={(checked) =>
+                      setCurrentItem((prev) => ({
+                        ...prev,
+                        freeDelivery: checked,
+                      }))
+                    }
                   />
                   <Label htmlFor="freeDelivery">Free Delivery</Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="collectionOnly"
                     checked={Boolean(currentItem.collectionOnly)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, collectionOnly: checked }))}
+                    onCheckedChange={(checked) =>
+                      setCurrentItem((prev) => ({
+                        ...prev,
+                        collectionOnly: checked,
+                      }))
+                    }
                   />
                   <Label htmlFor="collectionOnly">Collection Only</Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="deleted"
                     checked={Boolean(currentItem.deleted)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, deleted: checked }))}
+                    onCheckedChange={(checked) =>
+                      setCurrentItem((prev) => ({ ...prev, deleted: checked }))
+                    }
                   />
                   <Label htmlFor="deleted">Deleted</Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <StableSwitch
                     id="hidePrice"
                     checked={Boolean(currentItem.hidePrice)}
-                    onCheckedChange={(checked) => setCurrentItem(prev => ({ ...prev, hidePrice: checked }))}
+                    onCheckedChange={(checked) =>
+                      setCurrentItem((prev) => ({
+                        ...prev,
+                        hidePrice: checked,
+                      }))
+                    }
                   />
                   <Label htmlFor="hidePrice">Hide Price</Label>
                 </div>
@@ -1549,17 +1869,27 @@ export function EditGroupItemModal({ item, categoryId, open, onClose, onSave }: 
 
         <div className="flex justify-between gap-2 mt-4">
           {item && currentTab !== "items" && (
-            <Button variant="outline" onClick={handleDuplicate} className="flex items-center">
+            <Button
+              variant="outline"
+              onClick={handleDuplicate}
+              className="flex items-center"
+            >
               <Copy className="h-4 w-4 mr-2" />
               Duplicate
             </Button>
           )}
-          <div className={`flex justify-end gap-2 ${currentTab !== "items" || !item ? "" : "w-full"} ml-auto`}>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <div
+            className={`flex justify-end gap-2 ${
+              currentTab !== "items" || !item ? "" : "w-full"
+            } ml-auto`}
+          >
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>Save Changes</Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

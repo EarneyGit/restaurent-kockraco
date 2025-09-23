@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Category } from "@/types/menu";
-import { toast } from "react-hot-toast";
 import { BaseUrl } from "@/lib/config";
+import { toast } from "sonner";
 
 interface AddCategoryModalProps {
   open: boolean;
