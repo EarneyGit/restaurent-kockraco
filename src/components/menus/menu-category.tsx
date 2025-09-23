@@ -15,9 +15,9 @@ import { EditItemModal } from './edit-item-modal'
 import { EditGroupItemModal } from './edit-group-item-modal'
 import { Category, MenuItem } from '@/types/menu'
 import { EditCategoryModal } from './edit-category-modal'
-import { toast } from 'react-hot-toast'
 import { BaseUrl } from '@/lib/config'
 import api from '@/lib/axios'
+import { toast } from 'sonner'
 
 interface MenuCategoryProps {
   category: Category
@@ -334,19 +334,14 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           allowAddWithoutChoices: Boolean(data.data.allowAddWithoutChoices),
           isGroupItem: Boolean(data.data.isGroupItem),
         }
-        console.log("Transformed item for edit modal:", transformedItem);
         
-        // Determine if this is a group item by checking the isGroupItem field from backend
         const isGroupItem = Boolean(data.data.isGroupItem);
         
-        console.log("Is this a group item?", isGroupItem);
         
         if (isGroupItem) {
-          // Open group item modal
           setEditingGroupItem(transformedItem);
           setEditingItem(null);
         } else {
-          // Open regular item modal
           setEditingItem(transformedItem);
           setEditingGroupItem(null);
         }
@@ -369,7 +364,6 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
       setEditingItem(null)
       toast.success('Product updated successfully')
       
-      // Trigger parent refresh to get updated categories
       if (onRefresh) {
         onRefresh()
       }
