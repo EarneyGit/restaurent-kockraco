@@ -97,6 +97,8 @@ export function AttributeTypesModal({ open, onClose }: AttributeTypesModalProps)
             (attr._id || attr.id) === id ? data.data as Attribute : attr
           ))
           toast.success('Attribute type updated successfully')
+          // Ensure we reflect the latest server state
+          await fetchAttributes()
         }
       } else {
         // Create new attribute
@@ -106,6 +108,8 @@ export function AttributeTypesModal({ open, onClose }: AttributeTypesModalProps)
         if (data.success) {
           setAttributeTypes(prev => [...prev, data.data as Attribute])
           toast.success('Attribute type created successfully')
+          // Ensure we reflect the latest server state
+          await fetchAttributes()
         }
       }
       
