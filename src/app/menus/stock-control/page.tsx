@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronDown, ChevronUp, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { toast } from 'react-hot-toast'
+import { toast } from 'sonner'
 import api from '@/lib/axios'
 
 interface StockItem {
@@ -159,7 +159,7 @@ export default function StockControlPage() {
           console.warn('Some products failed to update:', errors)
           toast.error(`${successCount} products updated, ${errorCount} failed`)
         } else {
-          toast.success(`Stock updated successfylly`);
+          toast.success('Stock updated successfully')
         }
 
         // Refetch all data to get updated stock status
