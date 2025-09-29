@@ -53,7 +53,8 @@ export default function BusinessOffersModal({
     image: "",
     isActive: true
   })
-  const [errors, setErrors] = useState<{title?: string, content?: string}>({})
+  const [errors, setErrors] = useState<{title?: string, content?: string, image?: string}>({})
+  const MAX_FILE_SIZE_MB = 5 // Maximum file size in MB
 
   useEffect(() => {
     if (offer) {
@@ -88,6 +89,20 @@ export default function BusinessOffersModal({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Check file size
+      const fileSizeMB = file.size / (1024 * 1024)
+      if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        setErrors(prev => ({
+          ...prev, 
+          image: `Image file size must be less than ${MAX_FILE_SIZE_MB}MB. Your file is ${fileSizeMB.toFixed(2)}MB.`
+        }))
+        e.target.value = '' // Reset the input
+        return
+      }
+      
+      // Clear previous image error if any
+      setErrors(prev => ({ ...prev, image: undefined }))
+      
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, image: reader.result as string }))
@@ -137,12 +152,12 @@ export default function BusinessOffersModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{offer ? "Edit Offer" : "Add New Offer"}</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 flex-1 overflow-y-auto pr-1 modal-scroll-thin">
           <div className="grid gap-2">
             <Label htmlFor="title">Title *</Label>
             <Input
@@ -239,6 +254,10 @@ export default function BusinessOffersModal({
               onChange={handleImageChange}
               className="cursor-pointer"
             />
+            {errors.image && (
+              <p className="text-sm text-red-500 mt-1">{errors.image}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">Maximum file size: {MAX_FILE_SIZE_MB}MB</p>
             {formData.image && (
               <div className="mt-2">
                 <img
@@ -259,6 +278,26 @@ export default function BusinessOffersModal({
             Save
           </Button>
         </DialogFooter>
+        <style jsx>{`
+          /* Scoped thin scrollbar for modal content */
+          .modal-scroll-thin {
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: rgba(0,0,0,0.25) transparent; /* Firefox */
+          }
+          .modal-scroll-thin::-webkit-scrollbar {
+            width: 6px;
+          }
+          .modal-scroll-thin::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .modal-scroll-thin::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.25);
+            border-radius: 8px;
+          }
+          .modal-scroll-thin::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0,0,0,0.35);
+          }
+        `}</style>
       </DialogContent>
     </Dialog>
   )
