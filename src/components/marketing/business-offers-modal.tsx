@@ -53,7 +53,7 @@ export default function BusinessOffersModal({
     image: "",
     isActive: true
   })
-  const [errors, setErrors] = useState<{title?: string, content?: string, image?: string}>({})
+  const [errors, setErrors] = useState<{title?: string, content?: string, image?: string, startDate?: string}>({})
   const MAX_FILE_SIZE_MB = 5 // Maximum file size in MB
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function BusinessOffersModal({
     setErrors({})
     
     // Validate required fields
-    const newErrors: {title?: string, content?: string} = {}
+    const newErrors: {title?: string, content?: string, startDate?: string} = {}
     
     if (!formData.title.trim()) {
       newErrors.title = 'Please enter a title for the offer'
@@ -128,6 +128,14 @@ export default function BusinessOffersModal({
     
     if (!formData.content.trim()) {
       newErrors.content = 'Please enter content for the offer'
+    }
+    
+    // Validate start date is not in the past
+    if (formData.startDate) {
+      const today = new Date(new Date().setHours(0, 0, 0, 0))
+      if (formData.startDate < today) {
+        newErrors.startDate = 'Start date cannot be in the past'
+      }
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -189,7 +197,8 @@ export default function BusinessOffersModal({
                     variant="outline"
                     className={cn(
                       "justify-start text-left font-normal",
-                      !formData.startDate && "text-muted-foreground"
+                      !formData.startDate && "text-muted-foreground",
+                      errors.startDate && "border-red-300"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -202,9 +211,13 @@ export default function BusinessOffersModal({
                     selected={formData.startDate || undefined}
                     onSelect={(date) => handleDateSelect(date, (date) => setFormData(prev => ({ ...prev, startDate: date })))}
                     initialFocus
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   />
                 </PopoverContent>
               </Popover>
+              {errors.startDate && (
+                <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
