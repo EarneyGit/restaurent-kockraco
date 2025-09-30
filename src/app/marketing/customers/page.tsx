@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import PageLayout from "@/components/layout/page-layout"
 import { customerService, CustomerSimple, CustomerResponse } from '@/services/customer.service'
 import { useAuth } from '@/contexts/auth-context'
+import { ORDER_ENDPOINTS } from '@/config/api.config'
 
 interface SearchFilters {
   firstName: string
@@ -36,6 +37,13 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSimple | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalLoading, setModalLoading] = useState(false)
+  
+  // State for customer orders
+  const [customerOrders, setCustomerOrders] = useState<any[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [orderPage, setOrderPage] = useState(1)
+  const [orderTotalPages, setOrderTotalPages] = useState(1)
+  const [orderTotal, setOrderTotal] = useState(0)
 
   // Fetch customers from API
   const fetchCustomers = async () => {
@@ -90,6 +98,51 @@ export default function CustomersPage() {
     }
   }
 
+  // Fetch customer orders
+  const fetchCustomerOrders = async (customerId: string, page: number = 1) => {
+    try {
+      setOrdersLoading(true)
+      
+      // Get the token from localStorage
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found')
+        return
+      }
+      
+      // Use the configured API endpoint
+      const url = `${ORDER_ENDPOINTS.CUSTOMER_ORDERS(customerId)}?page=${page}&limit=5`
+      
+      // Make the API request with proper authentication
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setCustomerOrders(data.data)
+        setOrderTotalPages(data.totalPages)
+        setOrderPage(data.currentPage)
+        setOrderTotal(data.total)
+      } else {
+        console.error('Failed to fetch customer orders:', data.message)
+      }
+    } catch (err: any) {
+      console.error('Error fetching customer orders:', err.message || err)
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
+
   // Handle customer details view
   const handleViewDetails = async (customerId: string) => {
     try {
@@ -97,6 +150,12 @@ export default function CustomersPage() {
       const response = await customerService.getCustomerDetails(customerId)
       setSelectedCustomer(response.data)
       setIsModalOpen(true)
+      
+      // Reset orders pagination
+      setOrderPage(1)
+      
+      // Fetch customer orders
+      await fetchCustomerOrders(customerId)
     } catch (err: any) {
       console.error('Error fetching customer details:', err)
       setError('Failed to fetch customer details')
@@ -105,10 +164,19 @@ export default function CustomersPage() {
     }
   }
 
+  // Handle order page change
+  const handleOrderPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= orderTotalPages && selectedCustomer) {
+      setOrderPage(newPage)
+      fetchCustomerOrders(selectedCustomer.id, newPage)
+    }
+  }
+
   // Close modal
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedCustomer(null)
+    setCustomerOrders([])
   }
 
   return (
@@ -443,7 +511,7 @@ export default function CustomersPage() {
               {/* Order History Summary */}
               <div className="mt-6 pt-6 border-t">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Order History</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="text-sm font-medium text-gray-500">First Order Date</label>
                     <p className="text-sm text-gray-900">
@@ -470,6 +538,191 @@ export default function CustomersPage() {
                       }
                     </p>
                   </div>
+                </div>
+                
+                {/* Detailed Order History with Pagination */}
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <h4 className="text-md font-medium p-4 border-b bg-gray-50">
+                    Recent Orders ({orderTotal})
+                  </h4>
+                  
+                  {ordersLoading ? (
+                    <div className="flex justify-center items-center p-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="ml-2 text-gray-500">Loading orders...</span>
+                    </div>
+                  ) : customerOrders.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      No order history found for this customer.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Order #
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {customerOrders.map((order) => (
+                              <tr key={order.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-blue-600">
+                                    {order.orderNumber}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">
+                                    {order.formattedDate}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {order.orderType}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {order.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-right">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    £{order.finalTotal.toFixed(2)}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* Order Pagination */}
+                      {orderTotalPages > 1 && (
+                        <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 bg-gray-50">
+                          <div className="flex-1 flex justify-between sm:hidden">
+                            <button
+                              onClick={() => handleOrderPageChange(orderPage - 1)}
+                              disabled={orderPage === 1}
+                              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Previous
+                            </button>
+                            <button
+                              onClick={() => handleOrderPageChange(orderPage + 1)}
+                              disabled={orderPage === orderTotalPages}
+                              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm text-gray-700">
+                                Showing <span className="font-medium">{(orderPage - 1) * 5 + 1}</span> to{" "}
+                                <span className="font-medium">
+                                  {Math.min(orderPage * 5, orderTotal)}
+                                </span>{" "}
+                                of <span className="font-medium">{orderTotal}</span> orders
+                              </p>
+                            </div>
+                            <div>
+                              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button
+                                  onClick={() => handleOrderPageChange(1)}
+                                  disabled={orderPage === 1}
+                                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  <span className="sr-only">First</span>
+                                  <span>«</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOrderPageChange(orderPage - 1)}
+                                  disabled={orderPage === 1}
+                                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  <span className="sr-only">Previous</span>
+                                  <span>‹</span>
+                                </button>
+                                
+                                {/* Page numbers */}
+                                {[...Array(orderTotalPages)].map((_, i) => {
+                                  const pageNum = i + 1;
+                                  // Only show pages near current page
+                                  if (
+                                    pageNum === 1 ||
+                                    pageNum === orderTotalPages ||
+                                    (pageNum >= orderPage - 1 && pageNum <= orderPage + 1)
+                                  ) {
+                                    return (
+                                      <button
+                                        key={pageNum}
+                                        onClick={() => handleOrderPageChange(pageNum)}
+                                        className={`relative inline-flex items-center px-4 py-2 border ${
+                                          pageNum === orderPage
+                                            ? 'bg-blue-50 border-blue-500 text-blue-600 z-10'
+                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                        } text-sm font-medium`}
+                                      >
+                                        {pageNum}
+                                      </button>
+                                    );
+                                  }
+                                  
+                                  // Show ellipsis for skipped pages
+                                  if (
+                                    (pageNum === 2 && orderPage > 3) ||
+                                    (pageNum === orderTotalPages - 1 && orderPage < orderTotalPages - 2)
+                                  ) {
+                                    return <span key={pageNum} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>;
+                                  }
+                                  
+                                  return null;
+                                })}
+                                
+                                <button
+                                  onClick={() => handleOrderPageChange(orderPage + 1)}
+                                  disabled={orderPage === orderTotalPages}
+                                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  <span className="sr-only">Next</span>
+                                  <span>›</span>
+                                </button>
+                                <button
+                                  onClick={() => handleOrderPageChange(orderTotalPages)}
+                                  disabled={orderPage === orderTotalPages}
+                                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  <span className="sr-only">Last</span>
+                                  <span>»</span>
+                                </button>
+                              </nav>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

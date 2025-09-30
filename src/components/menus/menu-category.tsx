@@ -179,7 +179,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           p.id === item.id ? { ...p, delivery: checked } : p
         )
       )
-      toast.success('Product updated successfully')
+      toast.success(checked ? 'Delivery enabled' : 'Delivery disabled')
     } catch (error) {
       console.error('Error updating delivery status:', error)
       toast.error('Failed to update delivery status')
@@ -203,7 +203,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           p.id === item.id ? { ...p, collection: checked } : p
         )
       )
-      toast.success('Product updated successfully')
+      toast.success(checked ? 'Collection enabled' : 'Collection disabled')
     } catch (error) {
       console.error('Error updating collection status:', error)
       toast.error('Failed to update collection status')
@@ -227,7 +227,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           p.id === item.id ? { ...p, dineIn: checked } : p
         )
       )
-      toast.success('Product updated successfully')
+      toast.success(checked ? 'Dine-in enabled' : 'Dine-in disabled')
     } catch (error) {
       console.error('Error updating dine in status:', error)
       toast.error('Failed to update dine in status')

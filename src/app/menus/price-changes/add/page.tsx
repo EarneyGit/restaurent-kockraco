@@ -94,8 +94,8 @@ export default function AddPriceChangesPage() {
         return
       }
 
-      if (new Date(startDate) >= new Date(endDate)) {
-        toast.error('End date must be after start date')
+      if (new Date(startDate) > new Date(endDate)) {
+        toast.error('End date must be after or equal to start date')
         return
       }
 
