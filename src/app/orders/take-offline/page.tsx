@@ -221,13 +221,14 @@ export default function TakeOfflinePage() {
         <h1 className="text-2xl font-medium mb-6">Take items offline</h1>
 
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="mb-4 flex items-center gap-2">
+          {/* Search Row */}
+          <div className="mb-6 flex items-center gap-3">
             <Input
               type="text"
-              placeholder="Enter search text here"
+              placeholder="🔍 Search by name, category, or keyword..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
+              className="w-96 rounded-md border-gray-300  focus:outline-none  transition px-4 py-2 text-sm"
             />
 
             {searchTerm && (
@@ -245,18 +246,20 @@ export default function TakeOfflinePage() {
                     setAttributes([]);
                   }
                 }}
-                className="flex items-center gap-1 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full px-3 py-1 transition"
+                className="flex items-center gap-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3 py-1 transition"
               >
                 <XCircle size={16} />
                 <span className="text-sm font-medium">Reset</span>
               </Button>
             )}
-          </div>
 
-          <div className="flex gap-2 mb-6">
             <Button
               variant="outline"
-              className="flex-1"
+              className={`rounded-md font-medium px-4 transition ${
+                searchType === "products"
+                  ? "bg-green-600 text-white hover:text-white hover:bg-green-700 border-green-600"
+                  : "border-gray-300 text-gray-700 hover:border-green-400 hover:text-green-600"
+              }`}
               onClick={() => handleSearch("products")}
               disabled={loading}
             >
@@ -264,9 +267,14 @@ export default function TakeOfflinePage() {
                 ? "Searching..."
                 : "Search Products"}
             </Button>
+
             <Button
               variant="outline"
-              className="flex-1"
+              className={`rounded-md font-medium px-4 transition ${
+                searchType === "attributes"
+                ? "bg-green-600 text-white hover:text-white hover:bg-green-700 border-green-600"
+                : "border-gray-300 text-gray-700 hover:border-green-400 hover:text-green-600"
+              }`}
               onClick={() => handleSearch("attributes")}
               disabled={loading}
             >
@@ -274,22 +282,20 @@ export default function TakeOfflinePage() {
                 ? "Searching..."
                 : "Search Attributes"}
             </Button>
-          </div>
 
-          {/* Turn all products off button */}
-          {searchType === "products" && products.length > 0 && (
-            <div className="mb-6 text-center">
+            {/* Turn all products off - inline in search row */}
+            {searchType === "products" && products.length > 0 && (
               <Button
                 variant="outline"
                 onClick={turnAllProductsOffline}
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+                className="ml-auto px-5 py-2 rounded-lg bg-gradient-to-r from-red-500 to-pink-500 text-white font-medium shadow-sm hover:from-red-600 hover:to-pink-600 transition"
               >
-                Turn all products off
+                 Turn all products off
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Products List */}
+          {/* --- Products List (unchanged) --- */}
           {searchType === "products" && (
             <div className="space-y-3">
               {products.length > 0 ? (
@@ -330,7 +336,7 @@ export default function TakeOfflinePage() {
             </div>
           )}
 
-          {/* Attributes List */}
+          {/* Attributes List (unchanged) */}
           {searchType === "attributes" && (
             <div className="space-y-3">
               {attributes.length > 0 ? (

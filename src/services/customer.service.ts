@@ -125,10 +125,7 @@ class CustomerService {
    * Get customer details by ID (for modal view)
    */
   async getCustomerDetails(customerId: string): Promise<CustomerDetailsResponse> {
-    try {
-      console.log('Calling API for customer ID:', customerId);
-      console.log('API URL:', `${this.baseUrl}/${customerId}`);
-      
+    try {      
       const response = await axios.get(`${this.baseUrl}/${customerId}`);
       console.log('API Response:', response);
       console.log('Response Data:', response.data);
