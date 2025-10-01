@@ -45,6 +45,7 @@ export default function TakeOfflinePage() {
   const [searchType, setSearchType] = useState<
     "products" | "attributes" | null
   >(null);
+  const [allProductsOffline, setAllProductsOffline] = useState(false);
 
   const handleNavigate = (path: string) => {
     window.location.href = path;
@@ -60,8 +61,14 @@ export default function TakeOfflinePage() {
       const response = await api.get("/products/offline", { params });
 
       if (response.data.success) {
-        setProducts(response.data.data);
+        const fetchedProducts = response.data.data;
+        setProducts(fetchedProducts);
         setSearchType("products");
+        
+        // Check if all products are offline
+        const allOffline = fetchedProducts.length > 0 && 
+          fetchedProducts.every(product => product.isOffline === true);
+        setAllProductsOffline(allOffline);
       }
     } catch (error: any) {
       console.error("Error fetching products:", error);
@@ -156,23 +163,27 @@ export default function TakeOfflinePage() {
     }
   };
 
-  // Turn all products offline
-  const turnAllProductsOffline = async () => {
+  // Toggle all products online/offline
+  const toggleAllProducts = async () => {
+    // Toggle to the opposite of current state
+    const newOfflineState = !allProductsOffline;
+    
     try {
       const response = await api.patch("/products/toggle-all-offline", {
-        isOffline: true,
+        isOffline: newOfflineState,
       });
 
       if (response.data.success) {
         setProducts((prev) =>
-          prev.map((product) => ({ ...product, isOffline: true }))
+          prev.map((product) => ({ ...product, isOffline: newOfflineState }))
         );
+        setAllProductsOffline(newOfflineState);
         toast.success(response.data.message);
       }
     } catch (error: any) {
-      console.error("Error turning all products offline:", error);
+      console.error(`Error turning all products ${newOfflineState ? 'offline' : 'online'}:`, error);
       toast.error(
-        error.response?.data?.message || "Failed to turn all products offline"
+        error.response?.data?.message || `Failed to turn all products ${newOfflineState ? 'offline' : 'online'}`
       );
     }
   };
@@ -283,14 +294,18 @@ export default function TakeOfflinePage() {
                 : "Search Attributes"}
             </Button>
 
-            {/* Turn all products off - inline in search row */}
+            {/* Toggle all products - inline in search row */}
             {searchType === "products" && products.length > 0 && (
               <Button
                 variant="outline"
-                onClick={turnAllProductsOffline}
-                className="ml-auto px-5 py-2 rounded-lg bg-gradient-to-r from-red-500 to-pink-500 text-white font-medium shadow-sm hover:from-red-600 hover:to-pink-600 transition"
+                onClick={toggleAllProducts}
+                className={`ml-auto px-5 py-2 rounded-lg text-white font-medium shadow-sm transition ${
+                  allProductsOffline 
+                    ? "bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600" 
+                    : "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
+                }`}
               >
-                 Turn all products off
+                {allProductsOffline ? "Turn all products on" : "Turn all products off"}
               </Button>
             )}
           </div>
