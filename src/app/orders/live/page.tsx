@@ -737,16 +737,17 @@ export default function LiveOrdersPage() {
                     <span>{formatDetailedDate(selectedOrder.createdAt)}</span>
                   </div>
                 </div>
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     openDelayPopup(selectedOrder._id);
                   }}
-                  className="bg-emerald-600 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                  size="lg"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
                 >
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 mr-1" />
                   Delay
-                </button>
+                </Button>
               </div>
 
               <div className="flex bg-white items-start justify-between">
