@@ -1,10 +1,11 @@
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { AuthProvider } from '@/contexts/auth-context'
-import { SocketProvider } from '@/contexts/socket-context'
-import { Toaster } from 'sonner'
-import ClientLayout from '../components/layout/client-layout'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/contexts/auth-context";
+import { SocketProvider } from "@/contexts/socket-context";
+import { SidebarProvider } from "@/contexts/sidebar-context";
+import { Toaster } from "sonner";
+import ClientLayout from "../components/layout/client-layout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,28 +13,30 @@ const inter = Inter({
   preload: true,
   fallback: ["system-ui", "arial"],
   adjustFontFallback: true,
-})
+});
 
 export const metadata: Metadata = {
   title: "Restaurant Management System",
   description: "Restaurant management dashboard",
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
           <SocketProvider>
-            <ClientLayout>{children}</ClientLayout>
+            <SidebarProvider>
+              <ClientLayout>{children}</ClientLayout>
+            </SidebarProvider>
             <Toaster position="top-right" richColors />
           </SocketProvider>
         </AuthProvider>
       </body>
     </html>
-  )
-} 
+  );
+}
