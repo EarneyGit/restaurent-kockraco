@@ -103,6 +103,8 @@ interface Order {
   createdAt: string;
   updatedAt?: string;
   stripePaymentIntentId?: string; // Added for payment cancellation
+  serviceCharge?: number;
+  customerNotes?: string;
 }
 
 export default function LiveOrdersPage() {
@@ -140,8 +142,6 @@ export default function LiveOrdersPage() {
         return "pending";
     }
   };
-
-
 
   // Fetch all orders for counting
   const fetchAllOrders = async () => {
@@ -864,6 +864,28 @@ export default function LiveOrdersPage() {
                         </div>
                       </div>
                     )
+                  )}
+                  {/* order serviceCharge */}
+                  {selectedOrder.serviceCharge && (
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                      <span className="text-base font-semibold">
+                        Service Charge
+                      </span>
+                      <span className="text-base font-semibold">
+                        {selectedOrder.serviceCharge}
+                      </span>
+                    </div>
+                  )}
+                  {/* order customerNotes */}
+                  {selectedOrder.customerNotes && (
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                      <span className="text-base font-semibold">
+                        Customer Notes
+                      </span>
+                      <span className="text-base font-semibold">
+                        {selectedOrder.customerNotes}
+                      </span>
+                    </div>
                   )}
 
                   {/* Subtotal */}
