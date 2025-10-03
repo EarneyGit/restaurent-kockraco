@@ -2,6 +2,7 @@ export interface MenuItem {
   id: string
   name: string
   price: number
+  displayOrder?: number
   type?: 'item' | 'group'
   hideItem: boolean
   delivery: boolean

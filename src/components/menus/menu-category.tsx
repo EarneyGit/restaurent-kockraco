@@ -67,6 +67,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           id: product._id || product.id,
           name: product.name,
           description: product.description || '',
+          displayOrder: product.displayOrder || 0,
           price: product.price,
           weight: product.weight || 0,
           calorificValue: product.calorificValue || '',
@@ -86,7 +87,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
             mayContain: []
           },
           priceChanges: product.priceChanges || []
-        }))
+        })).sort((a, b) => a.displayOrder - b.displayOrder);
         setProducts(transformedProducts)
       }
     } catch (error) {
@@ -120,6 +121,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
       formData.append('name', `Copy of ${itemToClone.name}`);
       formData.append('price', itemToClone.price.toString());
       formData.append('description', itemToClone.description || '');
+      formData.append('displayOrder', itemToClone.displayOrder?.toString() || '0');
       formData.append('weight', (itemToClone.weight || '').toString());
       formData.append('calorificValue', itemToClone.calorificValue || '');
       formData.append('calorieDetails', itemToClone.calorieDetails || '');
@@ -303,6 +305,7 @@ export function MenuCategory({ category, onDelete, onUpdate, allCategories, onRe
           id: data.data._id || data.data.id, // Handle both _id and id
           name: data.data.name,
           description: data.data.description || '',
+          displayOrder: data.data.displayOrder || 0,
           price: data.data.price,
           weight: data.data.weight || 0,
           calorificValue: data.data.calorificValue || '',

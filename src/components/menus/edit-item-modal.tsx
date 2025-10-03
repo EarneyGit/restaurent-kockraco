@@ -112,6 +112,7 @@ export function EditItemModal({
         id: item.id,
         name: item.name || "",
         description: item.description || "",
+        displayOrder: (item as any).displayOrder ?? 0,
         price: item.price || 0,
         weight: item.weight || 0,
         calorificValue: item.calorificValue || "",
@@ -158,6 +159,7 @@ export function EditItemModal({
       return {
         id: "",
         name: "",
+        displayOrder: 0,
         price: 0,
         hideItem: false,
         delivery: true,
@@ -277,6 +279,7 @@ export function EditItemModal({
         id: item.id,
         name: item.name || "",
         description: item.description || "",
+        displayOrder: (item as any).displayOrder ?? 0,
         price: item.price || 0,
         weight: item.weight || 0,
         calorificValue: item.calorificValue || "",
@@ -349,6 +352,17 @@ export function EditItemModal({
 
       // Add all current item data to formData, applying defaults for empty values
       formData.append("name", currentItem.name);
+      const displayOrderStr = String((currentItem as any).displayOrder ?? "");
+      const displayOrderValue =
+        displayOrderStr === "" ||
+        displayOrderStr === "null" ||
+        displayOrderStr === "undefined"
+          ? 0
+          : parseInt(displayOrderStr, 10);
+      formData.append(
+        "displayOrder",
+        String(isNaN(displayOrderValue) ? 0 : displayOrderValue)
+      );
       const priceStr = String(currentItem.price);
       const priceValue =
         priceStr === "" || priceStr === "null" || priceStr === "undefined"
@@ -478,6 +492,7 @@ export function EditItemModal({
         id: data.data._id || data.data.id, // Handle both _id and id
         name: data.data.name,
         description: data.data.description || "",
+        displayOrder: data.data.displayOrder || 0,
         price: data.data.price,
         weight: data.data.weight || 0,
         calorificValue: data.data.calorificValue || "",
@@ -909,6 +924,7 @@ export function EditItemModal({
       formData.append("name", `${currentItem.name} (Copy)`);
       formData.append("price", currentItem.price.toString());
       formData.append("description", currentItem.description || "");
+      formData.append("displayOrder", (currentItem.displayOrder || "").toString());
       formData.append("weight", (currentItem.weight || "").toString());
       formData.append("calorificValue", currentItem.calorificValue || "");
       formData.append("calorieDetails", currentItem.calorieDetails || "");
@@ -1019,6 +1035,7 @@ export function EditItemModal({
         id: data.data._id || data.data.id,
         name: data.data.name,
         description: data.data.description || "",
+        displayOrder: data.data.displayOrder || 0,
         price: data.data.price,
         weight: data.data.weight || 0,
         calorificValue: data.data.calorificValue || "",
@@ -1114,6 +1131,18 @@ export function EditItemModal({
                   id="description"
                   value={currentItem.description || ""}
                   onChange={(e) => handleTextChange(e, "description")}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="displayOrder">Display Order</Label>
+                <Input
+                  id="displayOrder"
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={(currentItem as any).displayOrder ?? 0}
+                  onChange={(e) => handleNumberChange(e, "displayOrder")}
                 />
               </div>
 
