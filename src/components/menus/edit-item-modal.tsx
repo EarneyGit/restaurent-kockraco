@@ -347,11 +347,21 @@ export function EditItemModal({
     try {
       const formData = new FormData();
 
-      // Add all current item data to formData
+      // Add all current item data to formData, applying defaults for empty values
       formData.append("name", currentItem.name);
-      formData.append("price", currentItem.price.toString());
+      const priceStr = String(currentItem.price);
+      const priceValue =
+        priceStr === "" || priceStr === "null" || priceStr === "undefined"
+          ? 0
+          : parseFloat(priceStr);
+      formData.append("price", priceValue.toString());
       formData.append("description", currentItem.description || "");
-      formData.append("weight", (currentItem.weight || "").toString());
+      const weightStr = String(currentItem.weight);
+      const weightValue =
+        weightStr === "" || weightStr === "null" || weightStr === "undefined"
+          ? 0
+          : parseFloat(weightStr);
+      formData.append("weight", weightValue.toString());
       formData.append("calorificValue", currentItem.calorificValue || "");
       formData.append("calorieDetails", currentItem.calorieDetails || "");
       formData.append("hideItem", currentItem.hideItem.toString());
@@ -543,8 +553,11 @@ export function EditItemModal({
     e: React.ChangeEvent<HTMLInputElement>,
     field: keyof MenuItem
   ) => {
-    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
-    setCurrentItem((prev) => ({ ...prev, [field]: value }));
+    const value = e.target.value;
+    // Allow empty string, numbers, and decimal points for intermediate input
+    if (value === "" || value === "-" || /^-?\d*\.?\d*$/.test(value)) {
+      setCurrentItem((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleAvailabilityTypeChange = (
@@ -1109,8 +1122,9 @@ export function EditItemModal({
                   <Label htmlFor="price">Price (£)</Label>
                   <Input
                     id="price"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
                     value={currentItem.price}
                     onChange={(e) => handleNumberChange(e, "price")}
                   />
@@ -1120,7 +1134,9 @@ export function EditItemModal({
                   <Label htmlFor="weight">Weight (g)</Label>
                   <Input
                     id="weight"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
                     value={currentItem.weight || ""}
                     onChange={(e) => handleNumberChange(e, "weight")}
                   />

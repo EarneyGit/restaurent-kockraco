@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/page-layout";
 import { Eye, Search, Filter, Calendar } from "lucide-react";
+import { API_BASE_URL } from "@/config/api.config";
 
 interface Payment {
   _id: string;
@@ -58,9 +59,7 @@ export default function PaymentsPage() {
   });
 
   const getApiUrl = () => {
-    return process.env.NODE_ENV === "production"
-      ? "https://your-production-api.com/api"
-      : "http://localhost:5000/api";
+    return API_BASE_URL + "/api";
   };
 
   const getAuthToken = () => {
