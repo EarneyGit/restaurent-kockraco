@@ -6,9 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Edit, Trash2, Plus, Eye, Loader2 } from "lucide-react"
+import { Edit, Trash2, Plus, Eye, Loader2, MapPin, Search } from "lucide-react"
 import { deliveryChargeService, type DeliveryCharge, type PriceOverride, type PostcodeExclusion } from "@/services/delivery-charge.service"
 import { toast } from "sonner"
+import api from "@/lib/axios"
+
+// Branch Location interface
+interface BranchLocation {
+  latitude: number;
+  longitude: number;
+  formattedAddress?: string;
+  postcode?: string;
+}
 
 export default function DeliveryChargesPage() {
   // Delivery Charges State
@@ -33,13 +42,110 @@ export default function DeliveryChargesPage() {
   const [isEditExclusionModalOpen, setIsEditExclusionModalOpen] = useState(false)
   const [isAddExclusionModalOpen, setIsAddExclusionModalOpen] = useState(false)
   const [editingExclusion, setEditingExclusion] = useState<PostcodeExclusion | null>(null)
+  
+  // Branch Location State
+  const [branchLocation, setBranchLocation] = useState<BranchLocation | null>(null)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationPostcode, setLocationPostcode] = useState("")
+  const [isPostcodeSearchLoading, setIsPostcodeSearchLoading] = useState(false)
 
   // Load data on component mount
   useEffect(() => {
     loadDeliveryCharges()
     loadPriceOverrides()
     loadPostcodeExclusions()
+    loadBranchLocation()
   }, [])
+  
+  // Load branch location
+  const loadBranchLocation = async () => {
+    try {
+      setLocationLoading(true)
+      const response = await api.get("/api/branches/outlet-settings")
+      
+      if (response.data?.success && response.data?.data) {
+        const branchData = response.data.data
+        
+        if (branchData.location && 
+            branchData.location.coordinates && 
+            branchData.location.coordinates.length === 2) {
+          setBranchLocation({
+            longitude: branchData.location.coordinates[0],
+            latitude: branchData.location.coordinates[1],
+            formattedAddress: branchData.location.formattedAddress || branchData.address?.postalCode,
+            postcode: branchData.address?.postalCode
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error loading branch location:', error)
+    } finally {
+      setLocationLoading(false)
+    }
+  }
+  
+  // Get coordinates from postcode
+  const getCoordinatesFromPostcode = async () => {
+    if (!locationPostcode.trim()) {
+      toast.error('Please enter a postcode')
+      return
+    }
+    
+    try {
+      setIsPostcodeSearchLoading(true)
+      const response = await api.post("/branches/coordinates/from-postcode", {
+        postcode: locationPostcode
+      })
+      
+      if (response.data?.success && response.data?.data) {
+        const locationData = response.data.data
+        setBranchLocation({
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          formattedAddress: locationData.formattedAddress,
+          postcode: locationData.postcode
+        })
+        toast.success('Location coordinates found')
+      } else {
+        toast.error('Failed to get coordinates for the provided postcode')
+      }
+    } catch (error: any) {
+      console.error('Error getting coordinates:', error)
+      toast.error(error.response?.data?.message || 'Failed to get coordinates')
+    } finally {
+      setIsPostcodeSearchLoading(false)
+    }
+  }
+  
+  // Save branch location
+  const saveBranchLocation = async () => {
+    if (!branchLocation) {
+      toast.error('No location data to save')
+      return
+    }
+    
+    try {
+      setLocationLoading(true)
+      const response = await api.put("/branches/coordinates", {
+        latitude: branchLocation.latitude,
+        longitude: branchLocation.longitude,
+        postcode: branchLocation.postcode
+      })
+      
+      if (response.data?.success) {
+        toast.success('Branch location updated successfully')
+        setIsLocationModalOpen(false)
+      } else {
+        toast.error('Failed to update branch location')
+      }
+    } catch (error: any) {
+      console.error('Error saving branch location:', error)
+      toast.error(error.response?.data?.message || 'Failed to save branch location')
+    } finally {
+      setLocationLoading(false)
+    }
+  }
 
   const loadDeliveryCharges = async () => {
     try {
@@ -638,6 +744,15 @@ export default function DeliveryChargesPage() {
             <h1 className="text-2xl font-medium">Delivery Charges</h1>
             <div className="flex gap-2">
               <Button 
+                onClick={() => setIsLocationModalOpen(true)}
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 flex items-center"
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Branch Location
+                {branchLocation && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>}
+              </Button>
+              <Button 
                 onClick={handleBulkAdd}
                 variant="outline"
                 className="border-emerald-500 text-emerald-600 hover:bg-emerald-50"
@@ -939,6 +1054,127 @@ export default function DeliveryChargesPage() {
         onSave={handleSaveAddExclusion}
         title="Add Postcode Exclusion"
       />
+      
+      {/* Branch Location Modal */}
+      <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Branch Location Settings</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Postcode Search */}
+            <div className="space-y-2">
+              <Label htmlFor="postcode">Find by Postcode</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="postcode"
+                  value={locationPostcode}
+                  onChange={(e) => setLocationPostcode(e.target.value)}
+                  placeholder="Enter branch postcode"
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={getCoordinatesFromPostcode}
+                  disabled={isPostcodeSearchLoading}
+                  variant="outline"
+                >
+                  {isPostcodeSearchLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Coordinates Input */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="0.0000001"
+                  value={branchLocation?.latitude || ""}
+                  onChange={(e) => setBranchLocation(prev => ({
+                    ...prev!,
+                    latitude: parseFloat(e.target.value)
+                  }))}
+                  placeholder="e.g. 51.5074"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="0.0000001"
+                  value={branchLocation?.longitude || ""}
+                  onChange={(e) => setBranchLocation(prev => ({
+                    ...prev!,
+                    longitude: parseFloat(e.target.value)
+                  }))}
+                  placeholder="e.g. -0.1278"
+                />
+              </div>
+            </div>
+            
+            {/* Current Location Display */}
+            {branchLocation && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <h3 className="text-sm font-medium text-blue-800 mb-2">Current Branch Location</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="font-medium">Latitude:</span> {branchLocation.latitude}
+                  </div>
+                  <div>
+                    <span className="font-medium">Longitude:</span> {branchLocation.longitude}
+                  </div>
+                  {branchLocation.formattedAddress && (
+                    <div className="col-span-2">
+                      <span className="font-medium">Address:</span> {branchLocation.formattedAddress}
+                    </div>
+                  )}
+                  {branchLocation.postcode && (
+                    <div className="col-span-2">
+                      <span className="font-medium">Postcode:</span> {branchLocation.postcode}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-500">
+              <p>These coordinates are used to calculate delivery distances and charges.</p>
+              <p>You can either search by postcode or enter coordinates manually.</p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsLocationModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveBranchLocation}
+              disabled={!branchLocation || locationLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {locationLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Location'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }

@@ -94,8 +94,8 @@ interface Order {
   discount?: Discount;
   discountApplied?: DiscountApplied;
   status: "new" | "in-progress" | "complete";
-  paymentMethod: string;
-  paymentStatus: string;
+  paymentMethod: string; // "card", "cash_on_delivery", etc.
+  paymentStatus: string; // "pending", "paid", "failed", "refunded", etc.
   deliveryMethod: string;
   branchId: BranchInfo;
   estimatedDeliveryTime: string;
@@ -399,15 +399,21 @@ export default function LiveOrdersPage() {
     logout();
   };
 
-  // Filter orders based on delivery method and toggle states
+  // Filter orders based on delivery method, toggle states, and payment status
   const filteredOrders = orders.filter((order) => {
+    // Filter by status tab
     if (order.status !== activeTab) return false;
 
+    // Filter by delivery method
     const deliveryMethod = order.deliveryMethod?.toLowerCase();
-
     if (deliveryMethod === "pickup" && !showCollection) return false;
     if (deliveryMethod === "delivery" && !showDelivery) return false;
     if (deliveryMethod === "dine_in" && !showTableOrdering) return false;
+
+    // Filter out card payment orders that aren't paid yet
+    if (order.paymentMethod === "card" && order.paymentStatus !== "paid") {
+      return false;
+    }
 
     return true;
   });
