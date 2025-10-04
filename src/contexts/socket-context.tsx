@@ -31,7 +31,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
-        path: "/api/socet",
+        path: "/api/socket",
       })
 
       // Connection event listeners
