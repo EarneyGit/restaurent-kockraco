@@ -59,6 +59,7 @@ interface OrderItem {
   id: string;
   _id: string;
   addons: any[];
+  selectedAttributes: any[];
 }
 
 interface User {
@@ -691,9 +692,9 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-6 py-2",
                 showDelivery
-                ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
-                : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
-            )}
+                  ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
+                  : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
+              )}
             >
               Delivery
             </Button>
@@ -704,9 +705,9 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-6 py-2",
                 showTableOrdering
-                ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
-                : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
-            )}
+                  ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
+                  : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
+              )}
             >
               Table Ordering
             </Button>
@@ -836,29 +837,74 @@ export default function LiveOrdersPage() {
                 <div className="space-y-3">
                   {(selectedOrder.products || selectedOrder.items || []).map(
                     (item: OrderItem) => (
-                      <div
-                        key={item._id || item?.id}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium">
-                            {item.product?.name || "Unknown Product"}
+                      <>
+                        <div
+                          key={item._id || item?.id}
+                          className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">
+                              {item.product?.name || "Unknown Product"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-gray-600">
+                              Qty: {item.quantity}
+                            </span>
+                            <span className="font-semibold">
+                              £
+                              {typeof item.price === "number"
+                                ? (item.price * item.quantity).toFixed(2)
+                                : item.itemTotal
+                                ? item.itemTotal.toFixed(2)
+                                : (item.price.total * item.quantity).toFixed(2)}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-gray-600">
-                            Qty: {item.quantity}
-                          </span>
-                          <span className="font-semibold">
-                            £
-                            {typeof item.price === "number"
-                              ? (item.price * item.quantity).toFixed(2)
-                              : item.itemTotal
-                              ? item.itemTotal.toFixed(2)
-                              : (item.price.total * item.quantity).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                        {/* Selected attributes and items */}
+                        {Array.isArray(item.selectedAttributes) &&
+                          item.selectedAttributes.length > 0 && (
+                            <div className="mt-2 ml-4 space-y-2">
+                              {item.selectedAttributes.map((attribute: any) => (
+                                <div
+                                  key={attribute._id || attribute.id}
+                                  className=""
+                                >
+                                  <div className="text-sm font-semibold text-gray-700">
+                                    {attribute.attributeName}
+                                  </div>
+                                  {Array.isArray(attribute.selectedItems) &&
+                                    attribute.selectedItems.length > 0 && (
+                                      <ul className="mt-1 ml-4 text-sm text-gray-700 space-y-1">
+                                        {attribute.selectedItems.map(
+                                          (choice: any) => (
+                                            <li
+                                              key={choice._id || choice.id}
+                                              className="flex items-center"
+                                            >
+                                              <span className="font-medium">
+                                                {choice.itemName}
+                                              </span>
+                                              <span className="mx-2 flex-1 border-t border-dashed border-gray-300"></span>
+                                              <span className="whitespace-nowrap text-gray-600">
+                                                Qty: {choice.quantity}
+                                              </span>
+                                              <span className="ml-3 whitespace-nowrap">
+                                                £
+                                                {(
+                                                  Number(choice.itemPrice) || 0
+                                                ).toFixed(2)}
+                                              </span>
+                                            </li>
+                                          )
+                                        )}
+                                      </ul>
+                                    )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                      </>
                     )
                   )}
                   {/* order serviceCharge */}
