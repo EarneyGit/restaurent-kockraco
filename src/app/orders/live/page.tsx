@@ -570,7 +570,7 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
                 activeTab === "new"
-                  ? "border-emerald-500 text-emerald-600 bg-emerald-50"
+                  ? "border-yellow-500 text-yellow-600 bg-yellow-50"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               )}
               onClick={() => setActiveTab("new")}
@@ -581,7 +581,7 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
                 activeTab === "in-progress"
-                  ? "border-emerald-500 text-emerald-600 bg-emerald-50"
+                  ? "border-yellow-500 text-yellow-600 bg-yellow-50"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               )}
               onClick={() => setActiveTab("in-progress")}
@@ -592,7 +592,7 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
                 activeTab === "complete"
-                  ? "border-emerald-500 text-emerald-600 bg-emerald-50"
+                  ? "border-yellow-500 text-yellow-600 bg-yellow-50"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               )}
               onClick={() => setActiveTab("complete")}
@@ -678,8 +678,8 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-6 py-2",
                 showCollection
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                  ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
+                  : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
               )}
             >
               Collection
@@ -691,9 +691,9 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-6 py-2",
                 showDelivery
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
-              )}
+                ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
+                : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
+            )}
             >
               Delivery
             </Button>
@@ -704,9 +704,9 @@ export default function LiveOrdersPage() {
               className={cn(
                 "px-6 py-2",
                 showTableOrdering
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
-              )}
+                ? "bg-yellow-500/80 hover:bg-yellow-500 text-white"
+                : "border-yellow-500 text-yellow-500 hover:bg-yellow-50"
+            )}
             >
               Table Ordering
             </Button>
@@ -739,7 +739,7 @@ export default function LiveOrdersPage() {
                     openDelayPopup(selectedOrder._id);
                   }}
                   size="lg"
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
                 >
                   <Clock className="h-4 w-4 mr-1" />
                   Delay

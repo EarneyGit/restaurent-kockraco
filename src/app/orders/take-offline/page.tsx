@@ -268,8 +268,8 @@ export default function TakeOfflinePage() {
               variant="outline"
               className={`rounded-md font-medium px-4 transition ${
                 searchType === "products"
-                  ? "bg-green-600 text-white hover:text-white hover:bg-green-700 border-green-600"
-                  : "border-gray-300 text-gray-700 hover:border-green-400 hover:text-green-600"
+                  ? "bg-yellow-500/80 text-white hover:text-white hover:bg-yellow-500 border-yellow-500"
+                  : "border-gray-300 text-gray-700 hover:border-yellow-400 hover:text-yellow-600"
               }`}
               onClick={() => handleSearch("products")}
               disabled={loading}
@@ -283,9 +283,9 @@ export default function TakeOfflinePage() {
               variant="outline"
               className={`rounded-md font-medium px-4 transition ${
                 searchType === "attributes"
-                ? "bg-green-600 text-white hover:text-white hover:bg-green-700 border-green-600"
-                : "border-gray-300 text-gray-700 hover:border-green-400 hover:text-green-600"
-              }`}
+                ? "bg-yellow-500/80 text-white hover:text-white hover:bg-yellow-500 border-yellow-500"
+                : "border-gray-300 text-gray-700 hover:border-yellow-400 hover:text-yellow-600"
+            }`}
               onClick={() => handleSearch("attributes")}
               disabled={loading}
             >

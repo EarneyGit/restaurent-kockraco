@@ -327,14 +327,15 @@ export default function OrderingTimesPage() {
                 <div className="flex gap-2 mb-4">
                   <Button 
                     variant="outline" 
-                    className="text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                    className="text-yellow-600 hover:text-yellow-800 border-yellow-600 hover:bg-yellow-50"
+                    
                     onClick={navigateToClosedDates}
                   >
                     Closed Dates
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="text-emerald-600 border-emerald-600 hover:bg-emerald-50"
+                    className="text-yellow-600 hover:text-yellow-800 border-yellow-600 hover:bg-yellow-50"
                     onClick={navigateToRestrictions}
                   >
                     Restrictions
@@ -344,7 +345,7 @@ export default function OrderingTimesPage() {
                 <Button 
                   onClick={handleSaveAllChanges}
                   disabled={saving}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="w-full bg-yellow-500/80 hover:bg-yellow-500 text-white"
                 >
                   {saving ? (
                     <>

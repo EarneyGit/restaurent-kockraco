@@ -5,6 +5,7 @@ import PageLayout from "@/components/layout/page-layout"
 import { customerService, CustomerSimple, CustomerResponse } from '@/services/customer.service'
 import { useAuth } from '@/contexts/auth-context'
 import { ORDER_ENDPOINTS } from '@/config/api.config'
+import Image from 'next/image'
 
 interface SearchFilters {
   firstName: string
@@ -16,6 +17,7 @@ interface SearchFilters {
 
 export default function CustomersPage() {
   const { user } = useAuth()
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
   const [filters, setFilters] = useState<SearchFilters>({
@@ -183,8 +185,10 @@ export default function CustomersPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-center px-4 sm:px-8 py-3 border-b bg-white gap-4">
-        <div className="flex-1"></div>
-        <h1 className="text-lg sm:text-xl font-medium text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-lg sm:text-xl font-medium text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
@@ -237,12 +241,12 @@ export default function CustomersPage() {
             <input 
               type="text" 
               placeholder="Postcode" 
-              className="border border-gray-300 rounded-l-md px-3 py-2 text-sm flex-1"
+              className="border border-gray-300 w-40 rounded-l-md px-3 py-2 text-sm flex-1"
               value={filters.postcode}
               onChange={(e) => setFilters(prev => ({ ...prev, postcode: e.target.value }))}
             />
             <button 
-              className="bg-teal-500 hover:bg-teal-600 text-white px-4 rounded-r-md disabled:opacity-50"
+              className="bg-yellow-500/80 hover:bg-yellow-500 text-white px-4 rounded-r-md text-sm disabled:opacity-50"
               onClick={handleSearch}
               disabled={loading}
             >

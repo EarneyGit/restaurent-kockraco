@@ -14,10 +14,11 @@ import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/contexts/auth-context'
+import Image from "next/image"
 
 export default function TableOrderingPage() {
   const { user } = useAuth()
-  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   
   const [groups, setGroups] = useState<TableGroup[]>([])
   const [loading, setLoading] = useState(true)
@@ -392,13 +393,15 @@ export default function TableOrderingPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
         <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             className="flex items-center text-gray-700 font-medium"
             onClick={() => {
-              const { viewYourStore } = require('@/lib/utils')
+              const { viewYourStore } = require('@/lib/utils');
               viewYourStore()
             }}
           >
@@ -414,7 +417,7 @@ export default function TableOrderingPage() {
             <h1 className="text-2xl font-medium">Table Ordering</h1>
             <Button 
               onClick={() => setIsAddGroupModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Group
@@ -493,7 +496,7 @@ export default function TableOrderingPage() {
                         <Button
                           size="sm"
                           onClick={() => openAddTableModal(group._id)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                          className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Table
@@ -585,7 +588,7 @@ export default function TableOrderingPage() {
                   <p className="text-gray-500 mb-4">Create your first table group to start organizing your tables.</p>
                   <Button 
                     onClick={() => setIsAddGroupModalOpen(true)}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                    className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Your First Group

@@ -245,7 +245,7 @@ export default function ClosedDatesPage() {
               <Button
                 onClick={handleAddSingleDate}
                 disabled={saving || !singleDate}
-                className="w-full border border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                className="text-yellow-600 w-full hover:text-yellow-800 border-yellow-600 hover:bg-yellow-50"
                 variant="outline"
               >
                 {saving ? (
@@ -291,7 +291,7 @@ export default function ClosedDatesPage() {
               <Button
                 onClick={handleAddDateRange}
                 disabled={saving || !dateRange.start || !dateRange.end}
-                className="w-full border border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                className="text-yellow-600 w-full hover:text-yellow-800 border-yellow-600 hover:bg-yellow-50"
                 variant="outline"
               >
                 {saving ? (

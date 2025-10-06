@@ -429,7 +429,7 @@ export default function RestrictionsPage() {
             <Button 
               onClick={handleSave}
               disabled={saving}
-              className="bg-emerald-500 hover:bg-emerald-600"
+              className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
             >
               {saving ? (
                 <>

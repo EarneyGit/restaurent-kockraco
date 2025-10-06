@@ -54,7 +54,7 @@ export default function ReportsLayout({
               className={cn(
                 'px-6 py-4 text-sm font-medium',
                 selectedTab === tab.id
-                  ? 'border-b-2 border-teal-500 text-teal-500'
+                  ? 'border-b-2 border-yellow-500 text-yellow-500'
                   : 'text-gray-600 hover:text-gray-900'
               )}
             >

@@ -255,7 +255,7 @@ export default function AddPriceChangesPage() {
                   Cancel
                 </Button>
                 <Button 
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-6"
+                  className="bg-yellow-500/80 hover:bg-yellow-500 text-white px-6"
                   onClick={handleSaveChanges}
                   disabled={saving || categories.length === 0}
                 >

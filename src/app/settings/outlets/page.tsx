@@ -10,6 +10,7 @@ import { Eye, Loader2 } from "lucide-react"
 import { outletService, type OutletSettings } from "@/services/outlet.service"
 import { toast } from "sonner"
 import { useAuth } from '@/contexts/auth-context'
+import Image from 'next/image'
 
 const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
   ssr: false,
@@ -152,7 +153,9 @@ export default function OutletsPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
         <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
@@ -232,7 +235,7 @@ export default function OutletsPage() {
               <Button 
                 onClick={handleSaveDetails}
                 disabled={saving}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
               >
                 {saving ? (
                   <>
@@ -340,7 +343,7 @@ export default function OutletsPage() {
               <Button 
                 onClick={handleSaveLocation}
                 disabled={saving}
-                className="bg-teal-500 hover:bg-teal-600 text-white"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
               >
                 {saving ? (
                   <>

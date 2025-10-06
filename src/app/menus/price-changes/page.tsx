@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { priceChangesService, Category, MenuItem, TemporaryPriceChange } from "@/services/price-changes.service"
 import { toast } from "sonner"
+import { useAuth } from '@/contexts/auth-context'
+import Image from 'next/image'
 
 interface EditModalProps {
   isOpen: boolean
@@ -241,11 +243,11 @@ export default function PriceChangesPage() {
   })
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-
+  const { user } = useAuth()
   // Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingPriceChange, setEditingPriceChange] = useState<TemporaryPriceChange | null>(null)
-
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   // Load temporary price changes on component mount
   useEffect(() => {
     loadTemporaryPriceChanges()
@@ -371,8 +373,10 @@ export default function PriceChangesPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-4 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-semibold flex-1 text-center">Dunfermline</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-semibold flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
