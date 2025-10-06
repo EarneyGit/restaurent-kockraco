@@ -23,6 +23,7 @@ export default function SalesHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState<number>(50);
 
   // Fetch sales data
   const fetchSalesData = async (page = 1) => {
@@ -32,7 +33,7 @@ export default function SalesHistoryPage() {
         startDate: format(startDate, "yyyy-MM-dd"),
         endDate: format(endDate, "yyyy-MM-dd"),
         page,
-        limit: 50,
+        limit: pageSize,
       });
 
       if (response.success) {
@@ -53,7 +54,7 @@ export default function SalesHistoryPage() {
 
   useEffect(() => {
     fetchSalesData(1);
-  }, [startDate, endDate]);
+  }, [startDate, endDate, pageSize]);
 
   const handleRefresh = () => {
     fetchSalesData(currentPage);
@@ -251,6 +252,20 @@ export default function SalesHistoryPage() {
               />
             </Button>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Rows:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
+            >
+              {[10, 30, 50, 100, 300, 1000].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button
             onClick={handleExportPDF}
             variant="outline"
@@ -303,68 +318,68 @@ export default function SalesHistoryPage() {
             </div>
           ) : (
             <>
-              <ItemsTable data={salesData} type="sales" />
+              {/* Scrollable table area - responsive both axes */}
+              <div className="relative -mx-4 md:mx-0">
+                <div className="overflow-auto min-h-[300px] max-h-[50vh] sm:max-h-[60vh] md:max-h-[65vh] lg:max-h-[70vh] xl:max-h-[75vh]">
+                  <ItemsTable data={salesData} type="sales" />
+                </div>
+              </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-gray-500">
-                    Showing {(currentPage - 1) * 50 + 1} to{" "}
-                    {Math.min(currentPage * 50, totalItems)} of {totalItems}{" "}
-                    items
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from(
-                        { length: Math.min(5, totalPages) },
-                        (_, i) => {
-                          const pageNum = i + 1;
-                          return (
-                            <Button
-                              key={pageNum}
-                              variant={
-                                pageNum === currentPage ? "default" : "outline"
-                              }
-                              size="sm"
-                              onClick={() => handlePageChange(pageNum)}
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        }
-                      )}
-                      {totalPages > 5 && <span className="px-2">...</span>}
-                      {totalPages > 5 && (
+              {/* Pagination (always visible) */}
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                  {Math.min(currentPage * pageSize, totalItems)} of {totalItems}{" "}
+                  items
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = i + 1;
+                      return (
                         <Button
+                          key={pageNum}
                           variant={
-                            totalPages === currentPage ? "default" : "outline"
+                            pageNum === currentPage ? "default" : "outline"
                           }
                           size="sm"
-                          onClick={() => handlePageChange(totalPages)}
+                          onClick={() => handlePageChange(pageNum)}
                         >
-                          {totalPages}
+                          {pageNum}
                         </Button>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
+                      );
+                    })}
+                    {totalPages > 5 && <span className="px-2">...</span>}
+                    {totalPages > 5 && (
+                      <Button
+                        variant={
+                          totalPages === currentPage ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                      >
+                        {totalPages}
+                      </Button>
+                    )}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  >
+                    Next
+                  </Button>
                 </div>
-              )}
+              </div>
             </>
           )}
         </div>

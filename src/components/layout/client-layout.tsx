@@ -56,7 +56,7 @@ export default function ClientLayout({
 
       {showSidebar && (
         <div
-          className={`fixed h-screen overflow-hidden transition-all duration-300 ${
+          className={`fixed h-screen overflow-hidden transition-all z-10 duration-300 ${
             isCollapsed ? "w-16" : "w-64"
           }`}
         >
