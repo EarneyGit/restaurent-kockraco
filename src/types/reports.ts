@@ -18,6 +18,7 @@ export interface SaleData {
   created: string
   status: string
   orderNumber: string
+  branchId?: string
 }
 
 export interface DiscountHistoryItem {

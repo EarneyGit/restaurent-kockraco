@@ -7,6 +7,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ItemSaleData, SaleData } from "@/types/reports";
+import { Button } from "@/components/ui/button";
+import React from "react";
+import { ReportOrderDetailsModal } from "./order-details-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ItemsTableProps {
@@ -53,6 +56,8 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
   }
 
   const salesData = data as SaleData[];
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const [openBranchId, setOpenBranchId] = React.useState<string | null>(null);
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
@@ -69,6 +74,7 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
             <TableHead>Payment Method</TableHead>
             <TableHead>Payment Status</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -94,11 +100,29 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 <TableCell>{sale.paymentMethod}</TableCell>
                 <TableCell>{sale.paymentStatus}</TableCell>
                 <TableCell>{sale.created}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setOpenId(sale.id);
+                      setOpenBranchId(sale.branchId);
+                    }}
+                  >
+                    View
+                  </Button>
+                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+      <ReportOrderDetailsModal
+        orderId={openId}
+        open={Boolean(openId)}
+        onClose={() => setOpenId(null)}
+        branchId={openBranchId}
+      />
     </div>
   );
 }
