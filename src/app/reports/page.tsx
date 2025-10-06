@@ -1,331 +1,374 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { DatePicker } from '@/components/ui/date-picker'
-import { Button } from '@/components/ui/button'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { ItemsTable } from '@/components/reports/items-table'
-import { PrinterIcon, RefreshCw } from 'lucide-react'
-import { SaleData } from '@/types/reports'
-import { reportService } from '@/services/report.service'
-import { toast } from 'sonner'
-import { Skeleton } from '@/components/ui/skeleton'
-import { format } from 'date-fns'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ItemsTable } from "@/components/reports/items-table";
+import { PrinterIcon, RotateCw, FileDown, FileText } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { SaleData } from "@/types/reports";
+import { reportService } from "@/services/report.service";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
-export default function EndOfNightPage() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [salesData, setSalesData] = useState<SaleData[]>([])
-  const [loading, setLoading] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(['all-sales'])
+export default function SalesHistoryPage() {
+  // Set default date range to start of month and current date
+  const today = new Date();
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const [startDate, setStartDate] = useState<Date>(startOfMonth);
+  const [endDate, setEndDate] = useState<Date>(today);
 
+  const [salesData, setSalesData] = useState<SaleData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // Summary data
-  const [summary, setSummary] = useState({
-    totalOrders: 0,
-    totalSales: 0,
-    totalTips: 0,
-    totalDeliveryFees: 0,
-    averageOrderValue: 0,
-    cashOrders: 0,
-    cardOrders: 0,
-    deliveryOrders: 0,
-    pickupOrders: 0,
-    dineInOrders: 0
-  })
-
-  // Top items data
-  const [topItems, setTopItems] = useState<Array<{
-    _id: string;
-    name: string;
-    quantity: number;
-    revenue: number;
-  }>>([])
-
-  // Hourly sales data
-  const [hourlySales, setHourlySales] = useState<Array<{
-    _id: number;
-    orders: number;
-    sales: number;
-  }>>([])
-
-  // Fetch report data
-  const fetchReportData = async (date: Date) => {
-    setLoading(true)
+  // Fetch sales data
+  const fetchSalesData = async (page = 1) => {
+    setLoading(true);
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd')
-      const response = await reportService.getEndOfNightReport(formattedDate)
-      
-      if (response.success && response.data) {
-        setSummary(response.data.summary)
-        setTopItems(response.data.topItems)
-        setHourlySales(response.data.hourlySales)
-        
-        // Transform data for sales table - this would need actual order data
-        // For now, we'll create mock data based on summary
-        const mockSalesData: SaleData[] = []
-        
-        setSalesData(mockSalesData)
+      const response = await reportService.getSalesHistory({
+        startDate: format(startDate, "yyyy-MM-dd"),
+        endDate: format(endDate, "yyyy-MM-dd"),
+        page,
+        limit: 50,
+      });
+
+      if (response.success) {
+        setSalesData(response.data as unknown as SaleData[]);
+        if (response.pagination) {
+          setCurrentPage(response.pagination.currentPage);
+          setTotalPages(response.pagination.totalPages);
+          setTotalItems(response.pagination.totalItems);
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch report data:', error)
-      toast.error('Failed to fetch report data. Please try again.')
+      console.error("Failed to fetch sales data:", error);
+      toast.error("Failed to fetch sales data. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchReportData(selectedDate)
-  }, [selectedDate])
-
-  const handleDateChange = (date: Date | null) => {
-    if (date) {
-      setSelectedDate(date)
-    }
-  }
+    fetchSalesData(1);
+  }, [startDate, endDate]);
 
   const handleRefresh = () => {
-    fetchReportData(selectedDate)
-  }
+    fetchSalesData(currentPage);
+  };
 
   const handlePrint = () => {
-    window.print()
-  }
+    window.print();
+  };
 
-  const cardOnlyData = salesData.filter(sale => sale.pay === 'Card')
-  const cashOnlyData = salesData.filter(sale => sale.pay === 'Cash')
+  const handleExportCSV = () => {
+    if (!salesData || salesData.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    // Create CSV headers based on SaleData keys we show
+    const headers = [
+      "Order Number",
+      "Customer",
+      "Email",
+      "Order Type",
+      "Total",
+      "Discount",
+      "Postcode",
+      "Order Status",
+      "Payment Method",
+      "Payment Status",
+      "Created",
+    ];
 
-  const handleAccordionChange = (value: string[]) => {
-    setExpandedItems(value)
-  }
+    const rows = salesData.map((s) => {
+      const discountAmount =
+        typeof (s as any).discount === "object" &&
+        (s as any).discount?.discountAmount
+          ? (s as any).discount.discountAmount
+          : typeof (s as any).discount === "number"
+          ? (s as any).discount
+          : 0;
+      const value = ((s as any).total ?? 0) as number;
+      return [
+        (s as any).orderNumber ?? s.id ?? "",
+        s.customer ?? "",
+        s.email ?? "",
+        s.orderType ?? "",
+        value.toFixed(2),
+        (discountAmount as number).toFixed(2),
+        (s as any).postcode ?? "",
+        (s as any).status ?? "",
+        (s as any).paymentMethod ?? "",
+        (s as any).paymentStatus ?? "",
+        s.created ?? "",
+      ];
+    });
+
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sales-history_${format(startDate, "yyyyMMdd")}_${format(
+      endDate,
+      "yyyyMMdd"
+    )}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = async () => {
+    if (!salesData || salesData.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+    // Use the print stylesheet to make a PDF via browser print to PDF
+    // Open a new window with a simple table and trigger print
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const title = `Sales History: ${formatDate(startDate)} - ${formatDate(
+      endDate
+    )}`;
+    const style = `<style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding: 16px; }
+      h1 { font-size: 18px; margin-bottom: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+      th { background: #f3f4f6; text-align: left; }
+    </style>`;
+    const header = [
+      "Order Number",
+      "Customer",
+      "Email",
+      "Order Type",
+      "Total",
+      "Discount",
+      "Postcode",
+      "Order Status",
+      "Payment Method",
+      "Payment Status",
+      "Created",
+    ];
+    const rows = salesData.map((s) => {
+      const discountAmount =
+        typeof (s as any).discount === "object" &&
+        (s as any).discount?.discountAmount
+          ? (s as any).discount.discountAmount
+          : typeof (s as any).discount === "number"
+          ? (s as any).discount
+          : 0;
+      const value = ((s as any).total ?? 0) as number;
+      return [
+        (s as any).orderNumber ?? s.id ?? "",
+        s.customer ?? "",
+        s.email ?? "",
+        s.orderType ?? "",
+        value.toFixed(2),
+        (discountAmount as number).toFixed(2),
+        (s as any).postcode ?? "",
+        (s as any).status ?? "",
+        (s as any).paymentMethod ?? "",
+        (s as any).paymentStatus ?? "",
+        s.created ?? "",
+      ];
+    });
+    const table = `
+      <table>
+        <thead><tr>${header.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${rows
+            .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`)
+            .join("")}
+        </tbody>
+      </table>
+    `;
+    win.document.write(
+      `<html><head><title>${title}</title>${style}</head><body><h1>${title}</h1>${table}</body></html>`
+    );
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchSalesData(page);
+  };
+
+  const formatDate = (date: Date) => {
+    return date
+      .toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, "/");
+  };
+
+  // Totals with discount handling
+  const totalValue = salesData.reduce((sum, sale) => sum + sale.total, 0);
+
+  const totalDiscounts = salesData.reduce((sum, sale) => {
+    if (typeof sale.discount === "object" && sale.discount.discountAmount) {
+      return sum + sale.discount.discountAmount;
+    }
+    return sum;
+  }, 0);
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-medium">End of Night Report</h1>
+        <h1 className="text-2xl font-medium">
+          Sales History Report: {formatDate(startDate)} - {formatDate(endDate)}
+        </h1>
         <div className="flex gap-4 items-center no-print">
-          <DatePicker
-            selected={selectedDate}
-            onSelect={handleDateChange}
-            className="w-[200px]"
-          />
-          <Button 
-            onClick={handleRefresh} 
-            variant="outline" 
+          <div className="flex items-center gap-2">
+            <DatePicker
+              selected={startDate}
+              onSelect={(date) => date && setStartDate(date)}
+              className="w-[200px]"
+            />
+            <span className="text-gray-500">to</span>
+            <DatePicker
+              selected={endDate}
+              onSelect={(date) => date && setEndDate(date)}
+              className="w-[200px]"
+            />
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              className="bg-white"
+              disabled={loading}
+            >
+              <RotateCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </div>
+          <Button
+            onClick={handleExportPDF}
+            variant="outline"
             className="bg-white"
-            disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <FileText className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
-          <Button onClick={handlePrint} variant="outline" className="bg-white">
-            <PrinterIcon className="mr-2 h-4 w-4" />
-            Print
+          <Button
+            onClick={handleExportCSV}
+            variant="outline"
+            className="bg-white"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
         </div>
       </div>
 
-      {/* Summary Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-medium mb-4">Daily Summary</h2>
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-32" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <p className="text-2xl font-semibold">{summary.totalOrders}</p>
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="p-4">
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              {[...Array(10)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Sales</p>
-              <p className="text-2xl font-semibold">£{summary.totalSales.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Average Order</p>
-              <p className="text-2xl font-semibold">£{summary.averageOrderValue.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Tips</p>
-              <p className="text-2xl font-semibold">£{summary.totalTips.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Delivery Fees</p>
-              <p className="text-2xl font-semibold">£{summary.totalDeliveryFees.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Cash Orders</p>
-              <p className="text-2xl font-semibold">{summary.cashOrders}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Card Orders</p>
-              <p className="text-2xl font-semibold">{summary.cardOrders}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Delivery Orders</p>
-              <p className="text-2xl font-semibold">{summary.deliveryOrders}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Pickup Orders</p>
-              <p className="text-2xl font-semibold">{summary.pickupOrders}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Dine-in Orders</p>
-              <p className="text-2xl font-semibold">{summary.dineInOrders}</p>
-            </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <>
+              <ItemsTable data={salesData} type="sales" />
 
-      {/* Top Selling Items */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-medium mb-4">Top Selling Items</h2>
-        {loading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : topItems.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Item</th>
-                  <th className="text-right py-2">Quantity</th>
-                  <th className="text-right py-2">Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topItems.map((item, index) => (
-                  <tr key={item._id} className="border-b">
-                    <td className="py-2">{item.name}</td>
-                    <td className="text-right py-2">{item.quantity}</td>
-                    <td className="text-right py-2">£{item.revenue.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No sales data for this date</p>
-        )}
-      </div>
-
-      {/* Hourly Sales Breakdown */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-medium mb-4">Hourly Sales Breakdown</h2>
-        {loading ? (
-          <div className="space-y-2">
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
-          </div>
-        ) : hourlySales.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Hour</th>
-                  <th className="text-right py-2">Orders</th>
-                  <th className="text-right py-2">Sales</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hourlySales.map((hour) => (
-                  <tr key={hour._id} className="border-b">
-                    <td className="py-2">{hour._id}:00 - {hour._id + 1}:00</td>
-                    <td className="text-right py-2">{hour.orders}</td>
-                    <td className="text-right py-2">£{hour.sales.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No hourly data for this date</p>
-        )}
-      </div>
-
-      {/* Detailed Sales Accordion - Only show if we have actual sales data */}
-      {salesData.length > 0 && (
-        <Accordion
-          type="multiple"
-          value={expandedItems}
-          onValueChange={handleAccordionChange}
-          className="w-full space-y-4"
-        >
-          <AccordionItem value="all-sales" className="border-none">
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="font-medium">
-                  All Sales {!salesData.length && '(no data)'}
-                </h2>
-                <AccordionTrigger className="py-0 hover:no-underline flex-none border-none">
-                  <span className="text-sm text-gray-500 mr-2">
-                    {expandedItems.includes('all-sales') ? 'Collapse' : 'Expand'}
-                  </span>
-                </AccordionTrigger>
-              </div>
-              <AccordionContent>
-                <div className="p-4">
-                  <ItemsTable data={salesData} type="sales" />
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * 50 + 1} to{" "}
+                    {Math.min(currentPage * 50, totalItems)} of {totalItems}{" "}
+                    items
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={
+                                pageNum === currentPage ? "default" : "outline"
+                              }
+                              size="sm"
+                              onClick={() => handlePageChange(pageNum)}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        }
+                      )}
+                      {totalPages > 5 && <span className="px-2">...</span>}
+                      {totalPages > 5 && (
+                        <Button
+                          variant={
+                            totalPages === currentPage ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                        >
+                          {totalPages}
+                        </Button>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-              </AccordionContent>
+              )}
+            </>
+          )}
+        </div>
+        <div className="border-t p-4">
+          <div className="flex gap-8">
+            <div className="flex-1 border rounded-md p-4">
+              <div className="text-sm text-gray-500">Total Value</div>
+              {loading ? (
+                <Skeleton className="h-8 w-24 mt-1" />
+              ) : (
+                <div className="text-2xl mt-1">£{totalValue.toFixed(2)}</div>
+              )}
             </div>
-          </AccordionItem>
-
-          <AccordionItem value="cash-only" className="border-none">
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="font-medium">
-                  Sales by Cash Only {!cashOnlyData.length && '(no data)'}
-                </h2>
-                <AccordionTrigger className="py-0 hover:no-underline flex-none border-none">
-                  <span className="text-sm text-gray-500 mr-2">
-                    {expandedItems.includes('cash-only') ? 'Collapse' : 'Expand'}
-                  </span>
-                </AccordionTrigger>
-              </div>
-              <AccordionContent>
-                <div className="p-4">
-                  <ItemsTable data={cashOnlyData} type="sales" />
+            <div className="flex-1 border rounded-md p-4">
+              <div className="text-sm text-gray-500">Total Discounts</div>
+              {loading ? (
+                <Skeleton className="h-8 w-24 mt-1" />
+              ) : (
+                <div className="text-2xl mt-1">
+                  £{totalDiscounts.toFixed(2)}
                 </div>
-              </AccordionContent>
+              )}
             </div>
-          </AccordionItem>
-
-          <AccordionItem value="card-only" className="border-none">
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="font-medium">
-                  Sales by Card Only {!cardOnlyData.length && '(no data)'}
-                </h2>
-                <AccordionTrigger className="py-0 hover:no-underline flex-none border-none">
-                  <span className="text-sm text-gray-500 mr-2">
-                    {expandedItems.includes('card-only') ? 'Collapse' : 'Expand'}
-                  </span>
-                </AccordionTrigger>
-              </div>
-              <AccordionContent>
-                <div className="p-4">
-                  <ItemsTable data={cardOnlyData} type="sales" />
-                </div>
-              </AccordionContent>
-            </div>
-          </AccordionItem>
-        </Accordion>
-      )}
+          </div>
+        </div>
+      </div>
     </>
-  )
+  );
 }

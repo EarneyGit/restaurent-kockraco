@@ -60,14 +60,15 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
           <TableRow>
             <TableHead>Order Number</TableHead>
             <TableHead>Customer</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Order Type</TableHead>
+            <TableHead>Total</TableHead>
             <TableHead>Discount</TableHead>
-            <TableHead>Tip</TableHead>
             <TableHead>Postcode</TableHead>
-            <TableHead>Pay</TableHead>
-            <TableHead>Type</TableHead>
+            <TableHead>Order Status</TableHead>
+            <TableHead>Payment Method</TableHead>
+            <TableHead>Payment Status</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Platform</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,20 +79,21 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 : sale.discount || 0;
             return (
               <TableRow key={sale.id}>
-                <TableCell className="font-medium">{sale.id}</TableCell>
+                <TableCell className="font-medium">
+                  {sale.orderNumber}
+                </TableCell>
                 <TableCell className="text-gray-700">{sale.customer}</TableCell>
-                <TableCell>£{sale.value.toFixed(2)}</TableCell>
+                <TableCell>{sale.email}</TableCell>
+                <TableCell>{sale.orderType}</TableCell>
+                <TableCell>£{sale.total.toFixed(2)}</TableCell>
                 <TableCell>
                   {discount > 0 ? `£${discount.toFixed(2)}` : "—"}
                 </TableCell>
-                <TableCell>
-                  {sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : "—"}
-                </TableCell>
                 <TableCell>{sale.postcode}</TableCell>
-                <TableCell>{sale.pay}</TableCell>
-                <TableCell>{sale.type}</TableCell>
+                <TableCell>{sale.status}</TableCell>
+                <TableCell>{sale.paymentMethod}</TableCell>
+                <TableCell>{sale.paymentStatus}</TableCell>
                 <TableCell>{sale.created}</TableCell>
-                <TableCell>{sale.platform}</TableCell>
               </TableRow>
             );
           })}

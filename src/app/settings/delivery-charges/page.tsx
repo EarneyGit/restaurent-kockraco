@@ -65,7 +65,7 @@ export default  function DeliveryChargesPage() {
   const loadBranchLocation = async () => {
     try {
       setLocationLoading(true)
-      const response = await api.get("/api/branches/outlet-settings")
+      const response = await api.get("/branches/outlet-settings")
       
       if (response.data?.success && response.data?.data) {
         const branchData = response.data.data

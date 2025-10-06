@@ -7,14 +7,17 @@ export interface DiscountObject {
 export interface SaleData {
   id: string
   customer: string
-  value: number
+  email: string
+  total: number
   discount: number | DiscountObject // can be a number (like 0) or an object
-  tip: number
   postcode: string
-  pay: 'Card' | 'Cash'
-  type: 'Delivery' | 'Collection'
+  paymentMethod: string
+  paymentStatus: string
+  orderType: string
+  deliveryAddress: string
   created: string
-  platform: string
+  status: string
+  orderNumber: string
 }
 
 export interface DiscountHistoryItem {
