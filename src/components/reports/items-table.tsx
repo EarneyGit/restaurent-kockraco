@@ -19,6 +19,8 @@ interface ItemsTableProps {
 }
 
 export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
+    const [openId, setOpenId] = React.useState<string | null>(null);
+    const [openBranchId, setOpenBranchId] = React.useState<string | null>(null);
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -56,8 +58,7 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
   }
 
   const salesData = data as SaleData[];
-  const [openId, setOpenId] = React.useState<string | null>(null);
-  const [openBranchId, setOpenBranchId] = React.useState<string | null>(null);
+
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
