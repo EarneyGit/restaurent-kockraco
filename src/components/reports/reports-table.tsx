@@ -22,12 +22,11 @@ export function ReportsTable({ data }: ReportsTableProps) {
             <TableHead>Customer</TableHead>
             <TableHead>Value</TableHead>
             <TableHead>Discount</TableHead>
-            <TableHead>Tip</TableHead>
+            <TableHead>Payment Method</TableHead>
+            <TableHead>Payment Status</TableHead>
+            <TableHead>Order Type</TableHead>
             <TableHead>Postcode</TableHead>
-            <TableHead>Pay</TableHead>
-            <TableHead>Type</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Platform</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -41,14 +40,13 @@ export function ReportsTable({ data }: ReportsTableProps) {
               <TableRow key={sale.id}>
                 <TableCell className="text-blue-600">{sale.id}</TableCell>
                 <TableCell>{sale.customer}</TableCell>
-                <TableCell>£{sale.value.toFixed(2)}</TableCell>
+                <TableCell>£{sale.total.toFixed(2)}</TableCell>
                 <TableCell>{discount > 0 ? `£${discount.toFixed(2)}` : '—'}</TableCell>
-                <TableCell>{sale.tip > 0 ? `£${sale.tip.toFixed(2)}` : '—'}</TableCell>
                 <TableCell>{sale.postcode}</TableCell>
-                <TableCell>{sale.pay}</TableCell>
-                <TableCell>{sale.type}</TableCell>
+                <TableCell>{sale.paymentMethod}</TableCell>
+                <TableCell>{sale.paymentStatus}</TableCell>
+                <TableCell>{sale.orderType}</TableCell>
                 <TableCell>{sale.created}</TableCell>
-                <TableCell>{sale.platform}</TableCell>
               </TableRow>
             )
           })}

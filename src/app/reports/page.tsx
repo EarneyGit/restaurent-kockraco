@@ -271,6 +271,28 @@ export default function SalesHistoryPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm">
+        <div className="border-t p-4">
+          <div className="flex gap-8">
+            <div className="flex-1 border rounded-md p-4">
+              <div className="text-sm text-gray-500">Total Value</div>
+              {loading ? (
+                <Skeleton className="h-8 w-24 mt-1" />
+              ) : (
+                <div className="text-2xl mt-1">£{totalValue.toFixed(2)}</div>
+              )}
+            </div>
+            <div className="flex-1 border rounded-md p-4">
+              <div className="text-sm text-gray-500">Total Discounts</div>
+              {loading ? (
+                <Skeleton className="h-8 w-24 mt-1" />
+              ) : (
+                <div className="text-2xl mt-1">
+                  £{totalDiscounts.toFixed(2)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="p-4">
           {loading ? (
             <div className="space-y-2">
@@ -345,28 +367,6 @@ export default function SalesHistoryPage() {
               )}
             </>
           )}
-        </div>
-        <div className="border-t p-4">
-          <div className="flex gap-8">
-            <div className="flex-1 border rounded-md p-4">
-              <div className="text-sm text-gray-500">Total Value</div>
-              {loading ? (
-                <Skeleton className="h-8 w-24 mt-1" />
-              ) : (
-                <div className="text-2xl mt-1">£{totalValue.toFixed(2)}</div>
-              )}
-            </div>
-            <div className="flex-1 border rounded-md p-4">
-              <div className="text-sm text-gray-500">Total Discounts</div>
-              {loading ? (
-                <Skeleton className="h-8 w-24 mt-1" />
-              ) : (
-                <div className="text-2xl mt-1">
-                  £{totalDiscounts.toFixed(2)}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </>
