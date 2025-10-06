@@ -9,6 +9,8 @@ import { ChevronDown, ChevronUp, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from 'sonner'
 import api from '@/lib/axios'
+import Image from 'next/image'
+import { useAuth } from '@/contexts/auth-context'
 
 interface StockItem {
   id: string
@@ -31,6 +33,7 @@ export default function StockControlPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const { logout, user } = useAuth();
 
   // Extract data fetching logic into a reusable function
   const fetchData = async () => {
@@ -186,12 +189,16 @@ export default function StockControlPage() {
     return categories.reduce((total, category) => total + category.items.length, 0)
   }
 
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
+
   return (
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button className="flex items-center text-gray-700 font-medium">
             <Eye className="h-5 w-5 mr-1" />
@@ -225,7 +232,7 @@ export default function StockControlPage() {
             <Button 
               onClick={handleSaveChanges}
                   disabled={isSaving}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
             >
                   {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>

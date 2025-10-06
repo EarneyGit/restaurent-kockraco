@@ -293,21 +293,21 @@ export default function CustomReportsPage() {
       <div className="grid grid-cols-3 gap-4">
         <Button
           variant={selectedReport === 'menu-category-totals' ? 'default' : 'outline'}
-          className={selectedReport === 'menu-category-totals' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white'}
+          className={selectedReport === 'menu-category-totals' ? 'bg-yellow-500/80 hover:bg-yellow-500' : 'bg-white'}
           onClick={() => setSelectedReport('menu-category-totals')}
         >
           Totals By Menu Category
         </Button>
         <Button
           variant={selectedReport === 'daily-totals' ? 'default' : 'outline'}
-          className={selectedReport === 'daily-totals' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white'}
+          className={selectedReport === 'daily-totals' ? 'bg-yellow-500/80 hover:bg-yellow-500' : 'bg-white'}
           onClick={() => setSelectedReport('daily-totals')}
         >
           Daily Totals
         </Button>
         <Button
           variant={selectedReport === 'order-export' ? 'default' : 'outline'}
-          className={selectedReport === 'order-export' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white'}
+          className={selectedReport === 'order-export' ? 'bg-yellow-500/80 hover:bg-yellow-500' : 'bg-white'}
           onClick={() => setSelectedReport('order-export')}
         >
           Order Export

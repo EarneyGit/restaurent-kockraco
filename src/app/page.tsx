@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { LogOut } from "lucide-react";
+import Image from "next/image";
 
 // Sample data generator from dashboard
 interface DayData {
@@ -308,9 +309,11 @@ export default function HomePage() {
     <div className="p-6 bg-gray-50">
       {/* Header with location and view store button */}
       <div className="flex items-center justify-between mb-6 border-b pb-4">
-        <div className="flex-1"></div>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
         <h1 className="text-2xl font-medium text-center flex-1">
-          {displayName}
+          {displayName || "Admin User"}
         </h1>
         <div className="flex items-center justify-end flex-1 space-x-4">
           <button 
@@ -368,7 +371,7 @@ export default function HomePage() {
               className={cn(
                 "px-4 py-3",
                 selectedFilter === filter
-                  ? "text-teal-500 border-b-2 border-teal-500 font-medium"
+                  ? "text-yellow-500 border-b-2 border-yellow-500 font-medium"
                   : "text-gray-500"
               )}
               onClick={() => handleFilterChange(filter as DateFilter)}
@@ -409,7 +412,7 @@ export default function HomePage() {
             </div>
             <Button
               onClick={handleCustomDateSubmit}
-              className="bg-teal-500 hover:bg-teal-600 text-white"
+              className="bg-gray-500 hover:bg-gray-600 text-white"
             >
               Generate Report
             </Button>
@@ -615,7 +618,7 @@ export default function HomePage() {
             {stats?.hourlyData.map((data, i) => (
               <div
                 key={i}
-                className="flex-1 bg-green-500 transition-all duration-300"
+                className="flex-1 bg-yellow-500/50 transition-all duration-300"
                 style={{
                   height: `${
                     (data.sales /
@@ -651,7 +654,7 @@ export default function HomePage() {
             {stats?.hourlyData.slice(0, 7).map((data, i) => (
               <div
                 key={i}
-                className="flex-1 bg-green-500 transition-all duration-300"
+                className="flex-1 bg-yellow-500/50 transition-all duration-300"
                 style={{
                   height: `${
                     (data.sales /
@@ -660,7 +663,7 @@ export default function HomePage() {
                   }%`,
                 }}
               >
-                <div className="text-xs text-center text-white mt-2">
+                <div className="text-xs text-center text-slate-700 mt-6">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
                 </div>
               </div>
@@ -689,7 +692,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-teal-400 relative">
+              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="font-bold">
                     {stats?.totalSales
@@ -719,7 +722,7 @@ export default function HomePage() {
               <div className="text-xs text-center text-gray-500 mt-2">Cash</div>
             </div>
             <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-teal-400 relative">
+              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="font-bold">
                     {stats?.totalSales
@@ -754,7 +757,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-teal-400 relative">
+              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="font-bold">
                     {stats?.totalSales
@@ -812,7 +815,7 @@ export default function HomePage() {
           <div>
             <h4 className="text-sm font-medium mb-3 text-center">Retention</h4>
             <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-teal-400 relative overflow-hidden">
+              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative overflow-hidden">
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="font-bold">78%</span>
                   <span className="text-xs">Returning</span>

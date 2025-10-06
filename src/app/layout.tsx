@@ -16,8 +16,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Restaurant Management System",
-  description: "Restaurant management dashboard",
+  title: "Rasoie - Admin Panel",
+  description: "Rasoie - Indian Restaurant",
+  icons: {
+    icon: "/rasoie_logo.png",
+  },
 };
 
 export default function RootLayout({

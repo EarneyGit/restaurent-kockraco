@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch"
 import { Eye, Edit, Trash2, Plus, Loader2 } from "lucide-react"
 import { serviceChargeService, type ServiceCharge } from "@/services/service-charge.service"
 import { toast } from "sonner"
+import Image from "next/image"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function ServiceChargesPage() {
   const [charges, setCharges] = useState<ServiceCharge[]>([])
@@ -17,6 +19,7 @@ export default function ServiceChargesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingCharge, setEditingCharge] = useState<ServiceCharge | null>(null)
+  const { user } = useAuth()
 
   // Load data on component mount
   useEffect(() => {
@@ -212,13 +215,15 @@ export default function ServiceChargesPage() {
       </Dialog>
     )
   }
-
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   return (
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             className="flex items-center text-gray-700 font-medium"
@@ -239,7 +244,7 @@ export default function ServiceChargesPage() {
             <h1 className="text-2xl font-medium">Service Charges</h1>
             <Button 
               onClick={handleAdd}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Service Charge

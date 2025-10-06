@@ -6,6 +6,8 @@ import DiscountModal from "@/components/marketing/discount-modal"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { discountService, Discount, DiscountResponse } from '@/services/discount.service'
+import Image from 'next/image'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function DiscountsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -16,7 +18,8 @@ export default function DiscountsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalDiscounts, setTotalDiscounts] = useState(0)
-
+  const { user } = useAuth()
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   // Fetch discounts from API
   const fetchDiscounts = async () => {
     try {
@@ -84,8 +87,10 @@ export default function DiscountsPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
@@ -105,7 +110,7 @@ export default function DiscountsPage() {
           <h1 className="text-2xl font-medium">Discounts</h1>
           <Button
             onClick={handleAddDiscount}
-            className="bg-emerald-500 hover:bg-emerald-600"
+            className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
             disabled={loading}
           >
             Add Discount

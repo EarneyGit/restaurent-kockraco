@@ -10,6 +10,8 @@ import { Edit, Trash2, Plus, Eye, Loader2, MapPin, Search } from "lucide-react"
 import { deliveryChargeService, type DeliveryCharge, type PriceOverride, type PostcodeExclusion } from "@/services/delivery-charge.service"
 import { toast } from "sonner"
 import api from "@/lib/axios"
+import { useAuth } from "@/contexts/auth-context"
+import Image from "next/image"
 
 // Branch Location interface
 interface BranchLocation {
@@ -19,7 +21,8 @@ interface BranchLocation {
   postcode?: string;
 }
 
-export default function DeliveryChargesPage() {
+export default  function DeliveryChargesPage() {
+  const { user } = useAuth()
   // Delivery Charges State
   const [charges, setCharges] = useState<DeliveryCharge[]>([])
   const [loading, setLoading] = useState(true)
@@ -717,13 +720,15 @@ export default function DeliveryChargesPage() {
       </Dialog>
     )
   }
-
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
   return (
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             className="flex items-center text-gray-700 font-medium"
@@ -761,7 +766,7 @@ export default function DeliveryChargesPage() {
               </Button>
               <Button 
                 onClick={handleAdd}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Charge
@@ -853,7 +858,7 @@ export default function DeliveryChargesPage() {
               <Button 
                 onClick={handleAddOverride}
                 size="sm"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Override
@@ -934,7 +939,7 @@ export default function DeliveryChargesPage() {
               <Button 
                 onClick={handleAddExclusion}
                 size="sm"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Exclusion

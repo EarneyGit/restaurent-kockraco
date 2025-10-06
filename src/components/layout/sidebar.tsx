@@ -25,6 +25,11 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
+  ChevronLast,
+  ChevronFirst,
+  ChevronsLeft,
+  ChevronsRight,
+  Hamburger,
 } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
 
@@ -105,41 +110,27 @@ function Sidebar() {
       {/* Logo Header */}
       <div className="py-4 px-4 border-b border-blue-900 flex justify-between items-center">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-2">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-                fill="white"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-2">
+            <Hamburger size={18} className="text-yellow-800" />
           </div>
           {!isCollapsed && (
-            <span className="text-lg font-semibold text-white">
-              Restroman UK
-            </span>
+            <p className="text-lg font-semibold uppercase text-white flex flex-col">
+              Rasoie
+              {/* <sp>Indian Restaurant</sp> */}
+            </p>
           )}
         </div>
 
         {/* Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="p-1 hover:bg-blue-900 hover:bg-opacity-30 rounded transition-colors"
+          className="p-0.5 hover:bg-blue-200 hover:bg-opacity-30 rounded transition-colors"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <ChevronRight className="h-5 w-5 text-red-500" />
+            <ChevronsRight className="h-5 w-5 ml-2.5 text-yellow-700" />
           ) : (
-            <ChevronLeft className="h-5 w-5 text-red-500" />
+            <ChevronsLeft className="h-5 w-5 text-white" />
           )}
         </button>
       </div>

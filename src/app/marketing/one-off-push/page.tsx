@@ -7,13 +7,15 @@ import { OneOffPushModal } from '@/components/marketing/one-off-push-modal'
 import PageLayout from "@/components/layout/page-layout"
 import { pushNotificationService, PushNotification } from '@/services/push-notification.service'
 import { toast } from 'sonner'
+import Image from 'next/image'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function OneOffPushPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [messages, setMessages] = useState<PushNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-
+  const { user } = useAuth()
   // Load notifications on component mount
   useEffect(() => {
     loadNotifications()
@@ -81,13 +83,16 @@ export default function OneOffPushPage() {
     if (!dateString) return 'Immediate'
     return new Date(dateString).toLocaleString()
   }
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user"
 
   return (
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
         <div className="flex justify-end flex-1">
           <button 
             onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
@@ -107,7 +112,7 @@ export default function OneOffPushPage() {
           <Button 
             onClick={() => setIsModalOpen(true)}
             disabled={creating}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
           >
             {creating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

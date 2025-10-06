@@ -208,7 +208,7 @@ export default function LeadTimesPage() {
               <Button 
                 onClick={handleSave}
                 type="button"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white w-24"
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white w-24"
                 disabled={isLoading}
               >
                 {isLoading ? 'Saving...' : 'Save'}

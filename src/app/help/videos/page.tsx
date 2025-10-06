@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import PageLayout from "@/components/layout/page-layout";
+import Image from "next/image";
+import { useAuth } from "@/contexts/auth-context";
 
 interface HelpVideo {
   title: string;
@@ -14,6 +16,8 @@ interface VideoCategory {
 }
 
 export default function HelpVideosPage() {
+  const { user } = useAuth();
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user";
   const videoCategories: VideoCategory[] = [
     {
       title: "Orders",
@@ -68,11 +72,22 @@ export default function HelpVideosPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image
+            src="/rasoie_logo.png"
+            alt="Rasoie Logo"
+            width={50}
+            height={50}
+          />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">
+          {displayName}
+        </h1>
         <div className="flex justify-end flex-1">
-          <button 
-            onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
+          <button
+            onClick={() =>
+              import("@/lib/utils").then(({ viewYourStore }) => viewYourStore())
+            }
             className="flex items-center text-gray-700 font-medium"
           >
             <svg

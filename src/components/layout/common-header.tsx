@@ -1,36 +1,48 @@
-'use client'
+"use client";
 
-import React, { memo, useCallback } from 'react'
-import { LogOut, Eye } from 'lucide-react'
-import { useAuth } from '@/contexts/auth-context'
+import React, { memo, useCallback } from "react";
+import { LogOut, Eye } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
+import Image from "next/image";
 
 interface CommonHeaderProps {
-  title?: string
-  showViewStore?: boolean
+  title?: string;
+  showViewStore?: boolean;
 }
 
-const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }: CommonHeaderProps) {
-  const { logout, user } = useAuth()
+const CommonHeader = memo(function CommonHeader({
+  title,
+  showViewStore = true,
+}: CommonHeaderProps) {
+  const { logout, user } = useAuth();
   // Use actual user data if available
-  const displayName = user?.firstName + " " + user?.lastName || title || 'Adminn user'
+  const displayName =
+    user?.firstName + " " + user?.lastName || title || "Adminn user";
 
   const handleLogout = useCallback(() => {
-    logout()
-  }, [logout])
+    logout();
+  }, [logout]);
 
   const handleViewStore = useCallback(() => {
     // Use the viewYourStore function from utils
-    const { viewYourStore } = require('@/lib/utils')
-    viewYourStore()
-  }, [])
+    const { viewYourStore } = require("@/lib/utils");
+    viewYourStore();
+  }, []);
 
   return (
     <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-      <div className="flex-1"></div>
+      <div className="flex-1">
+        <Image
+          src="/rasoie_logo.png"
+          alt="Rasoie Logo"
+          width={50}
+          height={50}
+        />
+      </div>
       <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
       <div className="flex justify-end flex-1 items-center space-x-4">
         {showViewStore && (
-          <button 
+          <button
             className="flex items-center text-gray-700 font-medium"
             onClick={handleViewStore}
           >
@@ -38,7 +50,7 @@ const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }:
             View Your Store
           </button>
         )}
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
           title="Logout"
@@ -48,7 +60,7 @@ const CommonHeader = memo(function CommonHeader({ title, showViewStore = true }:
         </button>
       </div>
     </header>
-  )
-})
+  );
+});
 
-export default CommonHeader
+export default CommonHeader;

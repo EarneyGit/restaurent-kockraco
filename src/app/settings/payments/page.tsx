@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import PageLayout from "@/components/layout/page-layout";
 import { Eye, Search, Filter, Calendar } from "lucide-react";
 import { API_BASE_URL } from "@/config/api.config";
+import Image from "next/image";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Payment {
   _id: string;
@@ -33,6 +35,8 @@ interface PaginationInfo {
 }
 
 export default function PaymentsPage() {
+  const { user } = useAuth();
+  const displayName = user?.firstName + " " + user?.lastName || "Admin user";
   const [payments, setPayments] = useState<Payment[]>([]);
   const [stats, setStats] = useState<PaymentStats>({
     totalPaid: 0,
@@ -173,14 +177,23 @@ export default function PaymentsPage() {
     <PageLayout>
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
-        <div className="flex-1"></div>
-        <h1 className="text-xl font-medium flex-1 text-center">Admin user</h1>
+        <div className="flex-1">
+          <Image
+            src="/rasoie_logo.png"
+            alt="Rasoie Logo"
+            width={50}
+            height={50}
+          />
+        </div>
+        <h1 className="text-xl font-medium flex-1 text-center">
+          {displayName}
+        </h1>
         <div className="flex justify-end flex-1">
-          <button 
+          <button
             className="flex items-center text-gray-700 font-medium"
             onClick={() => {
-              const { viewYourStore } = require('@/lib/utils')
-              viewYourStore()
+              const { viewYourStore } = require("@/lib/utils");
+              viewYourStore();
             }}
           >
             <Eye className="h-5 w-5 mr-1" />

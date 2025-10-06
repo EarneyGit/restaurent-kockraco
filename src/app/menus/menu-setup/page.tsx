@@ -169,7 +169,7 @@ export default function MenuSetupPage() {
           <div className="flex flex-wrap gap-4 items-center">
             <Button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-emerald-500 hover:bg-emerald-600"
+              className="bg-yellow-500/80 hover:bg-yellow-500"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Category
