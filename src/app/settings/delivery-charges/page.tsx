@@ -61,23 +61,32 @@ export default  function DeliveryChargesPage() {
     loadBranchLocation()
   }, [])
   
+  // Also load branch location whenever the modal is opened
+  useEffect(() => {
+    if (isLocationModalOpen) {
+      loadBranchLocation()
+    }
+  }, [isLocationModalOpen])
+  
   // Load branch location
   const loadBranchLocation = async () => {
     try {
       setLocationLoading(true)
-      const response = await api.get("/branches/outlet-settings")
-      
+      // Fetch branch location from delivery-charges API
+      const response = await api.get("/settings/delivery-charges/branch-location")
+
       if (response.data?.success && response.data?.data) {
-        const branchData = response.data.data
-        
-        if (branchData.location && 
-            branchData.location.coordinates && 
-            branchData.location.coordinates.length === 2) {
+        const data = response.data.data
+
+        if (
+          typeof data.latitude === "number" &&
+          typeof data.longitude === "number"
+        ) {
           setBranchLocation({
-            longitude: branchData.location.coordinates[0],
-            latitude: branchData.location.coordinates[1],
-            formattedAddress: branchData.location.formattedAddress || branchData.address?.postalCode,
-            postcode: branchData.address?.postalCode
+            latitude: data.latitude,
+            longitude: data.longitude,
+            formattedAddress: data.formattedAddress || data.postcode || undefined,
+            postcode: data.postcode || undefined,
           })
         }
       }
