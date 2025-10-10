@@ -365,7 +365,6 @@ export function EditItemModal({
 
   const handleSave = async () => {
     if (!currentItem.name) return toast.error("Item name is required");
-    if (!currentItem.description) return toast.error("Item description is required");
     try {
       const formData = new FormData();
 
@@ -1141,7 +1140,7 @@ export function EditItemModal({
               </div>
 
               <div>
-                <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={currentItem.description || ""}
