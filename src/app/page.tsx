@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   format,
   subDays,
@@ -453,7 +453,7 @@ export default function HomePage() {
               onClick={handleCustomDateSubmit}
               className="bg-gray-500 hover:bg-gray-600 text-white"
             >
-              Generate Report
+              Search
             </Button>
           </div>
         )}
@@ -952,46 +952,116 @@ export default function HomePage() {
         </div>
       </div>
       </>
-      ) : (
+       ) : (
+       <>
+       {/* Total Orders Chart */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Overview</h3>
+          <h3 className="font-semibold">Total Orders</h3>
           <span className="text-xs text-gray-500">Custom Range</span>
         </div>
-        <div className="h-52 relative">
-          <div className="h-40 w-full flex items-end space-x-3">
-            {[{
-              label: "Orders",
-              value: liveStats?.totalOrders || 0,
-              color: "bg-yellow-500/70"
-            },{
-              label: "Revenue",
-              value: liveStats?.totalRevenue || 0,
-              color: "bg-green-500/70"
-            },{
-              label: "Discount",
-              value: liveStats?.totalDiscount || 0,
-              color: "bg-blue-500/70"
-            },{
-              label: "Customers",
-              value: liveStats?.totalCustomers || 0,
-              color: "bg-purple-500/70"
-            }].map((bar, i, arr) => {
-              const max = Math.max(...arr.map(b => Number(b.value) || 0), 1);
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center">
-                  <div
-                    className={`${bar.color} w-full transition-all duration-300`}
-                    style={{ height: `${(Number(bar.value) / max) * 100}%` }}
-                  />
-                  <div className="text-xs text-gray-600 mt-2">{bar.label}</div>
-                </div>
-              );
-            })}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-40">
+            <div className="h-32 w-full flex items-end">
+              <div
+                className="w-full bg-yellow-500/70"
+                style={{ height: "70%" }}
+              ></div>
+            </div>
+            <div className="text-xs text-center text-gray-500 mt-2">Orders</div>
+          </div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-bold">{liveStats?.totalOrders || 0}</span>
+                <span className="text-xs">Total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+     {/* Total Revenue Chart */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Total Revenue</h3>
+          <span className="text-xs text-gray-500">Custom Range</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-40">
+            <div className="h-32 w-full flex items-end">
+              <div
+                className="w-full bg-green-500/70"
+                style={{ height: "65%" }}
+              ></div>
+            </div>
+            <div className="text-xs text-center text-gray-500 mt-2">Revenue</div>
+          </div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full border-8 border-green-400/60 relative">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-bold">£{liveStats?.totalRevenue || 0}</span>
+                <span className="text-xs">Total</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      )}
+
+      {/* Total Discount Chart */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Total Discount</h3>
+          <span className="text-xs text-gray-500">Custom Range</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-40">
+            <div className="h-32 w-full flex items-end">
+              <div
+                className="w-full bg-blue-500/70"
+                style={{ height: "40%" }}
+              ></div>
+            </div>
+            <div className="text-xs text-center text-gray-500 mt-2">Discount</div>
+          </div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full border-8 border-blue-400/60 relative">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-bold">£{liveStats?.totalDiscount || 0}</span>
+                <span className="text-xs">Total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Customers Chart */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Total Customers</h3>
+          <span className="text-xs text-gray-500">Custom Range</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-40">
+            <div className="h-32 w-full flex items-end">
+              <div
+                className="w-full bg-purple-500/70"
+                style={{ height: "60%" }}
+              ></div>
+            </div>
+            <div className="text-xs text-center text-gray-500 mt-2">Customers</div>
+          </div>
+          <div className="h-40 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full border-8 border-purple-400/60 relative">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-bold">{liveStats?.totalCustomers || 0}</span>
+                <span className="text-xs">Total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+       </div>
+       </div>
+       </>
+       )}
     </div>
   );
 }
