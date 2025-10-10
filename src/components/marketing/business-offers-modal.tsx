@@ -54,7 +54,7 @@ export default function BusinessOffersModal({
     isActive: true
   })
   const [errors, setErrors] = useState<{title?: string, content?: string, image?: string, startDate?: string}>({})
-  const MAX_FILE_SIZE_MB = 5 // Maximum file size in MB
+  const MAX_FILE_SIZE_MB = 10 // Maximum file size in MB
 
   useEffect(() => {
     if (offer) {
