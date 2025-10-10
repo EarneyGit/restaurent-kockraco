@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
+import api from "@/lib/axios";
+import { toast } from "sonner";
 
 // Sample data generator from dashboard
 interface DayData {
@@ -97,10 +99,13 @@ type DateFilter =
 
 export default function HomePage() {
   const { logout, user } = useAuth();
-  const [selectedFilter, setSelectedFilter] = useState<DateFilter>("today");
+  const FEATURE_DEV = process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true";
+  const [selectedFilter, setSelectedFilter] = useState<DateFilter>(
+    (process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true") ? "today" : "custom"
+  );
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: startOfDay(subDays(new Date(), 1)),
-    to: endOfDay(subDays(new Date(), 1)),
+    from: startOfDay(new Date()),
+    to: endOfDay(new Date()),
   });
   const [stats, setStats] = useState<{
     totalSales: number;
@@ -117,11 +122,17 @@ export default function HomePage() {
       orders: number;
     }>;
   } | null>(null);
+  const [liveStats, setLiveStats] = useState<{
+    totalOrders: number;
+    totalRevenue: number;
+    totalDiscount: number;
+    totalCustomers: number;
+  } | null>(null);
   const [customDateRange, setCustomDateRange] = useState({
     from: "",
     to: "",
   });
-  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(!FEATURE_DEV);
 
   // Use actual user data if available
   const displayName = user?.firstName + " " + user?.lastName || "Admin User";
@@ -129,6 +140,19 @@ export default function HomePage() {
   const handleLogout = () => {
     logout();
   };
+
+  const availableFilters: string[] = FEATURE_DEV
+    ? [
+        "yesterday",
+        "today",
+        "lastWeek",
+        "thisWeek",
+        "lastMonth",
+        "thisMonth",
+        "last30Days",
+        "custom",
+      ]
+    : ["custom"];
 
   const handleFilterChange = (filter: DateFilter) => {
     setSelectedFilter(filter);
@@ -202,6 +226,30 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    if (!FEATURE_DEV) {
+      const fetchLiveStats = async () => {
+        try {
+          const startDate = format(dateRange.from, "yyyy-MM-dd");
+          const endDate = format(dateRange.to, "yyyy-MM-dd");
+          const response = await api.post("/dashboard", { startDate, endDate });
+          const data = (response as any).data;
+          if (data?.success) {
+            setLiveStats(data.data);
+          } else {
+            toast.error(data?.message || "Failed to fetch stats");
+          }
+        } catch (error: any) {
+          const msg =
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Failed to fetch stats";
+          toast.error(msg);
+        }
+      };
+      fetchLiveStats();
+      return;
+    }
     // Filter data based on date range
     const SAMPLE_DATA = generateSampleData(90);
     const filteredData = SAMPLE_DATA.filter((day) => {
@@ -356,16 +404,7 @@ export default function HomePage() {
       {/* Date filter tabs */}
       <div className="flex flex-col border-b mb-6">
         <div className="flex">
-          {[
-            "yesterday",
-            "today",
-            "lastWeek",
-            "thisWeek",
-            "lastMonth",
-            "thisMonth",
-            "last30Days",
-            "custom",
-          ].map((filter) => (
+          {availableFilters.map((filter) => (
             <button
               key={filter}
               className={cn(
@@ -421,11 +460,12 @@ export default function HomePage() {
       </div>
 
       {/* Metrics Cards */}
+      {FEATURE_DEV ? (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-500 mb-1">Total Orders</p>
+              <p className="text-sm text-gray-500 mb-1">Total Orders (Sales)</p>
               <h2 className="text-2xl font-bold text-gray-900">
                 {stats ? formatCurrency(stats.totalSales) : "---"}
               </h2>
@@ -602,7 +642,54 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Total Orders</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {liveStats ? liveStats.totalOrders.toLocaleString() : "---"}
+              </h2>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {liveStats ? formatCurrency(liveStats.totalRevenue) : "---"}
+              </h2>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Total Discount</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {liveStats ? formatCurrency(liveStats.totalDiscount) : "---"}
+              </h2>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Total Customers</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {liveStats ? liveStats.totalCustomers.toLocaleString() : "---"}
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
 
+      {/* Charts */}
+      {FEATURE_DEV ? (
+      <>
       {/* Hourly Sales Report */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex justify-between items-center mb-4">
@@ -864,6 +951,47 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      </>
+      ) : (
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Overview</h3>
+          <span className="text-xs text-gray-500">Custom Range</span>
+        </div>
+        <div className="h-52 relative">
+          <div className="h-40 w-full flex items-end space-x-3">
+            {[{
+              label: "Orders",
+              value: liveStats?.totalOrders || 0,
+              color: "bg-yellow-500/70"
+            },{
+              label: "Revenue",
+              value: liveStats?.totalRevenue || 0,
+              color: "bg-green-500/70"
+            },{
+              label: "Discount",
+              value: liveStats?.totalDiscount || 0,
+              color: "bg-blue-500/70"
+            },{
+              label: "Customers",
+              value: liveStats?.totalCustomers || 0,
+              color: "bg-purple-500/70"
+            }].map((bar, i, arr) => {
+              const max = Math.max(...arr.map(b => Number(b.value) || 0), 1);
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center">
+                  <div
+                    className={`${bar.color} w-full transition-all duration-300`}
+                    style={{ height: `${(Number(bar.value) / max) * 100}%` }}
+                  />
+                  <div className="text-xs text-gray-600 mt-2">{bar.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      )}
     </div>
   );
 }
