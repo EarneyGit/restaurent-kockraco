@@ -429,6 +429,20 @@ export function EditGroupItemModal({
     return image;
   };
 
+  // Helper function to extract error message from API response
+  const getErrorMessage = (error: any): string => {
+    if (error.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error.response?.data?.error) {
+      return error.response.data.error;
+    }
+    if (error.message) {
+      return error.message;
+    }
+    return "An unexpected error occurred";
+  };
+
   const handleSave = async () => {
     if (!currentItem.name) return toast.error("Item name is required");
 
@@ -605,9 +619,7 @@ export function EditGroupItemModal({
       onClose();
     } catch (error) {
       console.error("Error saving group item:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save group item"
-      );
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -1220,11 +1232,7 @@ export function EditGroupItemModal({
       onClose();
     } catch (error) {
       console.error("Error duplicating group item:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to duplicate group item"
-      );
+      toast.error(getErrorMessage(error));
     }
   };
 
