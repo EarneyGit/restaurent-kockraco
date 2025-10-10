@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { Category } from '@/types/menu'
-import { toast } from 'react-hot-toast'
+import { toast } from 'sonner'
 import api from '@/lib/axios'
 
 interface EditCategoryModalProps {
@@ -175,6 +175,18 @@ export function EditCategoryModal({
     }
   }, [formData.imageUrl])
 
+  const extractErrorMessage = (error: any): string => {
+    const responseData = error?.response?.data
+    if (typeof responseData === 'string') return responseData
+    if (responseData?.message) return responseData.message
+    if (responseData?.error) return responseData.error
+    if (Array.isArray(responseData?.errors) && responseData.errors[0]?.message) {
+      return responseData.errors[0].message
+    }
+    if (error?.message) return error.message
+    return 'An unexpected error occurred'
+  }
+
   const handleSave = async () => {
     if (!formData.name?.trim()) {
       toast.error('Category name is required')
@@ -244,13 +256,13 @@ export function EditCategoryModal({
     onClose()
       } else {
         console.error('API returned success: false', response.data)
-        toast.error(response.data.message || 'Failed to update category')
+        toast.error(response.data?.message || 'Failed to update category')
       }
     } catch (error: any) {
       console.error('Error updating category:', error)
       console.error('Error response:', error.response?.data)
       console.error('Error status:', error.response?.status)
-      toast.error(error.response?.data?.message || error.message || 'Error updating category')
+      toast.error(extractErrorMessage(error) || 'Error updating category')
     } finally {
       setIsLoading(false)
     }

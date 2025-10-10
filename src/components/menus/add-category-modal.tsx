@@ -80,6 +80,18 @@ export function AddCategoryModal({
     items: [],
   });
 
+  const extractErrorMessage = (error: any): string => {
+    const responseData = error?.response?.data
+    if (typeof responseData === 'string') return responseData
+    if (responseData?.message) return responseData.message
+    if (responseData?.error) return responseData.error
+    if (Array.isArray(responseData?.errors) && responseData.errors[0]?.message) {
+      return responseData.errors[0].message
+    }
+    if (error?.message) return error.message
+    return 'An unexpected error occurred'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -156,17 +168,13 @@ export function AddCategoryModal({
         toast.success("Category created successfully");
       } else {
         console.error("API returned success: false", response.data);
-        toast.error(response.data.message || "Failed to create category");
+        toast.error(response.data?.message || "Failed to create category");
       }
     } catch (error: any) {
       console.error("Error creating category:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Error creating category"
-      );
+      toast.error(extractErrorMessage(error) || "Error creating category");
     } finally {
       setIsLoading(false);
     }
