@@ -37,6 +37,7 @@ function Sidebar() {
   const pathname = usePathname() || "";
   const { user } = useAuth();
   const { isCollapsed, setIsCollapsed } = useSidebar();
+  const FEATURE_DEV = process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true";
 
   // Responsive state management
   // const [isCollapsed, setIsCollapsed] = useState(false);
@@ -332,24 +333,28 @@ function Sidebar() {
 
             {expandedMenus.marketing && !isCollapsed && (
               <div className="pl-10 space-y-1 mt-1">
-                <Link
-                  href="/marketing/one-off-push"
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
-                >
-                  One-off Push Msgs
-                </Link>
-                <Link
-                  href="/marketing/repeating-push"
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
-                >
-                  Repeating Push Msgs
-                </Link>
-                <Link
-                  href="/marketing/sms-email"
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
-                >
-                  SMS/Email Msgs
-                </Link>
+                {FEATURE_DEV && (
+                  <>
+                    <Link
+                      href="/marketing/one-off-push"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
+                    >
+                      One-off Push Msgs
+                    </Link>
+                    <Link
+                      href="/marketing/repeating-push"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
+                    >
+                      Repeating Push Msgs
+                    </Link>
+                    <Link
+                      href="/marketing/sms-email"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
+                    >
+                      SMS/Email Msgs
+                    </Link>
+                  </>
+                )}
                 <Link
                   href="/marketing/customers"
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"

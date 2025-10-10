@@ -128,10 +128,13 @@ export default function HomePage() {
     totalDiscount: number;
     totalCustomers: number;
   } | null>(null);
-  const [customDateRange, setCustomDateRange] = useState({
-    from: "",
-    to: "",
-  });
+const today = new Date().toISOString().split('T')[0]; // gets YYYY-MM-DD format
+
+const [customDateRange, setCustomDateRange] = useState({
+  from: today,
+  to: today,
+});
+
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(!FEATURE_DEV);
 
   // Use actual user data if available
@@ -954,112 +957,80 @@ export default function HomePage() {
       </>
        ) : (
        <>
-       {/* Total Orders Chart */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Total Orders</h3>
-          <span className="text-xs text-gray-500">Custom Range</span>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-40">
-            <div className="h-32 w-full flex items-end">
+        {/* Charts Grid - Responsive layout with 2 bar and 2 round charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Total Orders - Bar Chart */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold">Total Orders</h3>
+            <span className="text-xs text-gray-500">Custom Range</span>
+          </div>
+          <div className="h-52 relative">
+            <div className="h-40 w-full flex items-end">
               <div
                 className="w-full bg-yellow-500/70"
                 style={{ height: "70%" }}
               ></div>
             </div>
             <div className="text-xs text-center text-gray-500 mt-2">Orders</div>
-          </div>
-          <div className="h-40 flex items-center justify-center">
-            <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-bold">{liveStats?.totalOrders || 0}</span>
-                <span className="text-xs">Total</span>
-              </div>
+            <div className="absolute top-0 right-4 text-2xl font-bold text-yellow-600">
+              {liveStats?.totalOrders || 0}
             </div>
           </div>
         </div>
-     {/* Total Revenue Chart */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Total Revenue</h3>
-          <span className="text-xs text-gray-500">Custom Range</span>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-40">
-            <div className="h-32 w-full flex items-end">
-              <div
-                className="w-full bg-green-500/70"
-                style={{ height: "65%" }}
-              ></div>
-            </div>
-            <div className="text-xs text-center text-gray-500 mt-2">Revenue</div>
-          </div>
-          <div className="h-40 flex items-center justify-center">
-            <div className="w-32 h-32 rounded-full border-8 border-green-400/60 relative">
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-bold">£{liveStats?.totalRevenue || 0}</span>
-                <span className="text-xs">Total</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Total Discount Chart */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Total Discount</h3>
-          <span className="text-xs text-gray-500">Custom Range</span>
+        {/* Total Revenue - Round Chart */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold">Total Revenue</h3>
+            <span className="text-xs text-gray-500">Custom Range</span>
+          </div>
+          <div className="h-52 flex items-center justify-center">
+            <div className="w-36 h-36 rounded-full border-8 border-green-400/60 relative">
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-green-600">£{liveStats?.totalRevenue || 0}</span>
+                <span className="text-xs">Total Revenue</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-40">
-            <div className="h-32 w-full flex items-end">
+
+        {/* Total Discount - Bar Chart */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold">Total Discount</h3>
+            <span className="text-xs text-gray-500">Custom Range</span>
+          </div>
+          <div className="h-52 relative">
+            <div className="h-40 w-full flex items-end">
               <div
                 className="w-full bg-blue-500/70"
                 style={{ height: "40%" }}
               ></div>
             </div>
             <div className="text-xs text-center text-gray-500 mt-2">Discount</div>
+            <div className="absolute top-0 right-4 text-2xl font-bold text-blue-600">
+              £{liveStats?.totalDiscount || 0}
+            </div>
           </div>
-          <div className="h-40 flex items-center justify-center">
-            <div className="w-32 h-32 rounded-full border-8 border-blue-400/60 relative">
+        </div>
+
+        {/* Total Customers - Round Chart */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold">Total Customers</h3>
+            <span className="text-xs text-gray-500">Custom Range</span>
+          </div>
+          <div className="h-52 flex items-center justify-center">
+            <div className="w-36 h-36 rounded-full border-8 border-purple-400/60 relative">
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-bold">£{liveStats?.totalDiscount || 0}</span>
-                <span className="text-xs">Total</span>
+                <span className="text-2xl font-bold text-purple-600">{liveStats?.totalCustomers || 0}</span>
+                <span className="text-xs">Total Customers</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Total Customers Chart */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Total Customers</h3>
-          <span className="text-xs text-gray-500">Custom Range</span>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-40">
-            <div className="h-32 w-full flex items-end">
-              <div
-                className="w-full bg-purple-500/70"
-                style={{ height: "60%" }}
-              ></div>
-            </div>
-            <div className="text-xs text-center text-gray-500 mt-2">Customers</div>
-          </div>
-          <div className="h-40 flex items-center justify-center">
-            <div className="w-32 h-32 rounded-full border-8 border-purple-400/60 relative">
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-bold">{liveStats?.totalCustomers || 0}</span>
-                <span className="text-xs">Total</span>
-              </div>
-            </div>
-          </div>
-        </div>
-       </div>
-       </div>
        </>
        )}
     </div>
