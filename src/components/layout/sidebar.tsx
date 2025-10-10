@@ -423,6 +423,8 @@ function Sidebar() {
                 >
                   Service Charges
                 </Link>
+                {FEATURE_DEV && (
+                <>
                 <Link
                   href="/settings/payments"
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
@@ -434,7 +436,8 @@ function Sidebar() {
                   className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-900 hover:bg-opacity-20"
                 >
                   Table Ordering
-                </Link>
+                </Link></>
+                )}
               </div>
             )}
           </div>
