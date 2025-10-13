@@ -1071,7 +1071,7 @@ export default  function DeliveryChargesPage() {
       
       {/* Branch Location Modal */}
       <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Branch Location Settings</DialogTitle>
           </DialogHeader>
@@ -1133,6 +1133,24 @@ export default  function DeliveryChargesPage() {
                 />
               </div>
             </div>
+            
+            {/* Map Preview */}
+            {branchLocation && typeof window !== 'undefined' && (
+              <div className="space-y-2">
+                <Label>Map Preview</Label>
+                <div className="h-64 w-full rounded-lg overflow-hidden border">
+                  <iframe
+                    title="Branch Location Map"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(String(branchLocation.latitude))},${encodeURIComponent(String(branchLocation.longitude))}&z=15&output=embed`}
+                  />
+                </div>
+              </div>
+            )}
             
             {/* Current Location Display */}
             {branchLocation && (
