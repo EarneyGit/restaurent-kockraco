@@ -1,142 +1,220 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import PageLayout from "@/components/layout/page-layout"
-import dynamic from 'next/dynamic'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Eye, Loader2 } from "lucide-react"
-import { outletService, type OutletSettings } from "@/services/outlet.service"
-import { toast } from "sonner"
-import { useAuth } from '@/contexts/auth-context'
-import Image from 'next/image'
+import { useState, useEffect } from "react";
+import PageLayout from "@/components/layout/page-layout";
+import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye, Loader2 } from "lucide-react";
+import { outletService, type OutletSettings } from "@/services/outlet.service";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth-context";
+import Image from "next/image";
 
 const Tiptap = dynamic(() => import("@/components/ui/tiptap"), {
   ssr: false,
   loading: () => <p>Loading editor...</p>,
-})
+});
 
 export default function OutletsPage() {
-  const { user } = useAuth()
-  const displayName = (user?.firstName + " " + user?.lastName) || 'Admin User'
-  
-  const [activeTab, setActiveTab] = useState<'details' | 'opening-hours' | 'delivery-areas' | 'special-notes'>('details')
+  const { user } = useAuth();
+  const displayName = user?.firstName + " " + user?.lastName || "Admin User";
 
-  const [outletData, setOutletData] = useState<OutletSettings | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [aboutUs, setAboutUs] = useState('')
+  const [activeTab, setActiveTab] = useState<
+    "details" | "opening-hours" | "delivery-areas" | "special-notes"
+  >("details");
+
+  const [outletData, setOutletData] = useState<OutletSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [aboutUs, setAboutUs] = useState("");
+
+  // Ordering options state
+  const [orderingOptions, setOrderingOptions] = useState({
+    collectionDisplayFormat: "TimeOnly",
+    collectionTimeslotLength: 15,
+    deliveryDisplayFormat: "TimeOnly",
+    deliveryTimeslotLength: 15,
+  });
+
+  // Pre-ordering options state
+  const [preOrderingOptions, setPreOrderingOptions] = useState({
+    allowPreOrderingCollection: false,
+    allowPreOrderingDelivery: false,
+  });
 
   // Form states
   const [detailsForm, setDetailsForm] = useState({
-    name: '',
-    email: '',
-    contactNumber: '',
-    telephone: ''
-  })
+    name: "",
+    email: "",
+    contactNumber: "",
+    telephone: "",
+  });
 
   const [locationForm, setLocationForm] = useState({
-    street: '',
-    addressLine2: '',
-    city: '',
-    county: '',
-    state: '',
-    postcode: '',
-    country: ''
-  })
+    street: "",
+    addressLine2: "",
+    city: "",
+    county: "",
+    state: "",
+    postcode: "",
+    country: "",
+  });
 
   // Load outlet data on component mount
   useEffect(() => {
-    loadOutletData()
-  }, [])
+    loadOutletData();
+  }, []);
 
   const loadOutletData = async () => {
     try {
-      setLoading(true)
-      const response = await outletService.getOutletSettings()
-      const data = response.data
-      setOutletData(data)
-      
+      setLoading(true);
+      const response = await outletService.getOutletSettings();
+      const data = response.data;
+      setOutletData(data);
+
       // Set form data
       setDetailsForm({
-        name: data.name || '',
-        email: data.email || '',
-        contactNumber: data.contactNumber || '',
-        telephone: data.telephone || ''
-      })
+        name: data.name || "",
+        email: data.email || "",
+        contactNumber: data.contactNumber || "",
+        telephone: data.telephone || "",
+      });
 
       setLocationForm({
-        street: data.address.street || '',
-        addressLine2: data.address.addressLine2 || '',
-        city: data.address.city || '',
-        county: data.address.county || '',
-        state: data.address.state || '',
-        postcode: data.address.postcode || '',
-        country: data.address.country || ''
-      })
+        street: data.address.street || "",
+        addressLine2: data.address.addressLine2 || "",
+        city: data.address.city || "",
+        county: data.address.county || "",
+        state: data.address.state || "",
+        postcode: data.address.postcode || "",
+        country: data.address.country || "",
+      });
 
-      setAboutUs(data.aboutUs || '')
+      setAboutUs(data.aboutUs || "");
+
+      // Set ordering options
+      setOrderingOptions({
+        collectionDisplayFormat:
+          data.orderingOptions.collection.displayFormat || "TimeOnly",
+        collectionTimeslotLength:
+          data.orderingOptions.collection.timeslotLength || 10,
+        deliveryDisplayFormat:
+          data.orderingOptions.delivery.displayFormat || "TimeOnly",
+        deliveryTimeslotLength:
+          data.orderingOptions.delivery.timeslotLength || 10,
+      });
+
+      //
+      setPreOrderingOptions({
+        allowPreOrderingCollection:
+          data.preOrdering.allowCollectionPreOrders || false,
+        allowPreOrderingDelivery:
+          data.preOrdering.allowDeliveryPreOrders || false,
+      });
     } catch (error) {
-      console.error('Error loading outlet data:', error)
-      toast.error('Failed to load outlet data')
+      console.error("Error loading outlet data:", error);
+      toast.error("Failed to load outlet data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSaveDetails = async () => {
     try {
-      setSaving(true)
-      
+      setSaving(true);
+
       // Validate email
-      if (detailsForm.email && !outletService.validateEmail(detailsForm.email)) {
-        toast.error('Please enter a valid email address')
-        return
+      if (
+        detailsForm.email &&
+        !outletService.validateEmail(detailsForm.email)
+      ) {
+        toast.error("Please enter a valid email address");
+        return;
       }
 
       // Validate phone
-      if (detailsForm.contactNumber && !outletService.validatePhone(detailsForm.contactNumber)) {
-        toast.error('Please enter a valid contact number')
-        return
+      if (
+        detailsForm.contactNumber &&
+        !outletService.validatePhone(detailsForm.contactNumber)
+      ) {
+        toast.error("Please enter a valid contact number");
+        return;
       }
 
       await outletService.updateOutletDetails({
         ...detailsForm,
-        aboutUs
-      })
-      
-      toast.success('Outlet details updated successfully')
-      loadOutletData() // Reload to get updated data
+        aboutUs,
+      });
+
+      toast.success("Outlet details updated successfully");
+      loadOutletData(); // Reload to get updated data
     } catch (error) {
-      console.error('Error saving outlet details:', error)
-      toast.error('Failed to save outlet details')
+      console.error("Error saving outlet details:", error);
+      toast.error("Failed to save outlet details");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleSaveLocation = async () => {
     try {
-      setSaving(true)
-      
+      setSaving(true);
+
       // Validate postcode
-      if (locationForm.postcode && !outletService.validatePostcode(locationForm.postcode)) {
-        toast.error('Please enter a valid UK postcode')
-        return
+      if (
+        locationForm.postcode &&
+        !outletService.validatePostcode(locationForm.postcode)
+      ) {
+        toast.error("Please enter a valid UK postcode");
+        return;
       }
 
-      await outletService.updateOutletLocation(locationForm)
-      
-      toast.success('Outlet location updated successfully')
-      loadOutletData() // Reload to get updated data
+      await outletService.updateOutletLocation(locationForm);
+
+      toast.success("Outlet location updated successfully");
+      loadOutletData(); // Reload to get updated data
     } catch (error) {
-      console.error('Error saving outlet location:', error)
-      toast.error('Failed to save outlet location')
+      console.error("Error saving outlet location:", error);
+      toast.error("Failed to save outlet location");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
+
+  const handleSaveOrderingOptions = async () => {
+    try {
+      setSaving(true);
+      await outletService.updateOrderingOptions(orderingOptions);
+      toast.success("Ordering options updated successfully");
+    } catch (error) {
+      console.error("Error saving ordering options:", error);
+      toast.error("Failed to save ordering options");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSavePreOrderingOptions = async () => {
+    try {
+      setSaving(true);
+      await outletService.updatePreOrderingOptions(preOrderingOptions);
+      toast.success("Pre-ordering options updated successfully");
+    } catch (error) {
+      console.error("Error saving pre-ordering options:", error);
+      toast.error("Failed to save pre-ordering options");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -146,7 +224,7 @@ export default function OutletsPage() {
           Loading outlet settings...
         </div>
       </PageLayout>
-    )
+    );
   }
 
   return (
@@ -154,15 +232,22 @@ export default function OutletsPage() {
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-3 border-b bg-white">
         <div className="flex-1">
-          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+          <Image
+            src="/rasoie_logo.png"
+            alt="Rasoie Logo"
+            width={50}
+            height={50}
+          />
         </div>
-        <h1 className="text-xl font-medium flex-1 text-center">{displayName}</h1>
+        <h1 className="text-xl font-medium flex-1 text-center">
+          {displayName}
+        </h1>
         <div className="flex justify-end flex-1">
-          <button 
+          <button
             className="flex items-center text-gray-700 font-medium"
             onClick={() => {
-              const { viewYourStore } = require('@/lib/utils')
-              viewYourStore()
+              const { viewYourStore } = require("@/lib/utils");
+              viewYourStore();
             }}
           >
             <Eye className="h-5 w-5 mr-1" />
@@ -170,53 +255,64 @@ export default function OutletsPage() {
           </button>
         </div>
       </header>
-      
+
       <div className="p-6 bg-gray-50 min-h-screen">
         {/* Details Section */}
         <div className="mb-10">
           <h2 className="text-xl font-medium mb-4">Details</h2>
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <p className="text-gray-600 mb-4">Setup the basic contact details for your outlet</p>
-            <p className="text-gray-600 mb-4">Email and contact number are displayed on order confirmation emails sent to the customer</p>
-            
+            <p className="text-gray-600 mb-4">
+              Setup the basic contact details for your outlet
+            </p>
+            <p className="text-gray-600 mb-4">
+              Email and contact number are displayed on order confirmation
+              emails sent to the customer
+            </p>
+
             <div className="space-y-6">
               <div>
                 <Label htmlFor="outletName">Outlet Name</Label>
                 <Input
                   id="outletName"
-                  type="text" 
+                  type="text"
                   value={detailsForm.name}
-                  onChange={(e) => setDetailsForm({ ...detailsForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setDetailsForm({ ...detailsForm, name: e.target.value })
+                  }
                   placeholder="Enter outlet name"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="aboutUs">About Us</Label>
-                <Tiptap
-                  content={aboutUs}
-                  onChange={setAboutUs}
-                />
+                <Tiptap content={aboutUs} onChange={setAboutUs} />
               </div>
-              
+
               <div>
                 <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
-                  type="email" 
+                  type="email"
                   value={detailsForm.email}
-                  onChange={(e) => setDetailsForm({ ...detailsForm, email: e.target.value })}
+                  onChange={(e) =>
+                    setDetailsForm({ ...detailsForm, email: e.target.value })
+                  }
                   placeholder="Enter email address"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="contactNumber">Contact Number</Label>
                 <Input
                   id="contactNumber"
                   type="text"
                   value={detailsForm.contactNumber}
-                  onChange={(e) => setDetailsForm({ ...detailsForm, contactNumber: e.target.value })}
+                  onChange={(e) =>
+                    setDetailsForm({
+                      ...detailsForm,
+                      contactNumber: e.target.value,
+                    })
+                  }
                   placeholder="Enter contact number"
                 />
               </div>
@@ -225,14 +321,19 @@ export default function OutletsPage() {
                 <Label htmlFor="telephone">Telephone (optional)</Label>
                 <Input
                   id="telephone"
-                  type="text" 
+                  type="text"
                   value={detailsForm.telephone}
-                  onChange={(e) => setDetailsForm({ ...detailsForm, telephone: e.target.value })}
+                  onChange={(e) =>
+                    setDetailsForm({
+                      ...detailsForm,
+                      telephone: e.target.value,
+                    })
+                  }
                   placeholder="Enter telephone number"
                 />
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={handleSaveDetails}
                 disabled={saving}
                 className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
@@ -243,52 +344,68 @@ export default function OutletsPage() {
                     Saving...
                   </>
                 ) : (
-                  'Save Details'
+                  "Save Details"
                 )}
               </Button>
             </div>
           </div>
         </div>
-        
+
         {/* Location Section */}
         <div className="mb-10">
           <h2 className="text-xl font-medium mb-4">Location</h2>
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <p className="text-gray-600 mb-4">Address details for this outlet</p>
-            <p className="text-gray-600 mb-4">Postcode is required to calculate distances in relation to delivery charges.</p>
-            <p className="text-gray-600 mb-4">Please ensure a valid postcode is supplied.</p>
-            
+            <p className="text-gray-600 mb-4">
+              Address details for this outlet
+            </p>
+            <p className="text-gray-600 mb-4">
+              Postcode is required to calculate distances in relation to
+              delivery charges.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Please ensure a valid postcode is supplied.
+            </p>
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="street">Address Line 1</Label>
                 <Input
                   id="street"
-                  type="text" 
+                  type="text"
                   value={locationForm.street}
-                  onChange={(e) => setLocationForm({ ...locationForm, street: e.target.value })}
+                  onChange={(e) =>
+                    setLocationForm({ ...locationForm, street: e.target.value })
+                  }
                   placeholder="Enter street address"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="addressLine2">Address Line 2</Label>
                 <Input
                   id="addressLine2"
-                  type="text" 
+                  type="text"
                   value={locationForm.addressLine2}
-                  onChange={(e) => setLocationForm({ ...locationForm, addressLine2: e.target.value })}
+                  onChange={(e) =>
+                    setLocationForm({
+                      ...locationForm,
+                      addressLine2: e.target.value,
+                    })
+                  }
                   placeholder="Enter address line 2 (optional)"
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="city">City</Label>
                   <Input
                     id="city"
-                    type="text" 
+                    type="text"
                     value={locationForm.city}
-                    onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })}
+                    onChange={(e) =>
+                      setLocationForm({ ...locationForm, city: e.target.value })
+                    }
                     placeholder="Enter city"
                   />
                 </div>
@@ -297,50 +414,70 @@ export default function OutletsPage() {
                   <Label htmlFor="county">County</Label>
                   <Input
                     id="county"
-                    type="text" 
+                    type="text"
                     value={locationForm.county}
-                    onChange={(e) => setLocationForm({ ...locationForm, county: e.target.value })}
+                    onChange={(e) =>
+                      setLocationForm({
+                        ...locationForm,
+                        county: e.target.value,
+                      })
+                    }
                     placeholder="Enter county (optional)"
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="state">State/Region</Label>
                   <Input
                     id="state"
-                  type="text" 
+                    type="text"
                     value={locationForm.state}
-                    onChange={(e) => setLocationForm({ ...locationForm, state: e.target.value })}
+                    onChange={(e) =>
+                      setLocationForm({
+                        ...locationForm,
+                        state: e.target.value,
+                      })
+                    }
                     placeholder="Enter state or region"
-                />
-              </div>
-              
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="postcode">Postcode</Label>
                   <Input
                     id="postcode"
                     type="text"
                     value={locationForm.postcode}
-                    onChange={(e) => setLocationForm({ ...locationForm, postcode: e.target.value })}
+                    onChange={(e) =>
+                      setLocationForm({
+                        ...locationForm,
+                        postcode: e.target.value,
+                      })
+                    }
                     placeholder="Enter postcode"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="country">Country</Label>
                 <Input
                   id="country"
                   type="text"
                   value={locationForm.country}
-                  onChange={(e) => setLocationForm({ ...locationForm, country: e.target.value })}
+                  onChange={(e) =>
+                    setLocationForm({
+                      ...locationForm,
+                      country: e.target.value,
+                    })
+                  }
                   placeholder="Enter country"
                 />
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={handleSaveLocation}
                 disabled={saving}
                 className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
@@ -351,30 +488,264 @@ export default function OutletsPage() {
                     Saving...
                   </>
                 ) : (
-                  'Save Location'
+                  "Save Location"
                 )}
               </Button>
             </div>
           </div>
         </div>
-        
+
+        {/* Ordering Options Section */}
+        <div className="mb-10">
+          <h2 className="text-xl font-medium mb-4">Ordering Options</h2>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p className="text-gray-600 mb-4">
+              Choose how the ordering times are shown.
+            </p>
+
+            <div className="space-y-6">
+              {/* Collection Ordering */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-medium mb-4">
+                  Collection Ordering
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="collectionDisplayFormat"
+                      className="flex items-center gap-2"
+                    >
+                      Display Format
+                      <span className="text-gray-400">?</span>
+                    </Label>
+                    <Select
+                      value={orderingOptions.collectionDisplayFormat}
+                      onValueChange={(value) =>
+                        setOrderingOptions({
+                          ...orderingOptions,
+                          collectionDisplayFormat: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select display format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TimeOnly">Time Only</SelectItem>
+                        <SelectItem value="TimeSpan">Time Span</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="collectionTimeslotLength"
+                      className="flex items-center gap-2"
+                    >
+                      Length of Timeslot
+                      <span className="text-gray-400">?</span>
+                    </Label>
+                    <Input
+                      id="collectionTimeslotLength"
+                      type="number"
+                      value={orderingOptions.collectionTimeslotLength}
+                      onChange={(e) =>
+                        setOrderingOptions({
+                          ...orderingOptions,
+                          collectionTimeslotLength:
+                            parseInt(e.target.value) || 10,
+                        })
+                      }
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Ordering */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-medium mb-4">Delivery Ordering</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="deliveryDisplayFormat"
+                      className="flex items-center gap-2"
+                    >
+                      Display Format
+                      <span className="text-gray-400">?</span>
+                    </Label>
+                    <Select
+                      value={orderingOptions.deliveryDisplayFormat}
+                      onValueChange={(value) =>
+                        setOrderingOptions({
+                          ...orderingOptions,
+                          deliveryDisplayFormat: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select display format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TimeOnly">Time Only</SelectItem>
+                        <SelectItem value="TimeSpan">Time Span</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="deliveryTimeslotLength"
+                      className="flex items-center gap-2"
+                    >
+                      Length of Timeslot
+                      <span className="text-gray-400">?</span>
+                    </Label>
+                    <Input
+                      id="deliveryTimeslotLength"
+                      type="number"
+                      value={orderingOptions.deliveryTimeslotLength}
+                      onChange={(e) =>
+                        setOrderingOptions({
+                          ...orderingOptions,
+                          deliveryTimeslotLength:
+                            parseInt(e.target.value) || 10,
+                        })
+                      }
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSaveOrderingOptions}
+                disabled={saving}
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save all Changes"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Pre-Ordering Section */}
+        <div className="mb-10">
+          <h2 className="text-xl font-medium mb-4">Pre-Ordering</h2>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p className="text-gray-600 mb-4">
+              Choose if your customers can place pre-orders for collection or
+              delivery.
+            </p>
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="text-lg font-medium">
+                    Allow Pre-Ordering for Collection
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Enable customers to place orders for future collection
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setPreOrderingOptions({
+                      ...preOrderingOptions,
+                      allowPreOrderingCollection:
+                        !preOrderingOptions.allowPreOrderingCollection,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    preOrderingOptions.allowPreOrderingCollection
+                      ? "bg-yellow-500"
+                      : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      preOrderingOptions.allowPreOrderingCollection
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h3 className="text-lg font-medium">
+                    Allow Pre-Ordering for Delivery
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Enable customers to place orders for future delivery
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setPreOrderingOptions({
+                      ...preOrderingOptions,
+                      allowPreOrderingDelivery:
+                        !preOrderingOptions.allowPreOrderingDelivery,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    preOrderingOptions.allowPreOrderingDelivery
+                      ? "bg-yellow-500"
+                      : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      preOrderingOptions.allowPreOrderingDelivery
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <Button
+                onClick={handleSavePreOrderingOptions}
+                disabled={saving}
+                className="bg-yellow-500/80 hover:bg-yellow-500 text-white"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save all Changes"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Opening Times Display */}
         {outletData && (
           <div className="mb-10">
             <h2 className="text-xl font-medium mb-4">Opening Times</h2>
-          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <p className="text-gray-600 mb-4">
-                Opening times are managed in the <strong>Ordering Times</strong> section.
+                Opening times are managed in the <strong>Ordering Times</strong>{" "}
+                section.
               </p>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <pre className="whitespace-pre-wrap text-sm">
                   {outletService.formatOpeningTimes(outletData.openingTimes)}
                 </pre>
               </div>
-              </div>
+            </div>
           </div>
         )}
       </div>
     </PageLayout>
-  )
+  );
 }

@@ -14,11 +14,11 @@ export interface OutletAddress {
 
 export interface OutletOrderingOptions {
   collection: {
-    displayFormat: 'TimeOnly' | 'DateAndTime'
+    displayFormat: 'TimeOnly' | 'TimeSpan'
     timeslotLength: number
   }
   delivery: {
-    displayFormat: 'TimeOnly' | 'DateAndTime'
+    displayFormat: 'TimeOnly' | 'TimeSpan'
     timeslotLength: number
   }
 }
@@ -194,7 +194,7 @@ class OutletService {
   getDisplayFormatOptions() {
     return [
       { value: 'TimeOnly', label: 'Time Only' },
-      { value: 'DateAndTime', label: 'Date and Time' }
+      { value: 'TimeSpan', label: 'Time Span' }
     ]
   }
 
@@ -205,6 +205,70 @@ class OutletService {
       { value: 45, label: '45 minutes' },
       { value: 60, label: '1 hour' }
     ]
+  }
+
+  async updateOrderingOptions(options: {
+    collectionDisplayFormat: string
+    collectionTimeslotLength: number
+    deliveryDisplayFormat: string
+    deliveryTimeslotLength: number
+  }) {
+    const response = await fetch(
+      `${API_BASE_URL}/branches/outlet-ordering-options`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+            collection: {
+              displayFormat: options.collectionDisplayFormat as
+                | "TimeOnly"
+                | "TimeSpan",
+              timeslotLength: options.collectionTimeslotLength,
+            },
+            delivery: {
+              displayFormat: options.deliveryDisplayFormat as
+                | "TimeOnly"
+                | "TimeSpan",
+              timeslotLength: options.deliveryTimeslotLength,
+            },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to update ordering options')
+    }
+
+    return response.json()
+  }
+
+  async updatePreOrderingOptions(options: {
+    allowPreOrderingCollection: boolean
+    allowPreOrderingDelivery: boolean
+  }) {
+    const response = await fetch(
+      `${API_BASE_URL}/branches/outlet-pre-ordering`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+            allowCollectionPreOrders: options.allowPreOrderingCollection,
+            allowDeliveryPreOrders: options.allowPreOrderingDelivery,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to update pre-ordering options')
+    }
+
+    return response.json()
   }
 }
 
