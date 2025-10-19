@@ -13,6 +13,8 @@ import {
   Clock,
   User,
   Loader2,
+  Icon,
+  MapPin,
 } from "lucide-react";
 import { BaseUrl } from "@/lib/config";
 import { useAuth } from "@/contexts/auth-context";
@@ -24,9 +26,16 @@ interface DeliveryAddress {
   street: string;
   city: string;
   state: string;
+  postalCode: string;
+  country: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface BranchInfo {
+  location: {
+    coordinates: [number, number];
+  };
   address: {
     street: string;
     city: string;
@@ -1017,6 +1026,22 @@ export default function LiveOrdersPage() {
                   </div>
                 </div>
               </div>
+              {/* show google maps direction if order type is delivery */}
+              {selectedOrder?.deliveryMethod === "delivery" &&
+                selectedOrder.branchId.location.coordinates &&
+                selectedOrder.deliveryAddress.latitude &&
+                selectedOrder.deliveryAddress.longitude && (
+                  <div className="bg-white rounded-lg shadow-sm p-6 mb-4" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <MapPin className="h-6 w-6 text-emerald-600 mr-2" />
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&origin=${selectedOrder.branchId.location.coordinates[1]},${selectedOrder.branchId.location.coordinates[0]}&destination=${selectedOrder.deliveryAddress.latitude},${selectedOrder.deliveryAddress.longitude}&travelmode=driving`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open Google Maps Directions
+                    </a>
+                  </div>
+                )}
             </div>
           ) : (
             <div className="p-6 text-center text-gray-500">
