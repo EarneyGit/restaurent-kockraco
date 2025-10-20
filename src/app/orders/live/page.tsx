@@ -92,6 +92,7 @@ interface Discount {
 }
 
 interface Order {
+  selectedTimeSlot?: string;
   products: OrderItem[] | undefined;
   _id: string;
   orderNumber: string;
@@ -140,18 +141,14 @@ export default function LiveOrdersPage() {
   const [showDelivery, setShowDelivery] = useState(true);
   const [showTableOrdering, setShowTableOrdering] = useState(true);
 
-  // Map UI status to API status
-  const getApiStatus = (uiStatus: "new" | "in-progress" | "complete") => {
-    switch (uiStatus) {
-      case "new":
-        return "pending";
-      case "in-progress":
-        return "processing";
-      case "complete":
-        return "completed";
-      default:
-        return "pending";
-    }
+  // is time slot too far in the future
+  const isTimeSlotTooFarInTheFuture = (timeSlot: string) => {
+    const now = new Date();
+    const nowTime = now.getHours() * 60 + now.getMinutes();
+    const timeSlotTime =
+      parseInt(timeSlot.split(":")[0]) * 60 + parseInt(timeSlot.split(":")[1]);
+    console.log(timeSlotTime, nowTime, timeSlotTime - nowTime);
+    return timeSlotTime - nowTime > 60;
   };
 
   // Fetch all orders for counting
@@ -741,8 +738,26 @@ export default function LiveOrdersPage() {
 
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span>{formatDetailedDate(selectedOrder.createdAt)}</span>
+                    <span>
+                      Order Date: {formatDetailedDate(selectedOrder.createdAt)}
+                    </span>
                   </div>
+                  {/* show selectedTimeSlot if it exists */}
+                  {selectedOrder.selectedTimeSlot && (
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 text-gray-600",
+                        isTimeSlotTooFarInTheFuture(
+                          selectedOrder.selectedTimeSlot
+                        )
+                          ? "text-red-500"
+                          : "text-green-500"
+                      )}
+                    >
+                      <Clock className="h-4 w-4" />
+                      <span>Time Slot: {selectedOrder.selectedTimeSlot}</span>
+                    </div>
+                    )}
                 </div>
                 <Button
                   onClick={(e) => {
@@ -1031,7 +1046,14 @@ export default function LiveOrdersPage() {
                 selectedOrder.branchId.location.coordinates &&
                 selectedOrder.deliveryAddress.latitude &&
                 selectedOrder.deliveryAddress.longitude && (
-                  <div className="bg-white rounded-lg shadow-sm p-6 mb-4" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <div
+                    className="bg-white rounded-lg shadow-sm p-6 mb-4"
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
                     <MapPin className="h-6 w-6 text-emerald-600 mr-2" />
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&origin=${selectedOrder.branchId.location.coordinates[1]},${selectedOrder.branchId.location.coordinates[0]}&destination=${selectedOrder.deliveryAddress.latitude},${selectedOrder.deliveryAddress.longitude}&travelmode=driving`}
