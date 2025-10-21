@@ -39,14 +39,40 @@ export const getOrderCustomerDetails = (order: any) => {
 };
 
 export const transformOrder = (order: any) => {
-  if(order.isGuestOrder) {
-    order.customerName = (order.orderCustomerDetails?.firstName + ' ' + order.orderCustomerDetails?.lastName).trim() || order.orderCustomerDetails?.email || 'Customer';
+  if (order.isGuestOrder) {
+    order.customerName =
+      (
+        order.orderCustomerDetails?.firstName +
+        " " +
+        order.orderCustomerDetails?.lastName
+      ).trim() ||
+      order.orderCustomerDetails?.email ||
+      "Customer";
     order.customerEmail = order.orderCustomerDetails?.email;
     order.customerPhone = order.orderCustomerDetails?.phone;
   } else {
-    order.customerName = (order?.user?.firstName + ' ' + order?.user?.lastName).trim() || order?.user?.email || 'Customer';
-    order.customerEmail = order?.user?.email || '';
-    order.customerPhone = order?.user?.phone || '';
+    order.customerName =
+      (order?.user?.firstName + " " + order?.user?.lastName).trim() ||
+      order?.user?.email ||
+      "Customer";
+    order.customerEmail = order?.user?.email || "";
+    order.customerPhone = order?.user?.phone || "";
   }
   return order;
+};
+
+export const isEmpty = (value: any) => {
+  if (typeof value === "string") {
+    return value.trim() === "";
+  }
+  if (Array.isArray(value) && value.length === 0) {
+    return true;
+  }
+  if (typeof value === "object" && Object.keys(value).length === 0) {
+    return true;
+  }
+  if (Number.isNaN(value) || value === null || value === undefined) {
+    return true;
+  }
+  return false;
 };

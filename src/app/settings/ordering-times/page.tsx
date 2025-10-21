@@ -14,13 +14,13 @@ import { toast } from "sonner"
 
 // Days of the week in order
 const DAYS_OF_WEEK = [
+  { key: "sunday", label: "Sunday" },
   { key: "monday", label: "Monday" },
   { key: "tuesday", label: "Tuesday" },
   { key: "wednesday", label: "Wednesday" },
   { key: "thursday", label: "Thursday" },
   { key: "friday", label: "Friday" },
   { key: "saturday", label: "Saturday" },
-  { key: "sunday", label: "Sunday" }
 ] as const
 
 // Default settings for a day
@@ -105,7 +105,9 @@ const defaultOrderingTimes: OrderingTimes = {
 
 export default function OrderingTimesPage() {
   const router = useRouter()
-  const [expandedDay, setExpandedDay] = useState<string | null>("monday")
+  const daysOfWeek = DAYS_OF_WEEK.map(day => day.key);
+  const today = new Date().getDay();
+  const [expandedDay, setExpandedDay] = useState<string | null>(daysOfWeek[today])
   const [orderingTimes, setOrderingTimes] = useState<OrderingTimes | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
