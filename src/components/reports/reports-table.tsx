@@ -39,7 +39,7 @@ export function ReportsTable({ data }: ReportsTableProps) {
             return (
               <TableRow key={sale.id}>
                 <TableCell className="text-blue-600">{sale.id}</TableCell>
-                <TableCell>{sale.customer}</TableCell>
+                <TableCell>{sale.customerName}</TableCell>
                 <TableCell>£{sale.total.toFixed(2)}</TableCell>
                 <TableCell>{discount > 0 ? `£${discount.toFixed(2)}` : '—'}</TableCell>
                 <TableCell>{sale.postcode}</TableCell>
