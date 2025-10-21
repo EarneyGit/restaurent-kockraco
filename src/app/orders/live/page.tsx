@@ -107,7 +107,7 @@ interface Order {
   subtotal?: number;
   discount?: Discount;
   discountApplied?: DiscountApplied;
-  status: "new" | "in-progress" | "complete";
+  status: "new" | "processing" | "complete";
   paymentMethod: string; // "card", "cash_on_delivery", etc.
   paymentStatus: string; // "pending", "paid", "failed", "refunded", etc.
   deliveryMethod: string;
@@ -127,7 +127,7 @@ export default function LiveOrdersPage() {
   const { onOrderEvent, offOrderEvent, isConnected } = useSocket();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "new" | "in-progress" | "complete"
+    "new" | "processing" | "complete"
   >("new");
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]); // Store all orders for counting
@@ -170,7 +170,7 @@ export default function LiveOrdersPage() {
             order.status === "pending"
               ? "new"
               : order.status === "processing"
-              ? "in-progress"
+              ? "processing"
               : order.status === "completed"
               ? "complete"
               : order.status,
@@ -193,7 +193,7 @@ export default function LiveOrdersPage() {
         case "new":
           apiStatus = "pending";
           break;
-        case "in-progress":
+        case "processing":
           apiStatus = "processing";
           break;
         case "complete":
@@ -469,7 +469,7 @@ export default function LiveOrdersPage() {
   const getOrderCounts = () => {
     const newCount = allOrders.filter((order) => order.status === "new").length;
     const inProgressCount = allOrders.filter(
-      (order) => order.status === "in-progress"
+      (order) => order.status === "processing"
     ).length;
     const completeCount = allOrders.filter(
       (order) => order.status === "complete"
@@ -591,11 +591,11 @@ export default function LiveOrdersPage() {
             <button
               className={cn(
                 "px-4 py-3 text-sm font-medium border-b-2 flex-1",
-                activeTab === "in-progress"
+                activeTab === "processing"
                   ? "border-yellow-500 text-yellow-600 bg-yellow-50"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               )}
-              onClick={() => setActiveTab("in-progress")}
+              onClick={() => setActiveTab("processing")}
             >
               In Progress ({inProgressCount})
             </button>
@@ -624,7 +624,7 @@ export default function LiveOrdersPage() {
           ) : filteredOrders.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               {activeTab === "new" && "No new orders"}
-              {activeTab === "in-progress" && "No orders in progress"}
+              {activeTab === "processing" && "No orders in progress"}
               {activeTab === "complete" && "No completed orders"}
             </div>
           ) : (
@@ -802,7 +802,7 @@ export default function LiveOrdersPage() {
                   </div>
                 </div>
 
-                {activeTab === "in-progress" && (
+                {activeTab === "processing" && (
                   <div className="flex gap-3 p-6 mb-4 justify-center">
                     <Button
                       onClick={handleReadyOrder}
