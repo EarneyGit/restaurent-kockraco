@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { cn, getOrderCustomerDetails, getTodayDate, transformOrder } from "@/lib/utils";
+import {
+  cn,
+  getOrderCustomerDetails,
+  getTodayDate,
+  transformOrder,
+} from "@/lib/utils";
 import {
   Menu,
   X,
@@ -92,6 +97,7 @@ interface Discount {
 }
 
 interface Order {
+  orderType: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -126,9 +132,9 @@ export default function LiveOrdersPage() {
   const { logout } = useAuth();
   const { onOrderEvent, offOrderEvent, isConnected } = useSocket();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "new" | "processing" | "complete"
-  >("new");
+  const [activeTab, setActiveTab] = useState<"new" | "processing" | "complete">(
+    "new"
+  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]); // Store all orders for counting
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -370,7 +376,10 @@ export default function LiveOrdersPage() {
       // Simply refresh orders when any order event is received
       // play sound
       console.log("Order event received:", message);
-      if (message?.event === "order_created" || message?.paymentStatus === 'paid') {
+      if (
+        message?.event === "order_created" ||
+        message?.paymentStatus === "paid"
+      ) {
         toast.success("New order received!");
         const audio = new Audio("/school-bell-1.mp3");
         audio.play();
@@ -467,11 +476,27 @@ export default function LiveOrdersPage() {
 
   // Helper functions to calculate order counts for each status
   const getOrderCounts = () => {
-    const newCount = allOrders.filter((order) => order.status === "new").length;
-    const inProgressCount = allOrders.filter(
+    const filteredOrders = allOrders.filter((order) => {
+      // Filter by delivery method
+      const orderType = order.orderType?.toLowerCase();
+      if (orderType === "collection" && !showCollection) return false;
+      if (orderType === "delivery" && !showDelivery) return false;
+      if (orderType === "table_ordering" && !showTableOrdering) return false;
+
+      // Filter out card payment orders that aren't paid yet
+      if (order.paymentMethod === "card" && order.paymentStatus !== "paid") {
+        return false;
+      }
+
+      return true;
+    });
+    const newCount = filteredOrders.filter(
+      (order) => order.status === "new"
+    ).length;
+    const inProgressCount = filteredOrders.filter(
       (order) => order.status === "processing"
     ).length;
-    const completeCount = allOrders.filter(
+    const completeCount = filteredOrders.filter(
       (order) => order.status === "complete"
     ).length;
 
@@ -642,8 +667,7 @@ export default function LiveOrdersPage() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-medium text-lg mb-1">
-                      {order.customerName ||
-                        "Guest"}
+                      {order.customerName || "Guest"}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">
                       {getDeliveryMethodDisplay(order.deliveryMethod)}
@@ -760,7 +784,7 @@ export default function LiveOrdersPage() {
                       <Clock className="h-4 w-4" />
                       <span>Time Slot: {selectedOrder.selectedTimeSlot}</span>
                     </div>
-                    )}
+                  )}
                 </div>
                 <Button
                   onClick={(e) => {
@@ -1021,8 +1045,7 @@ export default function LiveOrdersPage() {
                   </div>
                   <div>
                     <div className="font-semibold text-lg">
-                      {selectedOrder.customerName ||
-                        "Guest"}
+                      {selectedOrder.customerName || "Guest"}
                     </div>
                     {selectedOrder.customerEmail && (
                       <div className="text-sm text-gray-600 space-y-1">

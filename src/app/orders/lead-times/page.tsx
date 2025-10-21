@@ -141,7 +141,7 @@ export default function LeadTimesPage() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => handleNavigate('/orders/live/exit')}
+            onClick={() => handleNavigate('/orders/live')}
           >
             Exit <X className="ml-2 h-4 w-4" />
           </Button>

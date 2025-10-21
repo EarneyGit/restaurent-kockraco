@@ -126,12 +126,13 @@ export default function SearchOrdersPage() {
       const response = await api.get(endpoint);
       const data = response.data;
       if (data.success) {
-        setOrders(data.data);
+        setOrders(data.data.map(transformOrder));
         setSearchMessage(`Found ${data.data.length} orders`);
       } else {
         throw new Error(data.message || "Failed to fetch orders");
       }
     } catch (err) {
+      console.error(err);
       setError("Error connecting to the server");
     } finally {
       setLoading(false);

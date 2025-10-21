@@ -44,9 +44,9 @@ export const transformOrder = (order: any) => {
     order.customerEmail = order.orderCustomerDetails?.email;
     order.customerPhone = order.orderCustomerDetails?.phone;
   } else {
-    order.customerName = (order.user.firstName + ' ' + order.user.lastName).trim() || order.user.email || 'Customer';
-    order.customerEmail = order.user.email;
-    order.customerPhone = order.user.phone;
+    order.customerName = (order?.user?.firstName + ' ' + order?.user?.lastName).trim() || order?.user?.email || 'Customer';
+    order.customerEmail = order?.user?.email || '';
+    order.customerPhone = order?.user?.phone || '';
   }
   return order;
 };
