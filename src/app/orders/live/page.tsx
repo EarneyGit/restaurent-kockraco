@@ -417,9 +417,9 @@ export default function LiveOrdersPage() {
 
     // Filter by delivery method
     const deliveryMethod = order.deliveryMethod?.toLowerCase();
-    if (deliveryMethod === "pickup" && !showCollection) return false;
+    if (deliveryMethod === "collection" && !showCollection) return false;
     if (deliveryMethod === "delivery" && !showDelivery) return false;
-    if (deliveryMethod === "dine_in" && !showTableOrdering) return false;
+    if (deliveryMethod === "table_ordering" && !showTableOrdering) return false;
 
     // Filter out card payment orders that aren't paid yet
     if (order.paymentMethod === "card" && order.paymentStatus !== "paid") {
@@ -448,11 +448,11 @@ export default function LiveOrdersPage() {
 
   const getDeliveryMethodDisplay = (method: string) => {
     switch (method?.toLowerCase()) {
-      case "pickup":
+      case "collection":
         return "Collection";
       case "delivery":
         return "Delivery";
-      case "dine_in":
+      case "table_ordering":
         return "Table Ordering";
       default:
         return method || "N/A";
