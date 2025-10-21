@@ -10,6 +10,7 @@ import { reportService } from "@/services/report.service";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { transformOrder } from "@/lib/utils";
 
 export default function SalesHistoryPage() {
   // Set default date range to start of month and current date
@@ -37,7 +38,7 @@ export default function SalesHistoryPage() {
       });
 
       if (response.success) {
-        setSalesData(response.data as unknown as SaleData[]);
+        setSalesData(response.data.map((order: any) => transformOrder(order)) as unknown as SaleData[]);
         if (response.pagination) {
           setCurrentPage(response.pagination.currentPage);
           setTotalPages(response.pagination.totalPages);
@@ -95,8 +96,8 @@ export default function SalesHistoryPage() {
       const value = ((s as any).total ?? 0) as number;
       return [
         (s as any).orderNumber ?? s.id ?? "",
-        s.customer ?? "",
-        s.email ?? "",
+        (s as any).customerName ?? "",
+        (s as any).customerEmail ?? "",
         s.orderType ?? "",
         value.toFixed(2),
         (discountAmount as number).toFixed(2),
@@ -168,8 +169,8 @@ export default function SalesHistoryPage() {
       const value = ((s as any).total ?? 0) as number;
       return [
         (s as any).orderNumber ?? s.id ?? "",
-        s.customer ?? "",
-        s.email ?? "",
+        (s as any).customerName ?? "",
+        (s as any).customerEmail ?? "",
         s.orderType ?? "",
         value.toFixed(2),
         (discountAmount as number).toFixed(2),

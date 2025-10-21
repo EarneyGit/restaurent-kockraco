@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { cn, getTodayDate } from "@/lib/utils";
+import { cn, getOrderCustomerDetails, getTodayDate, transformOrder } from "@/lib/utils";
 import {
   Menu,
   X,
@@ -92,6 +92,9 @@ interface Discount {
 }
 
 interface Order {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   selectedTimeSlot?: string;
   products: OrderItem[] | undefined;
   _id: string;
@@ -162,7 +165,7 @@ export default function LiveOrdersPage() {
       if (data.success) {
         // Map API status to UI status
         const mappedOrders = data.data.map((order: any) => ({
-          ...order,
+          ...transformOrder(order),
           status:
             order.status === "pending"
               ? "new"
@@ -208,7 +211,7 @@ export default function LiveOrdersPage() {
       if (data.success) {
         // Map API status back to UI status
         const mappedOrders = data.data.map((order: any) => ({
-          ...order,
+          ...transformOrder(order),
           status: activeTab, // Use the UI status instead of API status
         }));
         setOrders(mappedOrders);
@@ -229,7 +232,7 @@ export default function LiveOrdersPage() {
       const data = response.data;
       if (data.success) {
         setSelectedOrder({
-          ...data.data,
+          ...transformOrder(data.data),
           status: activeTab, // Maintain consistent status mapping
         });
       } else {
@@ -639,7 +642,7 @@ export default function LiveOrdersPage() {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-medium text-lg mb-1">
-                      {order.user?.firstName + " " + order.user?.lastName ||
+                      {order.customerName ||
                         "Guest"}
                     </div>
                     <div className="text-sm text-gray-600 mb-2">
@@ -1018,22 +1021,21 @@ export default function LiveOrdersPage() {
                   </div>
                   <div>
                     <div className="font-semibold text-lg">
-                      {selectedOrder.user?.firstName +
-                        " " +
-                        selectedOrder.user?.lastName || "Guest"}
+                      {selectedOrder.customerName ||
+                        "Guest"}
                     </div>
-                    {selectedOrder.user && (
+                    {selectedOrder.customerEmail && (
                       <div className="text-sm text-gray-600 space-y-1">
-                        {selectedOrder.user.email && (
+                        {selectedOrder.customerEmail && (
                           <div className="flex items-center gap-2">
                             <Mail className="h-3 w-3" />
-                            {selectedOrder.user.email}
+                            {selectedOrder.customerEmail}
                           </div>
                         )}
-                        {selectedOrder.user.phone && (
+                        {selectedOrder.customerPhone && (
                           <div className="flex items-center gap-2">
                             <Phone className="h-3 w-3" />
-                            {selectedOrder.user.phone}
+                            {selectedOrder.customerPhone}
                           </div>
                         )}
                       </div>

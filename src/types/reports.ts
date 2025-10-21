@@ -6,7 +6,8 @@ export interface DiscountObject {
 
 export interface SaleData {
   id: string
-  customer: string
+  customerName: string
+  customerEmail: string
   email: string
   total: number
   discount: number | DiscountObject // can be a number (like 0) or an object

@@ -89,8 +89,8 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 <TableCell className="font-medium">
                   {sale.orderNumber}
                 </TableCell>
-                <TableCell className="text-gray-700">{sale.customer}</TableCell>
-                <TableCell>{sale.email}</TableCell>
+                <TableCell className="text-gray-700">{sale.customerName}</TableCell>
+                <TableCell>{sale.customerEmail}</TableCell>
                 <TableCell>{sale.orderType}</TableCell>
                 <TableCell>£{sale.total.toFixed(2)}</TableCell>
                 <TableCell>
