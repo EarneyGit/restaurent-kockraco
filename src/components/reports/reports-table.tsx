@@ -68,19 +68,21 @@ export function ReportsTable({ data }: ReportsTableProps) {
                   {discount > 0 ? `£${discount.toFixed(2)}` : "—"}
                 </TableCell>
                 <TableCell>{sale.postcode}</TableCell>
-                <TableCell
-                  className={getPaymentMethodColor(sale.paymentMethod)}
-                >
-                  {sale.paymentMethod}
-                </TableCell>{" "}
-                <TableCell
-                  className={getPaymentStatusColor(
-                    sale.paymentStatus,
-                    sale.paymentMethod
-                  )}
-                >
-                  {sale.paymentStatus}
-                </TableCell>{" "}
+                <TableCell>
+                  <span className={getPaymentMethodColor(sale.paymentMethod)}>
+                    {sale.paymentMethod}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={getPaymentStatusColor(
+                      sale.paymentStatus,
+                      sale.paymentMethod
+                    )}
+                  >
+                    {sale.paymentStatus}
+                  </span>
+                </TableCell>
                 <TableCell>{sale.orderType}</TableCell>
                 <TableCell>{sale.created}</TableCell>
               </TableRow>
