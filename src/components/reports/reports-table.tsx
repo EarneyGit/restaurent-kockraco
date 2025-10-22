@@ -74,14 +74,18 @@ export function ReportsTable({ data }: ReportsTableProps) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={getPaymentStatusColor(
-                      sale.paymentStatus,
-                      sale.paymentMethod
-                    )}
-                  >
-                    {sale.paymentStatus}
-                  </span>
+                  {["cash", "cash_on_delivery"].includes(sale.paymentMethod) ? (
+                    <span className="text-green-600">N/A</span>
+                  ) : (
+                    <span
+                      className={getPaymentStatusColor(
+                        sale.paymentStatus,
+                        sale.paymentMethod
+                      )}
+                    >
+                      {sale.paymentStatus}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>{sale.orderType}</TableCell>
                 <TableCell>{sale.created}</TableCell>

@@ -127,14 +127,18 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={getPaymentStatusColor(
-                      sale.paymentStatus,
-                      sale.paymentMethod
-                    )}
-                  >
-                    {sale.paymentStatus}
-                  </span>
+                  {["cash", "cash_on_delivery"].includes(sale.paymentMethod) ? (
+                    <span className="text-green-600">N/A</span>
+                  ) : (
+                    <span
+                      className={getPaymentStatusColor(
+                        sale.paymentStatus,
+                        sale.paymentMethod
+                      )}
+                    >
+                      {sale.paymentStatus}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>{sale.created}</TableCell>
                 <TableCell>
