@@ -73,7 +73,6 @@ export function ReportsTable({ data }: ReportsTableProps) {
                 >
                   {sale.paymentMethod}
                 </TableCell>{" "}
-                // color the text based on the payment method
                 <TableCell
                   className={getPaymentStatusColor(
                     sale.paymentStatus,
@@ -82,7 +81,6 @@ export function ReportsTable({ data }: ReportsTableProps) {
                 >
                   {sale.paymentStatus}
                 </TableCell>{" "}
-                // color the text based on the payment status
                 <TableCell>{sale.orderType}</TableCell>
                 <TableCell>{sale.created}</TableCell>
               </TableRow>
