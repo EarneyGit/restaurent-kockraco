@@ -22,6 +22,7 @@ export default function EndOfNightPage() {
   const [salesData, setSalesData] = useState<SaleData[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(['all-sales'])
+  const [orderState, setOrderState] = useState<'completed' | 'cancelled'>('completed')
 
 
   // Summary data
@@ -58,7 +59,7 @@ export default function EndOfNightPage() {
     setLoading(true)
     try {
       const formattedDate = format(date, 'yyyy-MM-dd')
-      const response = await reportService.getEndOfNightReport(formattedDate)
+      const response = await reportService.getEndOfNightReport(formattedDate, undefined, orderState)
       
       if (response.success && response.data) {
         setSummary(response.data.summary)
@@ -81,7 +82,7 @@ export default function EndOfNightPage() {
 
   useEffect(() => {
     fetchReportData(selectedDate)
-  }, [selectedDate])
+  }, [selectedDate, orderState])
 
   const handleDateChange = (date: Date | null) => {
     if (date) {
@@ -109,6 +110,17 @@ export default function EndOfNightPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-medium">End of Night Report</h1>
         <div className="flex gap-4 items-center no-print">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Filter:</span>
+            <select
+              value={orderState}
+              onChange={(e) => setOrderState(e.target.value as 'completed' | 'cancelled')}
+              className="w-[160px] h-9 rounded-md border border-input bg-white px-2 text-sm"
+            >
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
           <DatePicker
             selected={selectedDate}
             onSelect={handleDateChange}

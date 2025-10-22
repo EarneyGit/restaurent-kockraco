@@ -154,10 +154,11 @@ class ReportService {
   }
 
   // End of Night Report
-  async getEndOfNightReport(date?: string, branchId?: string): Promise<{ success: boolean; data: EndOfNightReport }> {
+  async getEndOfNightReport(date?: string, branchId?: string, orderState?: 'completed' | 'cancelled'): Promise<{ success: boolean; data: EndOfNightReport }> {
     const params = new URLSearchParams();
     if (date) params.append('date', date);
     if (branchId) params.append('branchId', branchId);
+    if (orderState) params.append('orderState', orderState);
 
     const response = await fetch(`${API_BASE_URL}/reports/end-of-night?${params}`, {
       headers: this.getAuthHeaders(),
@@ -172,11 +173,12 @@ class ReportService {
   }
 
   // End of Month Report
-  async getEndOfMonthReport(month?: number, year?: number, branchId?: string): Promise<{ success: boolean; data: EndOfMonthReport }> {
+  async getEndOfMonthReport(month?: number, year?: number, branchId?: string, orderState?: 'completed' | 'cancelled'): Promise<{ success: boolean; data: EndOfMonthReport }> {
     const params = new URLSearchParams();
     if (month) params.append('month', month.toString());
     if (year) params.append('year', year.toString());
     if (branchId) params.append('branchId', branchId);
+    if (orderState) params.append('orderState', orderState);
 
     const response = await fetch(`${API_BASE_URL}/reports/end-of-month?${params}`, {
       headers: this.getAuthHeaders(),
@@ -191,7 +193,7 @@ class ReportService {
   }
 
   // Sales History
-  async getSalesHistory(filters: ReportFilters): Promise<{ success: boolean; data: SalesHistoryItem[]; pagination: PaginationInfo }> {
+  async getSalesHistory(filters: ReportFilters & { orderState?: 'completed' | 'cancelled' }): Promise<{ success: boolean; data: SalesHistoryItem[]; pagination: PaginationInfo }> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
