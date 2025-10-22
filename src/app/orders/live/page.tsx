@@ -834,7 +834,7 @@ export default function LiveOrdersPage() {
                     )}
                   <div className="mt-3 text-sm text-gray-500">
                     Payment: {selectedOrder.paymentMethod} (
-                    {selectedOrder.paymentStatus})
+                    {["cash", "cash_on_delivery"].includes(selectedOrder.paymentMethod) ? "N/A" : selectedOrder.paymentStatus})
                   </div>
                 </div>
 
