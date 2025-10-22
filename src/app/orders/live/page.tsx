@@ -37,6 +37,16 @@ interface DeliveryAddress {
   longitude: number;
 }
 
+interface CustomerDetails {
+  address: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  email: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface BranchInfo {
   location: {
     coordinates: [number, number];
@@ -107,6 +117,7 @@ interface Order {
   orderNumber: string;
   user?: User;
   deliveryAddress: DeliveryAddress;
+  orderCustomerDetails: CustomerDetails;
   items: OrderItem[];
   totalAmount: number;
   finalTotal: number;
@@ -476,7 +487,7 @@ export default function LiveOrdersPage() {
 
   // Helper functions to calculate order counts for each status
   const getOrderCounts = () => {
-    const filteredOrders = allOrders.filter((order) => {
+    const filteredOrders = allOrders?.filter((order) => {
       // Filter by delivery method
       const orderType = order.orderType?.toLowerCase();
       if (orderType === "collection" && !showCollection) return false;
@@ -810,13 +821,14 @@ export default function LiveOrdersPage() {
                       <div className="text-gray-600">
                         <p className="font-medium mb-1">Delivery Address</p>
                         <p>
-                          {[
+                          {/* {[
                             selectedOrder.deliveryAddress.street,
                             selectedOrder.deliveryAddress.city,
                             selectedOrder.deliveryAddress.state,
                           ]
                             .filter(Boolean)
-                            .join(", ")}
+                            .join(", ")} */}
+                          {selectedOrder?.orderCustomerDetails?.address || ""}
                         </p>
                       </div>
                     )}
@@ -960,7 +972,7 @@ export default function LiveOrdersPage() {
                     )
                   )}
                   {/* order serviceCharge */}
-                  {selectedOrder.serviceCharge && (
+                  {selectedOrder.serviceCharge ? (
                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
                       <span className="text-base font-semibold">
                         Service Charge
@@ -969,21 +981,25 @@ export default function LiveOrdersPage() {
                         {selectedOrder.serviceCharge}
                       </span>
                     </div>
+                  ) : (
+                    ""
                   )}
                   {/* order deliveryFee && deliveryMethod is delivery */}
                   {selectedOrder.deliveryFee &&
-                    selectedOrder.deliveryMethod === "delivery" && (
-                      <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                        <span className="text-base font-semibold">
-                          Delivery Fee
-                        </span>
-                        <span className="text-base font-semibold">
-                          {selectedOrder.deliveryFee}
-                        </span>
-                      </div>
-                    )}
+                  selectedOrder.deliveryMethod === "delivery" ? (
+                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                      <span className="text-base font-semibold">
+                        Delivery Fee
+                      </span>
+                      <span className="text-base font-semibold">
+                        {selectedOrder.deliveryFee}
+                      </span>
+                    </div>
+                  ) : (
+                    ""
+                  )}
                   {/* order customerNotes */}
-                  {selectedOrder.customerNotes && (
+                  {selectedOrder.customerNotes ? (
                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
                       <span className="text-base font-semibold">
                         Customer Notes
@@ -992,6 +1008,8 @@ export default function LiveOrdersPage() {
                         {selectedOrder.customerNotes}
                       </span>
                     </div>
+                  ) : (
+                    ""
                   )}
 
                   {/* Subtotal */}
@@ -1069,8 +1087,8 @@ export default function LiveOrdersPage() {
               {/* show google maps direction if order type is delivery */}
               {selectedOrder?.deliveryMethod === "delivery" &&
                 selectedOrder.branchId.location.coordinates &&
-                selectedOrder.deliveryAddress.latitude &&
-                selectedOrder.deliveryAddress.longitude && (
+                selectedOrder.orderCustomerDetails.latitude &&
+                selectedOrder.orderCustomerDetails.longitude && (
                   <div
                     className="bg-white rounded-lg shadow-sm p-6 mb-4"
                     style={{
@@ -1081,7 +1099,7 @@ export default function LiveOrdersPage() {
                   >
                     <MapPin className="h-6 w-6 text-emerald-600 mr-2" />
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&origin=${selectedOrder.branchId.location.coordinates[1]},${selectedOrder.branchId.location.coordinates[0]}&destination=${selectedOrder.deliveryAddress.latitude},${selectedOrder.deliveryAddress.longitude}&travelmode=driving`}
+                      href={`https://www.google.com/maps/dir/?api=1&origin=${selectedOrder.branchId.location.coordinates[1]},${selectedOrder.branchId.location.coordinates[0]}&destination=${selectedOrder.orderCustomerDetails.latitude},${selectedOrder.orderCustomerDetails.longitude}&travelmode=driving`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
