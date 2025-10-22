@@ -8,7 +8,7 @@ import { BaseUrl } from "@/lib/config";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { useAuth } from "@/contexts/auth-context";
-import { transformOrder } from "@/lib/utils";
+import { capitalizeFirstLetter, transformOrder } from "@/lib/utils";
 
 interface Product {
   _id: string;
@@ -42,6 +42,16 @@ interface DeliveryAddress {
   state: string;
 }
 
+interface CustomerDetails {
+  address: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  email: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface BranchAddress {
   street: string;
   city: string;
@@ -65,6 +75,7 @@ interface Order {
   customerPhone: string;
   products: OrderProduct[];
   deliveryAddress?: DeliveryAddress;
+  orderCustomerDetails: CustomerDetails;
   branchId: Branch;
   status: string;
   totalAmount: number;
@@ -245,7 +256,7 @@ export default function SearchOrdersPage() {
                   <div>
                     <div className="font-medium">{order.customerName}</div>
                     <div className="text-sm text-gray-500">
-                      {order.deliveryMethod}
+                      {capitalizeFirstLetter(order?.deliveryMethod)}
                     </div>
                   </div>
                   <div className="text-right">
@@ -300,9 +311,11 @@ export default function SearchOrdersPage() {
                     Order No: {selectedOrder.orderNumber}
                   </h2>
                   <div className="mt-2 text-gray-600">
-                    {selectedOrder.deliveryMethod}
+                    <span>
+                      {capitalizeFirstLetter(selectedOrder.deliveryMethod)}
+                    </span>
                     <br />
-                    Status: {selectedOrder.status}
+                    Status: {capitalizeFirstLetter(selectedOrder.status)}
                     <br />
                     Created: {formatDate(selectedOrder.createdAt)}
                     <br />
@@ -327,19 +340,19 @@ export default function SearchOrdersPage() {
                   </div>
                 </div>
               </div>
-
               {selectedOrder.deliveryMethod === "delivery" &&
                 selectedOrder.deliveryAddress && (
                   <div className="mb-6">
                     <h3 className="font-medium mb-2">Delivery Address</h3>
                     <p className="text-gray-600">
-                      {[
+                      {/* {[
                         selectedOrder.deliveryAddress.street,
                         selectedOrder.deliveryAddress.city,
                         selectedOrder.deliveryAddress.state,
                       ]
                         .filter(Boolean)
-                        .join(", ")}
+                        .join(", ")} */}
+                      {selectedOrder?.orderCustomerDetails?.address || ""}
                     </p>
                   </div>
                 )}
