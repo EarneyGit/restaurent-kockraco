@@ -193,7 +193,7 @@ class ReportService {
   }
 
   // Sales History
-  async getSalesHistory(filters: ReportFilters & { orderState?: 'completed' | 'cancelled' }): Promise<{ success: boolean; data: SalesHistoryItem[]; pagination: PaginationInfo }> {
+  async getSalesHistory(filters: ReportFilters & { orderState?: 'completed' | 'cancelled' | 'pending' }): Promise<{ success: boolean; data: SalesHistoryItem[]; pagination: PaginationInfo }> {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {

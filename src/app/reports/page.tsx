@@ -25,7 +25,7 @@ export default function SalesHistoryPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState<number>(50);
-  const [orderState, setOrderState] = useState<'completed' | 'cancelled'>('completed');
+  const [orderState, setOrderState] = useState<'completed' | 'cancelled' | 'pending'>('completed');
 
   // Fetch sales data
   const fetchSalesData = async (page = 1) => {
@@ -236,10 +236,11 @@ export default function SalesHistoryPage() {
             <span className="text-sm text-gray-600">Filter:</span>
             <select
               value={orderState}
-              onChange={(e) => setOrderState(e.target.value as 'completed' | 'cancelled')}
+              onChange={(e) => setOrderState(e.target.value as 'completed' | 'cancelled' | 'pending')}
               className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
             >
               <option value="completed">Completed</option>
+              <option value="pending">Pending(payments)</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
