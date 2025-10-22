@@ -101,7 +101,7 @@ export default function HomePage() {
   const { logout, user } = useAuth();
   const FEATURE_DEV = process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true";
   const [selectedFilter, setSelectedFilter] = useState<DateFilter>(
-    (process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true") ? "today" : "custom"
+    process.env.NEXT_PUBLIC_FEATURE_DEVELOPMENT === "true" ? "today" : "custom"
   );
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: startOfDay(new Date()),
@@ -130,14 +130,16 @@ export default function HomePage() {
     totalDiscount: number;
     totalCustomers: number;
   } | null>(null);
-const today = new Date().toISOString().split('T')[0]; // gets YYYY-MM-DD format
+  const today = new Date().toISOString().split("T")[0]; // gets YYYY-MM-DD format
 
-const [customDateRange, setCustomDateRange] = useState({
-  from: today,
-  to: today,
-});
+  const [customDateRange, setCustomDateRange] = useState({
+    from: today,
+    to: today,
+  });
 
-  const [showCustomDatePicker, setShowCustomDatePicker] = useState(!FEATURE_DEV);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(
+    !FEATURE_DEV
+  );
 
   // Use actual user data if available
   const displayName = user?.firstName + " " + user?.lastName || "Admin User";
@@ -363,14 +365,21 @@ const [customDateRange, setCustomDateRange] = useState({
       {/* Header with location and view store button */}
       <div className="flex items-center justify-between mb-6 border-b pb-4">
         <div className="flex-1">
-          <Image src="/rasoie_logo.png" alt="Rasoie Logo" width={50} height={50} />
+          <Image
+            src="/rasoie_logo.png"
+            alt="Rasoie Logo"
+            width={50}
+            height={50}
+          />
         </div>
         <h1 className="text-2xl font-medium text-center flex-1">
           {displayName || "Admin User"}
         </h1>
         <div className="flex items-center justify-end flex-1 space-x-4">
-          <button 
-            onClick={() => import('@/lib/utils').then(({ viewYourStore }) => viewYourStore())}
+          <button
+            onClick={() =>
+              import("@/lib/utils").then(({ viewYourStore }) => viewYourStore())
+            }
             className="flex items-center text-gray-700"
           >
             <svg
@@ -466,506 +475,554 @@ const [customDateRange, setCustomDateRange] = useState({
 
       {/* Metrics Cards */}
       {FEATURE_DEV ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Orders (Sales)</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {stats ? formatCurrency(stats.totalSales) : "---"}
-              </h2>
-              <div className="flex items-center mt-1">
-                <span
-                  className={cn(
-                    "text-xs",
-                    stats?.comparisonStats?.salesChange &&
-                      stats.comparisonStats.salesChange >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">
+                  Total Orders (Sales)
+                </p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {stats ? formatCurrency(stats.totalSales) : "---"}
+                </h2>
+                <div className="flex items-center mt-1">
+                  <span
+                    className={cn(
+                      "text-xs",
+                      stats?.comparisonStats?.salesChange &&
+                        stats.comparisonStats.salesChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    )}
+                  >
+                    {stats?.comparisonStats
+                      ? `${
+                          stats.comparisonStats.salesChange >= 0 ? "↑" : "↓"
+                        } ${Math.abs(stats.comparisonStats.salesChange).toFixed(
+                          1
+                        )}%`
+                      : "---"}
+                  </span>
+                </div>
+              </div>
+              <div className="bg-red-100 h-10 w-10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {stats?.comparisonStats
-                    ? `${
-                        stats.comparisonStats.salesChange >= 0 ? "↑" : "↓"
-                      } ${Math.abs(stats.comparisonStats.salesChange).toFixed(
-                        1
-                      )}%`
-                    : "---"}
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+                </svg>
               </div>
             </div>
-            <div className="bg-red-100 h-10 w-10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
-            </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {stats ? formatCurrency(stats.totalSales) : "---"}
-              </h2>
-              <div className="flex items-center mt-1">
-                <span
-                  className={cn(
-                    "text-xs",
-                    stats?.comparisonStats?.salesChange &&
-                      stats.comparisonStats.salesChange >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  )}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {stats ? formatCurrency(stats.totalSales) : "---"}
+                </h2>
+                <div className="flex items-center mt-1">
+                  <span
+                    className={cn(
+                      "text-xs",
+                      stats?.comparisonStats?.salesChange &&
+                        stats.comparisonStats.salesChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    )}
+                  >
+                    {stats?.comparisonStats
+                      ? `${
+                          stats.comparisonStats.salesChange >= 0 ? "↑" : "↓"
+                        } ${Math.abs(stats.comparisonStats.salesChange).toFixed(
+                          1
+                        )}%`
+                      : "---"}
+                  </span>
+                </div>
+              </div>
+              <div className="bg-blue-100 h-10 w-10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {stats?.comparisonStats
-                    ? `${
-                        stats.comparisonStats.salesChange >= 0 ? "↑" : "↓"
-                      } ${Math.abs(stats.comparisonStats.salesChange).toFixed(
-                        1
-                      )}%`
-                    : "---"}
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
               </div>
             </div>
-            <div className="bg-blue-100 h-10 w-10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Average Order Value</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {stats ? formatCurrency(stats.averageOrderValue) : "---"}
-              </h2>
-              <div className="flex items-center mt-1">
-                <span
-                  className={cn(
-                    "text-xs",
-                    stats?.comparisonStats?.avgOrderChange &&
-                      stats.comparisonStats.avgOrderChange >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  )}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">
+                  Average Order Value
+                </p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {stats ? formatCurrency(stats.averageOrderValue) : "---"}
+                </h2>
+                <div className="flex items-center mt-1">
+                  <span
+                    className={cn(
+                      "text-xs",
+                      stats?.comparisonStats?.avgOrderChange &&
+                        stats.comparisonStats.avgOrderChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    )}
+                  >
+                    {stats?.comparisonStats
+                      ? `${
+                          stats.comparisonStats.avgOrderChange >= 0 ? "↑" : "↓"
+                        } ${Math.abs(
+                          stats.comparisonStats.avgOrderChange
+                        ).toFixed(1)}%`
+                      : "---"}
+                  </span>
+                </div>
+              </div>
+              <div className="bg-green-100 h-10 w-10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {stats?.comparisonStats
-                    ? `${
-                        stats.comparisonStats.avgOrderChange >= 0 ? "↑" : "↓"
-                      } ${Math.abs(
-                        stats.comparisonStats.avgOrderChange
-                      ).toFixed(1)}%`
-                    : "---"}
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
               </div>
             </div>
-            <div className="bg-green-100 h-10 w-10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Orders</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {stats ? stats.totalOrders.toLocaleString() : "---"}
-              </h2>
-              <div className="flex items-center mt-1">
-                <span
-                  className={cn(
-                    "text-xs",
-                    stats?.comparisonStats?.ordersChange &&
-                      stats.comparisonStats.ordersChange >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  )}
-                >
-                  {stats?.comparisonStats
-                    ? `${
-                        stats.comparisonStats.ordersChange >= 0 ? "↑" : "↓"
-                      } ${Math.abs(stats.comparisonStats.ordersChange).toFixed(
-                        1
-                      )}%`
-                    : "---"}
-                </span>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Orders</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {stats ? stats.totalOrders.toLocaleString() : "---"}
+                </h2>
+                <div className="flex items-center mt-1">
+                  <span
+                    className={cn(
+                      "text-xs",
+                      stats?.comparisonStats?.ordersChange &&
+                        stats.comparisonStats.ordersChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    )}
+                  >
+                    {stats?.comparisonStats
+                      ? `${
+                          stats.comparisonStats.ordersChange >= 0 ? "↑" : "↓"
+                        } ${Math.abs(
+                          stats.comparisonStats.ordersChange
+                        ).toFixed(1)}%`
+                      : "---"}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div className="bg-purple-100 h-10 w-10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
+              <div className="bg-purple-100 h-10 w-10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Orders</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? liveStats.completedOrders.toLocaleString() : "---"}
-              </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Orders</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats
+                    ? (liveStats.completedOrders ?? 0) +
+                      (liveStats.cancelledOrders ?? 0)
+                    : "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Completed Orders</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats?.completedOrders?.toLocaleString() ?? "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Cancelled Orders</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats
+                    ? liveStats.cancelledOrders.toLocaleString()
+                    : "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Customers</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats
+                    ? liveStats.totalCustomers.toLocaleString()
+                    : "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats
+                    ? formatCurrency(liveStats.revenueAmount ?? 0)
+                    : "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Total Discount</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats ? formatCurrency(liveStats.totalDiscount) : "---"}
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">
+                  Total Refund Amount
+                </p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {liveStats ? formatCurrency(liveStats.refundedAmount) : "---"}
+                </h2>
+              </div>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? formatCurrency(liveStats.revenueAmount) : "---"}
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Discount</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? formatCurrency(liveStats.totalDiscount) : "---"}
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Customers</p>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? liveStats.totalCustomers.toLocaleString() : "---"}
-              </h2>
-            </div>
-          </div>
-        </div>
-      </div>
       )}
 
       {/* Charts */}
       {FEATURE_DEV ? (
-      <>
-      {/* Hourly Sales Report */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Hourly Sales Report</h3>
-          <span className="text-xs text-gray-500">
-            {stats
-              ? `${formatCurrency(stats.averageOrderValue)} Average`
-              : "---"}
-          </span>
-        </div>
-        <div className="h-52 relative">
-          <div className="h-40 w-full flex items-end space-x-1">
-            {stats?.hourlyData.map((data, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-yellow-500/50 transition-all duration-300"
-                style={{
-                  height: `${
-                    (data.sales /
-                      Math.max(...stats.hourlyData.map((d) => d.sales))) *
-                    100
-                  }%`,
-                }}
-              ></div>
-            ))}
-          </div>
-          <div className="mt-2 w-full flex justify-between text-xs text-gray-500">
-            {[0, 4, 8, 12, 16, 20, 23].map((hour) => (
-              <span key={hour} className="w-4 text-center">
-                {hour}
+        <>
+          {/* Hourly Sales Report */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Hourly Sales Report</h3>
+              <span className="text-xs text-gray-500">
+                {stats
+                  ? `${formatCurrency(stats.averageOrderValue)} Average`
+                  : "---"}
               </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Daily Sales Report */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Daily Sales Report</h3>
-          <span className="text-xs text-gray-500">
-            {stats
-              ? `${formatCurrency(stats.averageOrderValue)} Average`
-              : "---"}
-          </span>
-        </div>
-        <div className="h-52">
-          <div className="h-40 w-full flex items-end space-x-1">
-            {stats?.hourlyData.slice(0, 7).map((data, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-yellow-500/50 transition-all duration-300"
-                style={{
-                  height: `${
-                    (data.sales /
-                      Math.max(...stats.hourlyData.map((d) => d.sales))) *
-                    100
-                  }%`,
-                }}
-              >
-                <div className="text-xs text-center text-slate-700 mt-6">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Orders by Delivery Type */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Orders By Delivery Type</h3>
-            <span className="text-xs text-gray-500">View Details</span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-40">
-              <div className="h-32 w-full flex items-end">
-                <div
-                  className="w-full bg-teal-400"
-                  style={{ height: "80%" }}
-                ></div>
-              </div>
-              <div className="text-xs text-center text-gray-500 mt-2">
-                Delivery
-              </div>
             </div>
-            <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-bold">
-                    {stats?.totalSales
-                      ? formatCurrency(stats.totalSales * 0.6)
-                      : "---"}
+            <div className="h-52 relative">
+              <div className="h-40 w-full flex items-end space-x-1">
+                {stats?.hourlyData.map((data, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-yellow-500/50 transition-all duration-300"
+                    style={{
+                      height: `${
+                        (data.sales /
+                          Math.max(...stats.hourlyData.map((d) => d.sales))) *
+                        100
+                      }%`,
+                    }}
+                  ></div>
+                ))}
+              </div>
+              <div className="mt-2 w-full flex justify-between text-xs text-gray-500">
+                {[0, 4, 8, 12, 16, 20, 23].map((hour) => (
+                  <span key={hour} className="w-4 text-center">
+                    {hour}
                   </span>
-                  <span className="text-xs">Total</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Orders By Payment Type</h3>
-            <span className="text-xs text-gray-500">View Details</span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-40">
-              <div className="h-32 w-full flex items-end">
-                <div
-                  className="w-full bg-teal-400"
-                  style={{ height: "70%" }}
-                ></div>
-              </div>
-              <div className="text-xs text-center text-gray-500 mt-2">Cash</div>
-            </div>
-            <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-bold">
-                    {stats?.totalSales
-                      ? formatCurrency(stats.totalSales * 0.4)
-                      : "---"}
-                  </span>
-                  <span className="text-xs">Total</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Customers by Branch & Top Selling Products */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Customers by Branch Orders</h3>
-            <span className="text-xs text-gray-500">View Details</span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-40">
-              <div className="h-32 w-full flex items-end">
-                <div
-                  className="w-full bg-teal-400"
-                  style={{ height: "65%" }}
-                ></div>
-              </div>
-              <div className="text-xs text-center text-gray-500 mt-2">
-                Branch
-              </div>
-            </div>
-            <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-bold">
-                    {stats?.totalSales
-                      ? formatCurrency(stats.totalSales * 0.3)
-                      : "---"}
-                  </span>
-                  <span className="text-xs">Total</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Top Selling Products by Value</h3>
-            <span className="text-xs text-gray-500">View Details</span>
-          </div>
-          <div className="space-y-2">
-            {[
-              {
-                name: "Large BBQ Chicken Feast",
-                price: 9.99,
-                sales: stats?.totalSales ? stats.totalSales * 0.2 : 0,
-              },
-              {
-                name: "Garlic Bread with Cheese",
-                price: 3.99,
-                sales: stats?.totalSales ? stats.totalSales * 0.15 : 0,
-              },
-              {
-                name: "Regular Pepperoni Pizza",
-                price: 6.99,
-                sales: stats?.totalSales ? stats.totalSales * 0.1 : 0,
-              },
-            ].map((product, i) => (
-              <div key={i} className="flex justify-between items-center">
-                <span className="text-sm">{product.name}</span>
-                <span className="font-semibold">
-                  {formatCurrency(product.sales)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Customer Overview */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Customer Overview</h3>
-          <span className="text-xs text-gray-500">View Details</span>
-        </div>
-        <div className="grid grid-cols-2 gap-8">
-          <div>
-            <h4 className="text-sm font-medium mb-3 text-center">Retention</h4>
-            <div className="h-40 flex items-center justify-center">
-              <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative overflow-hidden">
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-bold">78%</span>
-                  <span className="text-xs">Returning</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium mb-3 text-center">
-              Value Split
-            </h4>
-            <div className="h-40 flex items-end justify-center">
-              <div className="w-24 h-36 bg-teal-400"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Operating Hours */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Operating Hours</h3>
-          <span className="text-xs text-gray-500">All Outlets</span>
-        </div>
-        <div className="space-y-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="flex items-center h-8">
-              <span className="w-12 text-xs text-gray-500">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+          {/* Daily Sales Report */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Daily Sales Report</h3>
+              <span className="text-xs text-gray-500">
+                {stats
+                  ? `${formatCurrency(stats.averageOrderValue)} Average`
+                  : "---"}
               </span>
-              <div className="flex-1 h-6 bg-gray-100 mx-2 relative">
-                <div className="absolute inset-y-0 left-1/4 right-1/4 bg-teal-400"></div>
+            </div>
+            <div className="h-52">
+              <div className="h-40 w-full flex items-end space-x-1">
+                {stats?.hourlyData.slice(0, 7).map((data, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-yellow-500/50 transition-all duration-300"
+                    style={{
+                      height: `${
+                        (data.sales /
+                          Math.max(...stats.hourlyData.map((d) => d.sales))) *
+                        100
+                      }%`,
+                    }}
+                  >
+                    <div className="text-xs text-center text-slate-700 mt-6">
+                      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="w-12 text-xs text-gray-500">24h</span>
-            </div>
-          ))}
-          <div className="flex justify-between pt-2 border-t mt-4">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-teal-400 mr-1"></div>
-              <span className="text-xs text-gray-500">Open Hours</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-gray-300 mr-1"></div>
-              <span className="text-xs text-gray-500">Closed</span>
             </div>
           </div>
-        </div>
-      </div>
-      </>
-       ) : (
-       <>
-         {/* Charts Grid - Round charts first row, bar charts second row */}
-       <div className="space-y-6 mb-6">
-         {/* First Row - Round Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Cancelled Orders - Round Chart */}
+          {/* Orders by Delivery Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Orders By Delivery Type</h3>
+                <span className="text-xs text-gray-500">View Details</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-40">
+                  <div className="h-32 w-full flex items-end">
+                    <div
+                      className="w-full bg-teal-400"
+                      style={{ height: "80%" }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-2">
+                    Delivery
+                  </div>
+                </div>
+                <div className="h-40 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-bold">
+                        {stats?.totalSales
+                          ? formatCurrency(stats.totalSales * 0.6)
+                          : "---"}
+                      </span>
+                      <span className="text-xs">Total</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Orders By Payment Type</h3>
+                <span className="text-xs text-gray-500">View Details</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-40">
+                  <div className="h-32 w-full flex items-end">
+                    <div
+                      className="w-full bg-teal-400"
+                      style={{ height: "70%" }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-2">
+                    Cash
+                  </div>
+                </div>
+                <div className="h-40 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-bold">
+                        {stats?.totalSales
+                          ? formatCurrency(stats.totalSales * 0.4)
+                          : "---"}
+                      </span>
+                      <span className="text-xs">Total</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Customers by Branch & Top Selling Products */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Customers by Branch Orders</h3>
+                <span className="text-xs text-gray-500">View Details</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-40">
+                  <div className="h-32 w-full flex items-end">
+                    <div
+                      className="w-full bg-teal-400"
+                      style={{ height: "65%" }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-2">
+                    Branch
+                  </div>
+                </div>
+                <div className="h-40 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-bold">
+                        {stats?.totalSales
+                          ? formatCurrency(stats.totalSales * 0.3)
+                          : "---"}
+                      </span>
+                      <span className="text-xs">Total</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Top Selling Products by Value</h3>
+                <span className="text-xs text-gray-500">View Details</span>
+              </div>
+              <div className="space-y-2">
+                {[
+                  {
+                    name: "Large BBQ Chicken Feast",
+                    price: 9.99,
+                    sales: stats?.totalSales ? stats.totalSales * 0.2 : 0,
+                  },
+                  {
+                    name: "Garlic Bread with Cheese",
+                    price: 3.99,
+                    sales: stats?.totalSales ? stats.totalSales * 0.15 : 0,
+                  },
+                  {
+                    name: "Regular Pepperoni Pizza",
+                    price: 6.99,
+                    sales: stats?.totalSales ? stats.totalSales * 0.1 : 0,
+                  },
+                ].map((product, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <span className="text-sm">{product.name}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(product.sales)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Overview */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Customer Overview</h3>
+              <span className="text-xs text-gray-500">View Details</span>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-sm font-medium mb-3 text-center">
+                  Retention
+                </h4>
+                <div className="h-40 flex items-center justify-center">
+                  <div className="w-32 h-32 rounded-full border-8 border-yellow-400/60 relative overflow-hidden">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-bold">78%</span>
+                      <span className="text-xs">Returning</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-3 text-center">
+                  Value Split
+                </h4>
+                <div className="h-40 flex items-end justify-center">
+                  <div className="w-24 h-36 bg-teal-400"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Operating Hours */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold">Operating Hours</h3>
+              <span className="text-xs text-gray-500">All Outlets</span>
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="flex items-center h-8">
+                  <span className="w-12 text-xs text-gray-500">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
+                  </span>
+                  <div className="flex-1 h-6 bg-gray-100 mx-2 relative">
+                    <div className="absolute inset-y-0 left-1/4 right-1/4 bg-teal-400"></div>
+                  </div>
+                  <span className="w-12 text-xs text-gray-500">24h</span>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 border-t mt-4">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-teal-400 mr-1"></div>
+                  <span className="text-xs text-gray-500">Open Hours</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-gray-300 mr-1"></div>
+                  <span className="text-xs text-gray-500">Closed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Charts Grid - Round charts first row, bar charts second row */}
+          <div className="space-y-6 mb-6">
+            {/* First Row - Round Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cancelled Orders - Round Chart */}
+              {/* <div className="bg-white rounded-lg shadow p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold">Cancelled Orders</h3>
                 <span className="text-xs text-gray-500">Custom Range</span>
@@ -978,10 +1035,10 @@ const [customDateRange, setCustomDateRange] = useState({
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
-            {/* Refunded Amount - Round Chart */}
-            <div className="bg-white rounded-lg shadow p-4">
+              {/* Refunded Amount - Round Chart */}
+              {/* <div className="bg-white rounded-lg shadow p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold">Refunded Amount</h3>
                 <span className="text-xs text-gray-500">Custom Range</span>
@@ -994,54 +1051,58 @@ const [customDateRange, setCustomDateRange] = useState({
                   </div>
                 </div>
               </div>
+            </div> */}
             </div>
-         </div>
 
-         {/* Second Row - Bar Charts */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {/* Total Orders - Bar Chart */}
-           <div className="bg-white rounded-lg shadow p-4">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-semibold">Total Orders</h3>
-               <span className="text-xs text-gray-500">Custom Range</span>
-             </div>
-             <div className="h-52 relative">
-               <div className="h-40 w-full flex items-end">
-                 <div
-                   className="w-full bg-yellow-500/70"
-                   style={{ height: "70%" }}
-                 ></div>
-               </div>
-               <div className="text-xs text-center text-gray-500 mt-2">Orders</div>
-               <div className="absolute top-0 right-4 text-2xl font-bold text-yellow-600">
-                 {liveStats?.completedOrders || 0}
-               </div>
-             </div>
-           </div>
+            {/* Second Row - Bar Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Total Orders - Bar Chart */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Total Orders</h3>
+                  <span className="text-xs text-gray-500">Custom Range</span>
+                </div>
+                <div className="h-52 relative">
+                  <div className="h-40 w-full flex items-end">
+                    <div
+                      className="w-full bg-yellow-500/70"
+                      style={{ height: "70%" }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-2">
+                    Orders
+                  </div>
+                  <div className="absolute top-0 right-4 text-2xl font-bold text-yellow-600">
+                    {liveStats?.completedOrders || 0}
+                  </div>
+                </div>
+              </div>
 
-           {/* Total Discount - Bar Chart */}
-           <div className="bg-white rounded-lg shadow p-4">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-semibold">Total Discount</h3>
-               <span className="text-xs text-gray-500">Custom Range</span>
-             </div>
-             <div className="h-52 relative">
-               <div className="h-40 w-full flex items-end">
-                 <div
-                   className="w-full bg-blue-500/70"
-                   style={{ height: "40%" }}
-                 ></div>
-               </div>
-               <div className="text-xs text-center text-gray-500 mt-2">Discount</div>
-               <div className="absolute top-0 right-4 text-2xl font-bold text-blue-600">
-                 £{liveStats?.totalDiscount || 0}
-               </div>
-             </div>
-           </div>
-         </div>
-       </div>
-       </>
-       )}
+              {/* Total Discount - Bar Chart */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Total Discount</h3>
+                  <span className="text-xs text-gray-500">Custom Range</span>
+                </div>
+                <div className="h-52 relative">
+                  <div className="h-40 w-full flex items-end">
+                    <div
+                      className="w-full bg-blue-500/70"
+                      style={{ height: "40%" }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-center text-gray-500 mt-2">
+                    Discount
+                  </div>
+                  <div className="absolute top-0 right-4 text-2xl font-bold text-blue-600">
+                    £{liveStats?.totalDiscount || 0}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

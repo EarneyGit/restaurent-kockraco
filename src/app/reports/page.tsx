@@ -25,6 +25,7 @@ export default function SalesHistoryPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState<number>(50);
+  const [orderState, setOrderState] = useState<'completed' | 'cancelled'>('completed');
 
   // Fetch sales data
   const fetchSalesData = async (page = 1) => {
@@ -35,6 +36,7 @@ export default function SalesHistoryPage() {
         endDate: format(endDate, "yyyy-MM-dd"),
         page,
         limit: pageSize,
+        orderState,
       });
 
       if (response.success) {
@@ -55,7 +57,7 @@ export default function SalesHistoryPage() {
 
   useEffect(() => {
     fetchSalesData(1);
-  }, [startDate, endDate, pageSize]);
+  }, [startDate, endDate, pageSize, orderState]);
 
   const handleRefresh = () => {
     fetchSalesData(currentPage);
@@ -230,6 +232,17 @@ export default function SalesHistoryPage() {
           Sales History Report: {formatDate(startDate)} - {formatDate(endDate)}
         </h1>
         <div className="flex gap-4 items-center no-print">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Filter:</span>
+            <select
+              value={orderState}
+              onChange={(e) => setOrderState(e.target.value as 'completed' | 'cancelled')}
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
+            >
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
           <div className="flex items-center gap-2">
             <DatePicker
               selected={startDate}

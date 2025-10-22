@@ -39,6 +39,7 @@ const monthOptions = generateMonthOptions()
 export default function EndOfMonthPage() {
   const [selectedMonth, setSelectedMonth] = useState(monthOptions[0])
   const [loading, setLoading] = useState(false)
+  const [orderState, setOrderState] = useState<'completed' | 'cancelled'>('completed')
 
 
   // Report data
@@ -72,7 +73,9 @@ export default function EndOfMonthPage() {
     try {
       const response = await reportService.getEndOfMonthReport(
         monthOption.month,
-        monthOption.year
+        monthOption.year,
+        undefined,
+        orderState
       )
       
       if (response.success && response.data) {
@@ -90,7 +93,7 @@ export default function EndOfMonthPage() {
 
   useEffect(() => {
     fetchReportData(selectedMonth)
-  }, [selectedMonth])
+  }, [selectedMonth, orderState])
 
   const handleMonthChange = (value: string) => {
     const monthOption = monthOptions.find(opt => opt.value === value)
@@ -122,6 +125,17 @@ export default function EndOfMonthPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-medium">End of Month Report</h1>
         <div className="flex gap-4 items-center no-print">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Filter:</span>
+            <select
+              value={orderState}
+              onChange={(e) => setOrderState(e.target.value as 'completed' | 'cancelled')}
+              className="w-[160px] h-10 rounded-md border border-input bg-white px-3 py-2 text-sm"
+            >
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
           <select
             value={selectedMonth.value}
             onChange={(e) => handleMonthChange(e.target.value)}
