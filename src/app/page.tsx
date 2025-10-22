@@ -123,8 +123,10 @@ export default function HomePage() {
     }>;
   } | null>(null);
   const [liveStats, setLiveStats] = useState<{
-    totalOrders: number;
-    totalRevenue: number;
+    completedOrders: number;
+    cancelledOrders: number;
+    revenueAmount: number;
+    refundedAmount: number;
     totalDiscount: number;
     totalCustomers: number;
   } | null>(null);
@@ -652,7 +654,7 @@ const [customDateRange, setCustomDateRange] = useState({
             <div>
               <p className="text-sm text-gray-500 mb-1">Total Orders</p>
               <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? liveStats.totalOrders.toLocaleString() : "---"}
+                {liveStats ? liveStats.completedOrders.toLocaleString() : "---"}
               </h2>
             </div>
           </div>
@@ -662,7 +664,7 @@ const [customDateRange, setCustomDateRange] = useState({
             <div>
               <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
               <h2 className="text-2xl font-bold text-gray-900">
-                {liveStats ? formatCurrency(liveStats.totalRevenue) : "---"}
+                {liveStats ? formatCurrency(liveStats.revenueAmount) : "---"}
               </h2>
             </div>
           </div>
@@ -960,38 +962,39 @@ const [customDateRange, setCustomDateRange] = useState({
          {/* Charts Grid - Round charts first row, bar charts second row */}
        <div className="space-y-6 mb-6">
          {/* First Row - Round Charts */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {/* Total Revenue - Round Chart */}
-           <div className="bg-white rounded-lg shadow p-4">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-semibold">Total Revenue</h3>
-               <span className="text-xs text-gray-500">Custom Range</span>
-             </div>
-             <div className="h-52 flex items-center justify-center">
-               <div className="w-36 h-36 rounded-full border-8 border-green-400/60 relative">
-                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className="text-2xl font-bold text-green-600">£{liveStats?.totalRevenue || 0}</span>
-                   <span className="text-xs">Total Revenue</span>
-                 </div>
-               </div>
-             </div>
-           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-           {/* Total Customers - Round Chart */}
-           <div className="bg-white rounded-lg shadow p-4">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-semibold">Total Customers</h3>
-               <span className="text-xs text-gray-500">Custom Range</span>
-             </div>
-             <div className="h-52 flex items-center justify-center">
-               <div className="w-36 h-36 rounded-full border-8 border-purple-400/60 relative">
-                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className="text-2xl font-bold text-purple-600">{liveStats?.totalCustomers || 0}</span>
-                   <span className="text-xs">Total Customers</span>
-                 </div>
-               </div>
-             </div>
-           </div>
+            {/* Cancelled Orders - Round Chart */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Cancelled Orders</h3>
+                <span className="text-xs text-gray-500">Custom Range</span>
+              </div>
+              <div className="h-52 flex items-center justify-center">
+                <div className="w-36 h-36 rounded-full border-8 border-red-400/60 relative">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-red-600">{liveStats?.cancelledOrders || 0}</span>
+                    <span className="text-xs">Cancelled</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Refunded Amount - Round Chart */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Refunded Amount</h3>
+                <span className="text-xs text-gray-500">Custom Range</span>
+              </div>
+              <div className="h-52 flex items-center justify-center">
+                <div className="w-36 h-36 rounded-full border-8 border-orange-400/60 relative">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-orange-600">£{liveStats?.refundedAmount || 0}</span>
+                    <span className="text-xs">Refunded</span>
+                  </div>
+                </div>
+              </div>
+            </div>
          </div>
 
          {/* Second Row - Bar Charts */}
@@ -1011,7 +1014,7 @@ const [customDateRange, setCustomDateRange] = useState({
                </div>
                <div className="text-xs text-center text-gray-500 mt-2">Orders</div>
                <div className="absolute top-0 right-4 text-2xl font-bold text-yellow-600">
-                 {liveStats?.totalOrders || 0}
+                 {liveStats?.completedOrders || 0}
                </div>
              </div>
            </div>
