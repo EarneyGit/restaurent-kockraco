@@ -18,9 +18,30 @@ interface ItemsTableProps {
   isLoading?: boolean;
 }
 
+const getPaymentMethodColor = (paymentMethod: string) => {
+  if (paymentMethod === "card") return "text-purple-600";
+  if (paymentMethod === "cash") return "text-green-600";
+  if (paymentMethod === "cash_on_delivery") return "text-green-600";
+  return "text-gray-600";
+};
+
+const getPaymentStatusColor = (
+  paymentStatus: string,
+  paymentMethod: string
+) => {
+  if (paymentStatus === "paid") return "text-green-600";
+  if (paymentMethod === "cash" || paymentMethod === "cash_on_delivery") {
+    return "text-green-600";
+  }
+  if (paymentStatus === "pending") return "text-blue-600";
+  if (paymentStatus === "processing") return "text-yellow-600";
+  if (paymentStatus === "refunded") return "text-orange-600";
+  return "text-gray-600";
+};
+
 export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
-    const [openId, setOpenId] = React.useState<string | null>(null);
-    const [openBranchId, setOpenBranchId] = React.useState<string | null>(null);
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const [openBranchId, setOpenBranchId] = React.useState<string | null>(null);
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -89,7 +110,9 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 <TableCell className="font-medium">
                   {sale.orderNumber}
                 </TableCell>
-                <TableCell className="text-gray-700">{sale.customerName}</TableCell>
+                <TableCell className="text-gray-700">
+                  {sale.customerName}
+                </TableCell>
                 <TableCell>{sale.customerEmail}</TableCell>
                 <TableCell>{sale.orderType}</TableCell>
                 <TableCell>£{sale.total.toFixed(2)}</TableCell>
@@ -98,8 +121,21 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                 </TableCell>
                 <TableCell>{sale.postcode}</TableCell>
                 <TableCell>{sale.status}</TableCell>
-                <TableCell>{sale.paymentMethod}</TableCell>
-                <TableCell>{sale.paymentStatus}</TableCell>
+                <TableCell>
+                  <span className={getPaymentMethodColor(sale.paymentMethod)}>
+                    {sale.paymentMethod}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={getPaymentStatusColor(
+                      sale.paymentStatus,
+                      sale.paymentMethod
+                    )}
+                  >
+                    {sale.paymentStatus}
+                  </span>
+                </TableCell>
                 <TableCell>{sale.created}</TableCell>
                 <TableCell>
                   <Button
