@@ -325,7 +325,7 @@ export default function LiveOrdersPage() {
     setCancelLoading(true);
     if (selectedOrder) {
       // Simply update the order status to cancelled
-      // The backend will handle refund processing for card/online payments
+      // The backend will handle refund processing for card payments
       await updateOrderStatus(selectedOrder._id, "cancelled");
     } else {
       toast.error("No selected order!");
@@ -451,7 +451,7 @@ export default function LiveOrdersPage() {
   });
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
+    return new Date(dateString).toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
     });
