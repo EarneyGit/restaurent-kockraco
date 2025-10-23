@@ -107,6 +107,7 @@ interface Discount {
 }
 
 interface Order {
+  total: number;
   orderType: string;
   customerName?: string;
   customerEmail?: string;
@@ -686,7 +687,7 @@ export default function LiveOrdersPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-lg text-gray-900">
-                      £{(order.totalAmount || 0).toFixed(2)}
+                      £{(order.total || 0).toFixed(2)}
                     </div>
                     <div className="text-sm text-emerald-500 mt-1 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -834,7 +835,10 @@ export default function LiveOrdersPage() {
                     )}
                   <div className="mt-3 text-sm text-gray-500">
                     Payment: {selectedOrder.paymentMethod} (
-                    {["cash"].includes(selectedOrder.paymentMethod) ? "N/A" : selectedOrder.paymentStatus})
+                    {["cash"].includes(selectedOrder.paymentMethod)
+                      ? "N/A"
+                      : selectedOrder.paymentStatus}
+                    )
                   </div>
                 </div>
 
@@ -971,12 +975,17 @@ export default function LiveOrdersPage() {
                       </>
                     )
                   )}
+                  {/* Subtotal */}
+                  <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                    <span className="text-base font-semibold">Subtotal</span>
+                    <span className="text-base font-semibold">
+                      £{selectedOrder?.subtotal?.toFixed(2)}
+                    </span>
+                  </div>
                   {/* order serviceCharge */}
                   {selectedOrder.serviceCharge ? (
                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                      <span className="text-base font-semibold">
-                        Service Charge
-                      </span>
+                      <span className="text-base">Service Charge</span>
                       <span className="text-base font-semibold">
                         {selectedOrder.serviceCharge}
                       </span>
@@ -988,9 +997,7 @@ export default function LiveOrdersPage() {
                   {selectedOrder.deliveryFee &&
                   selectedOrder.deliveryMethod === "delivery" ? (
                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                      <span className="text-base font-semibold">
-                        Delivery Fee
-                      </span>
+                      <span className="text-base">Delivery Fee</span>
                       <span className="text-base font-semibold">
                         {selectedOrder.deliveryFee}
                       </span>
@@ -1012,20 +1019,10 @@ export default function LiveOrdersPage() {
                     ""
                   )}
 
-                  {/* Subtotal */}
-                  <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
-                    <span className="text-base font-semibold">Subtotal</span>
-                    <span className="text-base font-semibold">
-                      £
-                      {selectedOrder?.discount?.originalTotal?.toFixed(2) ??
-                        selectedOrder?.subtotal?.toFixed(2)}
-                    </span>
-                  </div>
-
                   {/* Discount if applied */}
                   {selectedOrder?.discountApplied &&
                     selectedOrder?.discountApplied?.discountAmount !== 0 && (
-                      <div className="flex justify-between items-center text-sm text-red-600">
+                      <div className="flex justify-between items-center text-sm border-t-2 border-gray-200 text-red-600">
                         <span>
                           Discount ({selectedOrder.discountApplied.name} -{" "}
                           {selectedOrder.discountApplied.discountType ===
@@ -1047,9 +1044,7 @@ export default function LiveOrdersPage() {
                   <div className="flex justify-between items-center pt-2 border-t border-gray-300">
                     <span className="text-lg font-bold">Total</span>
                     <span className="text-xl font-bold text-emerald-600">
-                      £
-                      {selectedOrder?.finalTotal?.toFixed(2) ??
-                        selectedOrder?.totalAmount?.toFixed(2)}
+                      £{selectedOrder?.total?.toFixed(2)}
                     </span>
                   </div>
                 </div>
