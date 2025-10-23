@@ -125,7 +125,7 @@ interface Order {
   discount?: Discount;
   discountApplied?: DiscountApplied;
   status: "new" | "processing" | "complete";
-  paymentMethod: string; // "card", "cash_on_delivery", etc.
+  paymentMethod: string; // "card", "cash"
   paymentStatus: string; // "pending", "paid", "failed", "refunded", etc.
   deliveryMethod: string;
   branchId: BranchInfo;
@@ -834,7 +834,7 @@ export default function LiveOrdersPage() {
                     )}
                   <div className="mt-3 text-sm text-gray-500">
                     Payment: {selectedOrder.paymentMethod} (
-                    {["cash", "cash_on_delivery"].includes(selectedOrder.paymentMethod) ? "N/A" : selectedOrder.paymentStatus})
+                    {["cash"].includes(selectedOrder.paymentMethod) ? "N/A" : selectedOrder.paymentStatus})
                   </div>
                 </div>
 

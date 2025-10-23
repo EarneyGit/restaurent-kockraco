@@ -15,7 +15,6 @@ interface ReportsTableProps {
 const getPaymentMethodColor = (paymentMethod: string) => {
   if (paymentMethod === "card") return "text-purple-600";
   if (paymentMethod === "cash") return "text-green-600";
-  if (paymentMethod === "cash_on_delivery") return "text-green-600";
   return "text-gray-600";
 };
 
@@ -23,9 +22,9 @@ const getPaymentStatusColor = (
   paymentStatus: string,
   paymentMethod: string
 ) => {
-  // if cash or cash_on_delivery, return text-green-600
+  // if cash, return text-green-600
   if (paymentStatus === "paid") return "text-green-600";
-  if (paymentMethod === "cash" || paymentMethod === "cash_on_delivery") {
+  if (paymentMethod === "cash") {
     return "text-green-600";
   }
 
@@ -74,7 +73,7 @@ export function ReportsTable({ data }: ReportsTableProps) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {["cash", "cash_on_delivery"].includes(sale.paymentMethod) ? (
+                  {["cash"].includes(sale.paymentMethod) ? (
                     <span className="text-green-600">N/A</span>
                   ) : (
                     <span

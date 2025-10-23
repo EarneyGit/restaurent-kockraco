@@ -21,7 +21,6 @@ interface ItemsTableProps {
 const getPaymentMethodColor = (paymentMethod: string) => {
   if (paymentMethod === "card") return "text-purple-600";
   if (paymentMethod === "cash") return "text-green-600";
-  if (paymentMethod === "cash_on_delivery") return "text-green-600";
   return "text-gray-600";
 };
 
@@ -30,7 +29,7 @@ const getPaymentStatusColor = (
   paymentMethod: string
 ) => {
   if (paymentStatus === "paid") return "text-green-600";
-  if (paymentMethod === "cash" || paymentMethod === "cash_on_delivery") {
+  if (paymentMethod === "cash") {
     return "text-green-600";
   }
   if (paymentStatus === "pending") return "text-blue-600";
@@ -127,7 +126,7 @@ export function ItemsTable({ data, type, isLoading }: ItemsTableProps) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {["cash", "cash_on_delivery"].includes(sale.paymentMethod) ? (
+                  {["cash"].includes(sale.paymentMethod) ? (
                     <span className="text-green-600">N/A</span>
                   ) : (
                     <span
