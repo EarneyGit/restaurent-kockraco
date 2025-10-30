@@ -20,12 +20,14 @@ import {
 import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { BaseUrl } from "@/lib/config";
+import { Switch } from "@radix-ui/react-switch";
 
 interface Attribute {
   id: string;
   name: string;
   type: "single" | "multiple";
   requiresSelection: boolean;
+  isMultipleTimes: boolean;
   description?: string;
   displayOrder: number;
   isActive: boolean;
@@ -112,6 +114,7 @@ export function AttributesTab({
   const [newAttribute, setNewAttribute] = useState({
     name: "",
     type: "single" as "single" | "multiple",
+    isMultipleTimes: false,
     requiresSelection: true,
     description: "",
     displayOrder: 0,
@@ -166,6 +169,7 @@ export function AttributesTab({
             name: item.attribute.name,
             type: item.attribute.type,
             requiresSelection: item.attribute.requiresSelection,
+            isMultipleTimes: item.attribute.isMultipleTimes,
             description: item.attribute.description,
             displayOrder: item.attribute.displayOrder,
             isActive: item.attribute.isActive,
@@ -263,6 +267,7 @@ export function AttributesTab({
           name: attr.name,
           type: attr.type,
           requiresSelection: attr.requiresSelection,
+          isMultipleTimes: attr.isMultipleTimes,
           description: attr.description,
           displayOrder: attr.displayOrder,
           isActive: attr.isActive,
@@ -317,6 +322,7 @@ export function AttributesTab({
         name: newAttribute.name,
         type: newAttribute.type,
         requiresSelection: newAttribute.requiresSelection,
+        isMultipleTimes: newAttribute.isMultipleTimes,
         description: newAttribute.description || "",
         displayOrder: newAttribute.displayOrder,
         minAttribute: newAttribute?.minAttribute || 0,
@@ -335,6 +341,7 @@ export function AttributesTab({
           name: "",
           type: "single",
           requiresSelection: true,
+          isMultipleTimes: false,
           description: "",
           displayOrder: 0,
           minAttribute: 0,
@@ -348,6 +355,7 @@ export function AttributesTab({
           name: data.data.name,
           type: data.data.type,
           requiresSelection: data.data.requiresSelection,
+          isMultipleTimes: data.data.isMultipleTimes,
           description: data.data.description,
           displayOrder: data.data.displayOrder,
           minAttribute: data.data.minAttribute,
@@ -914,6 +922,22 @@ export function AttributesTab({
                 <option value="multiple">Select multiple options</option>
               </select>
             </div>
+            {/* isMultipleTimes if multiple is selected */}
+            {newAttribute?.type === "multiple" && (
+              <div className="flex items-center space-x-2">
+                <StableSwitch
+                  id="isMultipleTimes"
+                  checked={newAttribute.isMultipleTimes}
+                  onCheckedChange={(checked) =>
+                    setNewAttribute((prev) => ({
+                      ...prev,
+                      isMultipleTimes: checked as boolean,
+                    }))
+                  }
+                />
+                <Label htmlFor="isMultipleTimes">Is Multiple Times Allowed</Label>
+              </div>
+            )}
 
             {newAttribute?.type === "multiple" ? (
               <>

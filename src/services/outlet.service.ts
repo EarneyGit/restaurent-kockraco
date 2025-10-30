@@ -181,7 +181,8 @@ class OutletService {
   }
 
   validatePhone(phone: string): boolean {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+    // e.g. +447777777777  or +07777777777
+    const phoneRegex = /^[\+]?[0-9]{1,3}[\s]?[\(]?[0-9]{1,3}[\)]?[\s]?[\-]?[0-9]{1,4}[\s]?[\-]?[0-9]{1,4}[\s]?[\-]?[0-9]{1,4}$/
     return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
   }
 

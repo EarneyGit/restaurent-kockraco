@@ -5,6 +5,9 @@ export interface Attribute {
   displayOrder: number
   type: 'single' | 'multiple' | 'multiple-times'
   requiresSelection: boolean
+  isMultipleTimes: boolean
+  minAttribute: number
+  maxAttribute: number
   availableDays: string[]
   branchId?: string
   isActive: boolean

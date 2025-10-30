@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Attribute, DAYS_OF_WEEK, DayOfWeek } from '@/types/attribute'
+import { StableSwitch } from '../ui/stable-switch'
 
 interface EditAttributeTypeModalProps {
   attributeType: Attribute
@@ -95,7 +96,7 @@ export function EditAttributeTypeModal({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Edit Attribute Type' : 'Add Attribute Type'}
+            {isEditing ? "Edit Attribute Type" : "Add Attribute Type"}
           </DialogTitle>
         </DialogHeader>
 
@@ -107,9 +108,11 @@ export function EditAttributeTypeModal({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Enter attribute type name"
-              className={errors.name ? 'border-red-500' : ''}
+              className={errors.name ? "border-red-500" : ""}
             />
             {errors.name && (
               <p className="text-sm text-red-500 mt-1">{errors.name}</p>
@@ -120,10 +123,15 @@ export function EditAttributeTypeModal({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={formData.description || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              value={formData.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Enter description (optional)"
-              className={errors.description ? 'border-red-500' : ''}
+              className={errors.description ? "border-red-500" : ""}
               rows={3}
             />
             {errors.description && (
@@ -140,11 +148,13 @@ export function EditAttributeTypeModal({
               type="number"
               min="0"
               value={formData.displayOrder}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                displayOrder: parseInt(e.target.value) || 0 
-              }))}
-              className={errors.displayOrder ? 'border-red-500' : ''}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  displayOrder: parseInt(e.target.value) || 0,
+                }))
+              }
+              className={errors.displayOrder ? "border-red-500" : ""}
             />
             {errors.displayOrder && (
               <p className="text-sm text-red-500 mt-1">{errors.displayOrder}</p>
@@ -162,18 +172,83 @@ export function EditAttributeTypeModal({
             >
               <option value="single">Select a single option</option>
               <option value="multiple">Select multiple options</option>
-              <option value="multiple-times">Select multiple options multiple times</option>
             </select>
           </div>
+          {/* isMultipleTimes if multiple is selected */}
+          {formData?.type === 'multiple' && (
+            <div className="flex items-center space-x-2">
+              <StableSwitch
+                id="isMultipleTimes"
+                checked={formData.isMultipleTimes}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isMultipleTimes: checked as boolean,
+                  }))
+                }
+              />
+              <Label htmlFor="isMultipleTimes">Is Multiple Times Allowed</Label>
+            </div>
+          )}
+
+          {formData?.type === 'multiple' ? (
+            <>
+              <div>
+                <Label>Minimum Selected Options</Label>
+                <Input
+                  id="minAttribute"
+                  type="number"
+                  value={formData.minAttribute}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      minAttribute: parseInt(e.target.value) || 0,
+                    }))
+                  }
+                  placeholder="e.g., Enter limit"
+                />
+                {errors.minAttribute && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.minAttribute}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label>Maximum Selected Options</Label>
+                <Input
+                  id="maxAttribute"
+                  type="number"
+                  value={formData.maxAttribute}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      maxAttribute: parseInt(e.target.value) || 0,
+                    }))
+                  }
+                  placeholder="e.g., Enter limit"
+                />
+                {errors.maxAttribute && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.maxAttribute}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <></>
+          )}
 
           <div className="flex items-center gap-2">
             <Switch
               id="requiresSelection"
               checked={formData.requiresSelection}
-              onCheckedChange={(checked) => setFormData(prev => ({ 
-                ...prev, 
-                requiresSelection: checked 
-              }))}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  requiresSelection: checked,
+                }))
+              }
             />
             <Label htmlFor="requiresSelection">Requires a selection</Label>
           </div>
@@ -182,10 +257,12 @@ export function EditAttributeTypeModal({
             <Switch
               id="isActive"
               checked={formData.isActive}
-              onCheckedChange={(checked) => setFormData(prev => ({ 
-                ...prev, 
-                isActive: checked 
-              }))}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  isActive: checked,
+                }))
+              }
             />
             <Label htmlFor="isActive">Active</Label>
           </div>
@@ -195,7 +272,7 @@ export function EditAttributeTypeModal({
               Available Days <span className="text-red-500">*</span>
             </Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {DAYS_OF_WEEK.map(day => (
+              {DAYS_OF_WEEK.map((day) => (
                 <div key={day} className="flex items-center gap-2">
                   <Switch
                     id={day}
@@ -207,7 +284,9 @@ export function EditAttributeTypeModal({
               ))}
             </div>
             {errors.availableDays && (
-              <p className="text-sm text-red-500 mt-1">{errors.availableDays}</p>
+              <p className="text-sm text-red-500 mt-1">
+                {errors.availableDays}
+              </p>
             )}
           </div>
 
@@ -216,11 +295,11 @@ export function EditAttributeTypeModal({
               Cancel
             </Button>
             <Button type="submit" disabled={!formData.name.trim()}>
-              {isEditing ? 'Update' : 'Create'} Attribute Type
+              {isEditing ? "Update" : "Create"} Attribute Type
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 } 
