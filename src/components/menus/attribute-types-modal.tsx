@@ -155,6 +155,9 @@ export function AttributeTypesModal({ open, onClose }: AttributeTypesModalProps)
     type: 'single',
     displayOrder: attributeTypes.length + 1,
     requiresSelection: true,
+    isMultipleTimes: false,
+    minAttribute: 0,
+    maxAttribute: 0,
     availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     isActive: true,
     description: ''
