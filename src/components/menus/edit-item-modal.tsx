@@ -348,7 +348,7 @@ export function EditItemModal({
   // Helper function to extract error message from API response
   const getErrorMessage = (error: any): string => {
     if (error.response?.data?.error) {
-      if(error.response.data.error.toLowerCase().includes('file too large')) {
+      if (error.response.data.error.toLowerCase().includes("file too large")) {
         return `${error.response.data.error}. Maximum file size limit is 10MB per file.`;
       }
       return error.response.data.error;
@@ -361,7 +361,6 @@ export function EditItemModal({
     }
     return "An unexpected error occurred";
   };
-
 
   const handleSave = async () => {
     if (!currentItem.name) return toast.error("Item name is required");
@@ -431,6 +430,7 @@ export function EditItemModal({
               productResponse.data.data.allowAddWithoutChoices
             );
           }
+          console.log("productResponse", productResponse);
         } catch (error) {
           console.error("Error fetching current product settings:", error);
         }
@@ -464,31 +464,24 @@ export function EditItemModal({
         })
       );
 
-      // Handle images
-      if (currentItem.images) {
-        // Handle new image files (those added in the current session)
+      if (Array.isArray(currentItem.images)) {
         const newImages = currentItem.images.filter(
-          (image) => image instanceof File || image instanceof Blob
+          (img) => img instanceof File || img instanceof Blob
         );
-        newImages.forEach((image) => {
-          formData.append("images", image);
-        });
 
-        // Handle existing image URLs (those loaded from the server)
-        const existingImages = currentItem.images
-          .filter((image) => typeof image === "string")
-          .filter(
-            (image) => typeof image === "string" && !image.startsWith("blob:")
-          );
+        const existingImages = currentItem.images.filter(
+          (img) => typeof img === "string" && !img.startsWith("blob:")
+        );
 
-        if (existingImages.length > 0) {
-          // Tell the backend to keep these existing images
-          formData.append("existingImages", JSON.stringify(existingImages));
-        } else if (currentItem.id && newImages.length === 0) {
-          // If we're updating an item, and there are no new or existing images,
-          // send an empty array to indicate all images should be removed
-          formData.append("existingImages", JSON.stringify([]));
+        if (newImages.length > 0) {
+          newImages.forEach((img) => formData.append("images", img));
+        } else if (existingImages.length > 0) {
+          formData.append("images", JSON.stringify(existingImages));
+        } else {
+          formData.append("images", "[]");
         }
+      } else {
+          formData.append("images", "[]");
       }
 
       // Get the correct ID for the API call
@@ -940,7 +933,10 @@ export function EditItemModal({
       formData.append("name", `${currentItem.name} (Copy)`);
       formData.append("price", currentItem.price.toString());
       formData.append("description", currentItem.description || "");
-      formData.append("displayOrder", (currentItem.displayOrder || "").toString());
+      formData.append(
+        "displayOrder",
+        (currentItem.displayOrder || "").toString()
+      );
       formData.append("weight", (currentItem.weight || "").toString());
       formData.append("calorificValue", currentItem.calorificValue || "");
       formData.append("calorieDetails", currentItem.calorieDetails || "");
