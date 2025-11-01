@@ -960,7 +960,7 @@ export default function LiveOrdersPage() {
                                               <span className="ml-3 whitespace-nowrap">
                                                 £
                                                 {(
-                                                  Number(choice.itemPrice) || 0
+                                                  Number(choice?.itemPrice * choice?.quantity) || 0
                                                 ).toFixed(2)}
                                               </span>
                                             </li>
