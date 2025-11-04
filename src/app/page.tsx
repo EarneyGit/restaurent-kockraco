@@ -1059,7 +1059,7 @@ export default function HomePage() {
               {/* Total Orders - Bar Chart */}
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">Total Orders</h3>
+                  <h3 className="font-semibold">Completed orders</h3>
                   <span className="text-xs text-gray-500">Custom Range</span>
                 </div>
                 <div className="h-52 relative">
