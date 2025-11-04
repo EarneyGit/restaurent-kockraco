@@ -920,12 +920,7 @@ export default function LiveOrdersPage() {
                               Qty: {item.quantity}
                             </span>
                             <span className="font-semibold">
-                              £
-                              {typeof item.price === "number"
-                                ? (item.price * item.quantity).toFixed(2)
-                                : item.itemTotal
-                                ? item.itemTotal.toFixed(2)
-                                : (item.price.total * item.quantity).toFixed(2)}
+                              £{item.product.price * item.quantity}
                             </span>
                           </div>
                         </div>
@@ -960,7 +955,10 @@ export default function LiveOrdersPage() {
                                               <span className="ml-3 whitespace-nowrap">
                                                 £
                                                 {(
-                                                  Number(choice?.itemPrice * choice?.quantity) || 0
+                                                  Number(
+                                                    choice?.itemPrice *
+                                                      choice?.quantity
+                                                  ) || 0
                                                 ).toFixed(2)}
                                               </span>
                                             </li>
@@ -982,6 +980,25 @@ export default function LiveOrdersPage() {
                       £{selectedOrder?.subtotal?.toFixed(2)}
                     </span>
                   </div>
+                  <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
+                    <span className="text-base font-semibold">
+                      Total Add-ons
+                    </span>
+                    <span className="text-base font-semibold">
+                      £
+                      {selectedOrder?.products
+                        ? selectedOrder.products
+                            .reduce(
+                              (total, product) =>
+                                total +
+                                ((product.price as any)?.attributesTotal || 0),
+                              0
+                            )
+                            .toFixed(2)
+                        : "0.00"}
+                    </span>
+                  </div>
+
                   {/* order serviceCharge */}
                   {selectedOrder.serviceCharge ? (
                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200">
